@@ -1,0 +1,3 @@
+pymongo[srv]
+python-dotenv
+flask
