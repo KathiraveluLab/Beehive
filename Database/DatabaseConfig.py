@@ -13,9 +13,8 @@ connectionString = os.environ.get("MONGODB_CONNECTION_STRING")
 dbclient = MongoClient(connectionString)
 
 beehive = dbclient.beehive
-
 beehive_user_collection = beehive.users
-
+beehive_image_collection = beehive.images
 
 def create_user(firstname: str, lastname: str, email: str, username: str, password: str, accountcreatedtime: datetime):
     
@@ -46,6 +45,32 @@ def get_password_by_username(username: str):
         return user.get("password")
     else:
         return "user not found!"
+    
+def get_user_by_username(username: str):
+    query = {
+        "username" : username
+    }
+    user = beehive_user_collection.find_one(query)
+    return user
+  
+def save_image(username, filename, title, description):
+    image = {
+        'username': username,
+        'filename': filename,
+        'title': title,
+        'description': description
+    }
+    beehive_image_collection.insert_one(image)
+
+def get_images_by_user(username):
+    images = beehive_image_collection.find({'username': username})
+    return [{'id': str(image['_id']), 'filename': image['filename'], 'title': image['title'], 'description': image['description']} for image in images]
+
+def update_image(image_id, title, description):
+    beehive_image_collection.update_one({'_id': image_id}, {'$set': {'title': title, 'description': description}})
+
+def delete_image(image_id):
+    beehive_image_collection.delete_one({'_id': image_id})
 
 
     
