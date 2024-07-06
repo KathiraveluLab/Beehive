@@ -14,6 +14,62 @@ body {
     box-shadow: 0 0 10px rgba(26, 26, 26, 0.1);
 }
 
+.toggle{
+    background-color: #0044ff;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin-top: 10px;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.3s ease;
+}
+
+.upload-button {
+    background-color: #00bb1f;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin-top: 10px;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.3s ease;
+}
+
+.upload-button:hover {
+    background-color: #007906; /* Darker green on hover */
+}
+
+
+.toggle:hover{
+    background-color: #0019b9;
+
+}
+
+input{
+    width: 95%;
+    padding: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+textarea {
+    width: 95%;
+    padding: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
+
+.imageshow{
+
+}
+
 .logout-button {
     background-color: #ff0400;
     color: #fff;

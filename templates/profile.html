@@ -5,35 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+    <script>
+        function toggleUploadForm() {
+            var uploadForm = document.getElementById("uploadForm");
+            uploadForm.style.display = (uploadForm.style.display === 'none' || uploadForm.style.display === '') ? 'block' : 'none';
+        }
+    </script>
 </head>
 <body>
     <div class="container">
         <h1>Welcome to your Profile Page, {{ username }}!</h1>
-        <h3>{{full_name}}</h3>
-        <button class="logout-button"><a href="{{ url_for('logout') }}">Logout</a></button>
+        <h3>{{ full_name }}</h3>
+        <button class="logout-button"><a href="{{ url_for('logout') }}">Logout</a></button><hr>
+    
+        <button class = "toggle" onclick="toggleUploadForm()">Upload Images</button><br><br>
+        
+        <div id="uploadForm" style="display: none;">
+            <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data">
+                <input type="file" name="file" required><br>
+                <input type="text" name="title" placeholder="Title" required><br>
+                <textarea name="description" placeholder="Description" required></textarea>
+                <button class="upload-button" type="submit">Upload</button>
+            </form>
+        </div>
     </div>
-        <h2>Upload New Image</h2>
-        <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data">
-            <input type="file" name="file" required>
-            <input type="text" name="title" placeholder="Title" required>
-            <textarea name="description" placeholder="Description" required></textarea>
-            <button type="submit">Upload</button>
-        </form>
-
-        <h2>Your Images</h2>
-        {% for image in images %}
-            <div>
-                <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" alt="{{ image.title }}" width="200">
-                <h3>{{ image.title }}</h3>
-                <p>{{ image.description }}</p>
-                <form action="{{ url_for('edit_image', image_id=image.id) }}" method="post">
-                    <input type="text" name="title" value="{{ image.title }}" required>
-                    <textarea name="description" required>{{ image.description }}</textarea>
-                    <button type="submit">Edit</button>
-                </form>
-                <a class="delete-link" href="{{ url_for('delete_image_route', image_id=image.id) }}">Delete</a>
-            </div>
-        {% endfor %}
     
 </body>
 </html>
