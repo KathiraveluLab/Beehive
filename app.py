@@ -1,9 +1,9 @@
 import os
 import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session,config
 from bson import ObjectId
 from Database.DatabaseConfig import (
-    create_user, get_password_by_username, is_username_available, 
+    create_user, get_image_by_id, get_password_by_username, is_username_available, 
     get_user_by_username, save_image, get_images_by_user, 
     update_image, delete_image
 )
@@ -13,14 +13,14 @@ app = Flask(__name__)
 app.secret_key = 'beehive'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
-# Ensure upload folder exists
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
 
+
+# Home page
 @app.route('/')
 def home():
     return render_template('login.html')
 
+# Login the user
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -35,6 +35,7 @@ def login():
             flash('Invalid credentials, please try again.', 'danger')
     return render_template("login.html")
 
+# Register a new user
 @app.route('/register', methods=['GET', 'POST'])
 def register():
     if request.method == 'POST':
@@ -61,6 +62,7 @@ def register():
 
     return render_template("register.html")
 
+# Display the user's profile page
 @app.route('/profile')
 def profile():
     if 'username' not in session:
@@ -77,8 +79,11 @@ def profile():
 
     return render_template("profile.html", username=user['username'], full_name=f"{user['first_name']} {user['last_name']}", images=images)
 
+# Upload images to the user's profile
 @app.route('/upload', methods=['POST'])
 def upload_image():
+    if not os.path.exists(app.config['UPLOAD_FOLDER']):
+        os.makedirs(app.config['UPLOAD_FOLDER'])
     if 'username' not in session:
         flash('Please log in to upload images.', 'danger')
         return redirect(url_for('login'))
@@ -103,6 +108,7 @@ def upload_image():
 
     return redirect(url_for('profile'))
 
+# Edit images uploaded by the user
 @app.route('/edit/<image_id>', methods=['POST'])
 def edit_image(image_id):
     if 'username' not in session:
@@ -115,18 +121,18 @@ def edit_image(image_id):
     flash('Image updated successfully!', 'success')
     return redirect(url_for('profile'))
 
+# Delete images uploaded by the user
 @app.route('/delete/<image_id>')
 def delete_image_route(image_id):
     if 'username' not in session:
         flash('Please log in to delete images.', 'danger')
         return redirect(url_for('login'))
 
-    # Retrieve image information
-    image = get_images_by_user(session['username'])
+
+    image = get_image_by_id(ObjectId(image_id))
     if not image:
         flash('Image not found.', 'danger')
         return redirect(url_for('profile'))
-
     # Delete image file from upload directory
     try:
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], image['filename'])
@@ -137,14 +143,15 @@ def delete_image_route(image_id):
             flash('Image file not found in upload directory.', 'danger')
     except Exception as e:
         flash(f'Failed to delete image file: {str(e)}', 'danger')
-
-    # Delete image record from the database
+    # Delete image record from database
     delete_image(ObjectId(image_id))
     flash('Image record deleted from database.', 'success')
-    
+
     return redirect(url_for('profile'))
 
 
+
+# Logout the user
 @app.route('/logout')
 def logout():
     session.pop('username', None)
