@@ -3,7 +3,7 @@ import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, session,config
 from bson import ObjectId
 from Database.DatabaseConfig import (
-    create_user, get_image_by_id, get_password_by_username, is_username_available, 
+    create_user, get_image_by_id, get_password_by_username, is_email_available, is_username_available, 
     get_user_by_username, save_image, get_images_by_user, 
     update_image, delete_image
 )
@@ -52,13 +52,16 @@ def register():
         elif password != confirm_password:
             flash('Passwords do not match, please try again.', 'danger')
         else:
-            if is_username_available(username):
-                account_created_at = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-                create_user(first_name, last_name, email, username, password, account_created_at)
-                flash('Registration successful!', 'success')
-                return redirect(url_for('login'))
+            if is_email_available(email):
+                if is_username_available(username):
+                    account_created_at = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+                    create_user(first_name, last_name, email, username, password, account_created_at)
+                    flash('Registration successful!', 'success')
+                    return redirect(url_for('login'))
+                else:
+                    flash('This Username already taken.', 'danger')
             else:
-                flash('This Username already taken.', 'danger')
+                flash('This Email already signed in.', 'danger')
 
     return render_template("register.html")
 
