@@ -38,6 +38,14 @@ def is_username_available(username: str):
     count = beehive_user_collection.count_documents(query)
     return count == 0
 
+def is_email_available(email: str):
+    query= {
+        "mail_id" : email
+    }
+
+    count = beehive_user_collection.count_documents(query)
+    return count == 0
+
 # Get password by username from MongoDB
 def get_password_by_username(username: str):
     query = {
