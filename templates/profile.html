@@ -7,28 +7,56 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
     <script>
         function toggleUploadForm() {
-            var uploadForm = document.getElementById("uploadForm");
-            uploadForm.style.display = (uploadForm.style.display === 'none' || uploadForm.style.display === '') ? 'block' : 'none';
+            var uploadForm = document.getElementById('uploadForm');
+            if (uploadForm.style.display === 'none' || uploadForm.style.display === '') {
+                uploadForm.style.display = 'block';
+            } else {
+                uploadForm.style.display = 'none';
+            }
         }
-    </script>
+    </script> 
 </head>
 <body>
-    <div class="container">
-        <h1>Welcome to your Profile Page, {{ username }}!</h1>
-        <h3>{{ full_name }}</h3>
-        <button class="logout-button"><a href="{{ url_for('logout') }}">Logout</a></button><hr>
-    
-        <button class = "toggle" onclick="toggleUploadForm()">Upload Images</button><br><br>
-        
-        <div id="uploadForm" style="display: none;">
-            <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data">
-                <input type="file" name="file" required><br>
-                <input type="text" name="title" placeholder="Title" required><br>
-                <textarea name="description" placeholder="Description" required></textarea>
-                <button class="upload-button" type="submit">Upload</button>
-            </form>
-        </div>
+    <div class="nav">
+        <h1>{{ username }}</h1>
     </div>
     
+    <div class="button-container">
+        <button class="toggle" onclick="toggleUploadForm()">Upload Images</button>
+        <button class="logout-button"><a href="{{ url_for('logout') }}">Logout</a></button>
+    </div>
+
+    <div class="toggle-container">
+    <div id="uploadForm" style="display: none;">
+        <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data">
+            <input class="file-button" type="file" name="file" required><br>
+            <input class="title-area" type="text" name="title" placeholder="Title" required><br>
+            <textarea class="description-area" name="description" placeholder="Description" required></textarea><br>
+            <button class="upload-button" type="submit">Upload</button>
+        </form>
+    </div>
+    </div>
+
+    <h2>Uploaded Images</h2>
+    <div class="image-container">
+        {% for image in images %}
+            <div class="image-card">
+                <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" alt="{{ image.title }}">
+                <h3>{{ image.title }}</h3>
+                <p>{{ image.description }}</p>
+                <div class="actions">
+                    <form action="{{ url_for('edit_image', image_id=image._id) }}" method="post">
+                        <input type="text" name="title" value="{{ image.title }}" required>
+                        <textarea name="description" required>{{ image.description }}</textarea>
+                        <button type="submit">Edit</button>
+                    </form>
+                    <a href="{{ url_for('delete_image_route', image_id=image._id) }}">Delete</a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    
+
+
 </body>
 </html>
