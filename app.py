@@ -78,9 +78,10 @@ def profile():
         flash('User not found.', 'danger')
         return redirect(url_for('login'))
 
-    images = get_images_by_user(username)
+    images = get_images_by_user(username)  # Fetch images uploaded by the user
 
     return render_template("profile.html", username=user['username'], full_name=f"{user['first_name']} {user['last_name']}", images=images)
+
 
 # Upload images to the user's profile
 @app.route('/upload', methods=['POST'])

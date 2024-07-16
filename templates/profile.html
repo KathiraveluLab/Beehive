@@ -7,10 +7,14 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
     <script>
         function toggleUploadForm() {
-            var uploadForm = document.getElementById("uploadForm");
-            uploadForm.style.display = (uploadForm.style.display === 'none' || uploadForm.style.display === '') ? 'block' : 'none';
+            var uploadForm = document.getElementById('uploadForm');
+            if (uploadForm.style.display === 'none' || uploadForm.style.display === '') {
+                uploadForm.style.display = 'block';
+            } else {
+                uploadForm.style.display = 'none';
+            }
         }
-    </script>
+    </script> 
 </head>
 <body>
     <div class="nav">
@@ -31,6 +35,25 @@
             <button class="upload-button" type="submit">Upload</button>
         </form>
     </div>
+    </div>
+
+    <h2>Uploaded Images</h2>
+    <div class="image-container">
+        {% for image in images %}
+            <div class="image-card">
+                <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" alt="{{ image.title }}">
+                <h3>{{ image.title }}</h3>
+                <p>{{ image.description }}</p>
+                <div class="actions">
+                    <form action="{{ url_for('edit_image', image_id=image._id) }}" method="post">
+                        <input type="text" name="title" value="{{ image.title }}" required>
+                        <textarea name="description" required>{{ image.description }}</textarea>
+                        <button type="submit">Edit</button>
+                    </form>
+                    <a href="{{ url_for('delete_image_route', image_id=image._id) }}">Delete</a>
+                </div>
+            </div>
+        {% endfor %}
     </div>
     
 
