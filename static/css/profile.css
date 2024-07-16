@@ -5,18 +5,49 @@ body {
     padding: 0;
 }
 
-.container {
-    width: 500px;
-    margin: 50px auto;
-    padding: 20px;
-    background: white;
-    border-radius: 15px;
-    box-shadow: 0 0 10px rgba(26, 26, 26, 0.1);
+
+.nav{
+    background-color: #333;
+    color: #fff;
+    text-align: center;
+    padding: 10px;
+}
+.button-container {
+    display: flex;
+    justify-content: flex-end; 
+    gap: 40%; 
+    margin-top: 10px;
+    margin-right: 10px;
 }
 
-.toggle{
+
+
+.toggle {
     background-color: #0044ff;
     color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background 0.3s ease;
+}
+
+.toggle:hover {
+    background-color: #0019b9;
+}
+
+
+.toggle-container {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column; 
+    align-items: center; 
+    width: 100%; 
+}
+
+
+.file-button{
     border: none;
     padding: 10px 20px;
     cursor: pointer;
@@ -25,8 +56,32 @@ body {
     text-decoration: none;
     display: inline-block;
     transition: background 0.3s ease;
+    width: 100%;
 }
 
+.title-area{
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin-top: 10px;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.3s ease;
+    width: 100%;
+}
+
+.description-area{
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    margin-top: 10px;
+    border-radius: 4px;
+    text-decoration: none;
+    display: inline-block;
+    transition: background 0.3s ease;
+    width: 100%;
+}
 .upload-button {
     background-color: #00bb1f;
     color: #fff;
@@ -41,34 +96,9 @@ body {
 }
 
 .upload-button:hover {
-    background-color: #007906; /* Darker green on hover */
+    background-color: #007906;
 }
 
-
-.toggle:hover{
-    background-color: #0019b9;
-
-}
-
-input{
-    width: 95%;
-    padding: 8px;
-    margin-bottom: 20px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-textarea {
-    width: 95%;
-    padding: 8px;
-    margin-bottom: 20px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.imageshow{
-
-}
 
 .logout-button {
     background-color: #ff0400;
@@ -76,10 +106,8 @@ textarea {
     border: none;
     padding: 10px 20px;
     cursor: pointer;
-    margin-top: 10px;
     border-radius: 4px;
     text-decoration: none;
-    display: inline-block;
     transition: background 0.3s ease;
 }
 
