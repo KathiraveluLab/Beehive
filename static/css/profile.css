@@ -146,3 +146,62 @@ body {
 .logout-button:hover {
     background-color: #d60400;
 }
+
+h2{
+    text-align:center;
+}
+
+.more-info-button {
+    background-color: #0044ff;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background 0.3s ease;
+}
+
+.more-info-button:hover {
+    background-color: #0019b9;
+}
+
+.more-info {
+    margin-top: 10px;
+}
+
+.delete-button {
+    background-color: #ff0400;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background 0.3s ease;
+}
+
+.delete-button:hover {
+    background-color: #d60400;
+}
+
+.edit-form input, .edit-form textarea {
+    display: block;
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+.edit-button {
+    background-color: #00bb1f;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: background 0.3s ease;
+}
+
+.edit-button:hover {
+    background-color: #007906;
+}
