@@ -82,12 +82,8 @@ def profile():
 
     return render_template("profile.html", username=user['username'], full_name=f"{user['first_name']} {user['last_name']}", images=images)
 
-
-# Upload images to the user's profile
 @app.route('/upload', methods=['POST'])
 def upload_image():
-    if not os.path.exists(app.config['UPLOAD_FOLDER']):
-        os.makedirs(app.config['UPLOAD_FOLDER'])
     if 'username' not in session:
         flash('Please log in to upload images.', 'danger')
         return redirect(url_for('login'))
@@ -121,7 +117,14 @@ def edit_image(image_id):
 
     title = request.form['title']
     description = request.form['description']
-    update_image(ObjectId(image_id), title, description)
+
+    try:
+        image_id = ObjectId(image_id)
+    except Exception as e:
+        flash(f'Invalid image ID format: {str(e)}', 'danger')
+        return redirect(url_for('profile'))
+
+    update_image(image_id, title, description)
     flash('Image updated successfully!', 'success')
     return redirect(url_for('profile'))
 
@@ -132,26 +135,31 @@ def delete_image_route(image_id):
         flash('Please log in to delete images.', 'danger')
         return redirect(url_for('login'))
 
+    try:
+        image_id = ObjectId(image_id)
+    except Exception as e:
+        flash(f'Invalid image ID format: {str(e)}', 'danger')
+        return redirect(url_for('profile'))
 
-    image = get_image_by_id(ObjectId(image_id))
+    image = get_image_by_id(image_id)
     if not image:
         flash('Image not found.', 'danger')
         return redirect(url_for('profile'))
+
     # Delete image file from upload directory
-    try:
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], image['filename'])
-        if os.path.exists(filepath):
-            os.remove(filepath)
-            flash(f'Image file deleted: {image["filename"]}', 'success')
-        else:
-            flash('Image file not found in upload directory.', 'danger')
-    except Exception as e:
-        flash(f'Failed to delete image file: {str(e)}', 'danger')
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], image['filename'])
+    if os.path.exists(filepath):
+        os.remove(filepath)
+        flash(f'Image file deleted: {image["filename"]}', 'success')
+    else:
+        flash('Image file not found in upload directory.', 'danger')
+
     # Delete image record from database
-    delete_image(ObjectId(image_id))
+    delete_image(image_id)
     flash('Image record deleted from database.', 'success')
 
     return redirect(url_for('profile'))
+
 
 
 

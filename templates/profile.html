@@ -1,3 +1,4 @@
+<!-- profile.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,53 +11,73 @@
             var uploadForm = document.getElementById('uploadForm');
             if (uploadForm.style.display === 'none' || uploadForm.style.display === '') {
                 uploadForm.style.display = 'block';
-            } else {
+            } 
+            else {
                 uploadForm.style.display = 'none';
             }
         }
-    </script> 
+
+        function toggleMoreInfo(imageId) {
+            var moreInfo = document.getElementById('moreInfo_' + imageId);
+            if (moreInfo.style.display === 'none' || moreInfo.style.display === '') {
+                moreInfo.style.display = 'block';
+            } else {
+                moreInfo.style.display = 'none';
+            }
+        }
+
+        function toggleEditForm(imageId) {
+            var editForm = document.getElementById('editForm_' + imageId);
+            if (editForm.style.display === 'none' || editForm.style.display === '') {
+                editForm.style.display = 'block';
+            } else {
+                editForm.style.display = 'none';
+            }
+        }
+    </script>
 </head>
 <body>
     <div class="nav">
         <h1>{{ username }}</h1>
     </div>
-    
+
     <div class="button-container">
         <button class="toggle" onclick="toggleUploadForm()">Upload Images</button>
         <button class="logout-button"><a href="{{ url_for('logout') }}">Logout</a></button>
     </div>
 
     <div class="toggle-container">
-    <div id="uploadForm" style="display: none;">
-        <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data">
-            <input class="file-button" type="file" name="file" required><br>
-            <input class="title-area" type="text" name="title" placeholder="Title" required><br>
-            <textarea class="description-area" name="description" placeholder="Description" required></textarea><br>
-            <button class="upload-button" type="submit">Upload</button>
-        </form>
-    </div>
+        <div id="uploadForm" style="display: none;">
+            <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data">
+                <input class="file-button" type="file" name="file" required><br>
+                <input class="title-area" type="text" name="title" placeholder="Title" required><br>
+                <textarea class="description-area" name="description" placeholder="Description" required></textarea><br>
+                <button class="upload-button" type="submit">Upload</button>
+            </form>
+        </div>
     </div>
 
-    <h2>Uploaded Images</h2>
+    <h2 style="text-align: center;">Uploaded Images</h2>
     <div class="image-container">
         {% for image in images %}
-            <div class="image-card">
-                <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" alt="{{ image.title }}">
-                <h3>{{ image.title }}</h3>
-                <p>{{ image.description }}</p>
-                <div class="actions">
-                    <form action="{{ url_for('edit_image', image_id=image._id) }}" method="post">
+        <div class="image-card">
+            <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" alt="{{ image.title }}">
+            <h3>{{ image.title }}</h3>
+            <p>{{ image.description }}</p>
+            <button class="more-info-button" onclick="toggleMoreInfo('{{ image.id }}')">More Info</button>
+            <div id="moreInfo_{{ image.id }}" class="more-info" style="display: none;">
+                <button class="edit-button" onclick="toggleEditForm('{{ image.id }}')">Edit</button>
+                <div id="editForm_{{ image.id }}" class="edit-form" style="display: none;"><br><br>
+                    <form action="{{ url_for('edit_image', image_id=image.id) }}" method="post">
                         <input type="text" name="title" value="{{ image.title }}" required>
                         <textarea name="description" required>{{ image.description }}</textarea>
-                        <button type="submit">Edit</button>
+                        <button type="submit">Update</button>
                     </form>
-                    <a href="{{ url_for('delete_image_route', image_id=image._id) }}">Delete</a>
-                </div>
+                </div><br><br>
+                <a href="{{ url_for('delete_image_route', image_id=image.id) }}" class="delete-button">Delete</a>
             </div>
+        </div>
         {% endfor %}
     </div>
-    
-
-
 </body>
 </html>

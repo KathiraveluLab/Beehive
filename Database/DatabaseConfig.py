@@ -6,9 +6,7 @@ from pymongo import MongoClient
 
 load_dotenv(find_dotenv())
 
-
 connectionString = os.environ.get("MONGODB_CONNECTION_STRING")
-
 
 dbclient = MongoClient(connectionString)
 
@@ -29,9 +27,9 @@ def create_user(firstname: str, lastname: str, email: str, username: str, passwo
     }
     user_inserted_id = beehive_user_collection.insert_one(user_data).inserted_id
 
-# Check if username is available in MongoDB for registeration purpose
+# Check if username is available in MongoDB for registration purpose
 def is_username_available(username: str):
-    query= {
+    query = {
         "username" : username
     }
 
@@ -39,7 +37,7 @@ def is_username_available(username: str):
     return count == 0
 
 def is_email_available(email: str):
-    query= {
+    query = {
         "mail_id" : email
     }
 
