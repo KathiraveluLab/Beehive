@@ -15,7 +15,8 @@ def create_user(firstname: str, lastname: str, email: str, username: str, passwo
         "mail_id" : email,
         "username" : username,
         "password" : password,
-        "account_created_at" : accountcreatedtime
+        "account_created_at" : accountcreatedtime,
+        "role" : "user"
     }
     user_inserted_id = beehive_user_collection.insert_one(user_data).inserted_id
 
