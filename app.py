@@ -1,13 +1,10 @@
 import os
 import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, session,config
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from bson import ObjectId
-from Database.DatabaseConfig import (
-    create_user, get_image_by_id, get_password_by_username, is_email_available, is_username_available, 
-    get_user_by_username, save_image, get_images_by_user, 
-    update_image, delete_image
-)
-import Users.valid_username as valid_username
+
+from Database.userdatahandler import create_user, delete_image, get_image_by_id, get_images_by_user, get_password_by_username, get_user_by_username, is_email_available, is_username_available, save_image, update_image
+import users.valid_username as valid_username
 
 app = Flask(__name__)
 app.secret_key = 'beehive'
