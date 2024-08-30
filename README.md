@@ -1,9 +1,9 @@
 # Beehive
-A Data Federation Approach to Analyze Behavioral Health and Supplement Healthcare Practice with Community Health Metrics in Alaska
+A Data Federation Approach to Analyze Behavioral Health and Complement Healthcare Practice with Community Health Metrics in Alaska
 
 ## Project Description
 
-This project aims to analyze behavioral health and supplement healthcare practice with community health metrics in Alaska using a data federation approach. By leveraging data from various sources, we can gain insights into behavioral health patterns and improve healthcare practices in the community.
+This project aims to analyze behavioral health and complement healthcare practice with community health metrics in Alaska using a data federation approach. By leveraging data from various sources, we can gain insights into behavioral health patterns and improve healthcare practices in the community.
 
 ## Setup Instructions
 
