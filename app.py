@@ -2,14 +2,46 @@ import os
 import datetime
 from flask import Flask, render_template, request, redirect, url_for, flash, session
 from bson import ObjectId
+from authlib.integrations.flask_client import OAuth
 
-from Database.userdatahandler import create_user, delete_image, get_image_by_id, get_images_by_user, get_password_by_username, get_user_by_username, is_email_available, is_username_available, save_image, update_image
+
+from Database.userdatahandler import (
+    create_user, 
+    delete_image, 
+    get_image_by_id, 
+    get_images_by_user, 
+    get_password_by_username, 
+    get_user_by_username, 
+    is_email_available, 
+    is_username_available, 
+    save_image, 
+    update_image
+)
+
 import users.valid_username as valid_username
+
 
 app = Flask(__name__)
 app.secret_key = 'beehive'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 
+app.config['GOOGLE_CLIENT_ID'] = os.getenv('GOOGLE_CLIENT_ID')
+app.config['GOOGLE_CLIENT_SECRET'] = os.getenv('GOOGLE_CLIENT_SECRET')
+app.config['ADMIN_EMAILS'] = os.getenv('ADMIN_EMAILS').split(',')
+
+oauth = OAuth(app)
+google = oauth.register(
+    'google',
+    client_id=app.config['GOOGLE_CLIENT_ID'],
+    client_secret=app.config['GOOGLE_CLIENT_SECRET'],
+    authorize_url='https://accounts.google.com/o/oauth2/auth',
+    authorize_params=None,
+    access_token_url='https://accounts.google.com/o/oauth2/token',
+    access_token_params=None,
+    refresh_token_url=None,
+    redirect_uri='/admin/login/callback',
+    client_kwargs={'scope': 'openid profile email'},
+)
 
 
 # Home page
@@ -158,14 +190,41 @@ def delete_image_route(image_id):
     return redirect(url_for('profile'))
 
 
-
-
 # Logout the user
 @app.route('/logout')
 def logout():
     session.pop('username', None)
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
+
+
+
+# Admin part
+@app.route('/admin/login')
+def admin_login():
+    redirect_uri = url_for('admin_login_callback', _external=True)
+    return google.authorize_redirect(redirect_uri)
+
+@app.route('/admin/login/callback')
+def admin_login_callback():
+    token = google.authorize_access_token()
+    user = google.parse_id_token(token)
+    user_email = user.get('email')
+    
+    admin_emails = app.config['ADMIN_EMAILS']
+    if user_email in admin_emails:
+        session['user'] = user
+        return "You are verified as admin"
+    else:
+        return "You are not an admin"
+
+@app.route('/admin/dashboard')
+def admin_dashboard():
+    user = session.get('user')
+    if not user:
+        return redirect(url_for('admin_login'))
+    return f'Hello {user["name"]}, welcome to the Admin Dashboard!'
+
 
 if __name__ == '__main__':
     app.run(debug=True)
