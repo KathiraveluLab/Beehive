@@ -47,7 +47,7 @@ google = oauth.register(
 # Home page
 @app.route('/')
 def home():
-    return render_template('login.html')
+    return render_template('index.html')
 
 # Login the user
 @app.route('/login', methods=['GET', 'POST'])
@@ -199,7 +199,6 @@ def logout():
 
 
 
-# Admin part
 @app.route('/admin/login')
 def admin_login():
     redirect_uri = url_for('admin_login_callback', _external=True)
@@ -214,16 +213,35 @@ def admin_login_callback():
     admin_emails = app.config['ADMIN_EMAILS']
     if user_email in admin_emails:
         session['user'] = user
-        return "You are verified as admin"
+        return redirect(url_for('admin_dashboard'))
     else:
-        return "You are not an admin"
+        flash("You are not an admin. Access denied.")
+        return redirect(url_for('login'))
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
     user = session.get('user')
     if not user:
-        return redirect(url_for('admin_login'))
+        flash("You must log in as an admin to access the dashboard.")
+        return redirect(url_for('login'))
     return f'Hello {user["name"]}, welcome to the Admin Dashboard!'
+
+# Additional routes for other admin functionalities
+@app.route('/admin/profile')
+def admin_profile():
+    user = session.get('user')
+    if not user:
+        flash("You must log in as an admin to view your profile.")
+        return redirect(url_for('login'))
+    return f'Admin Profile: {user["name"]}'
+
+@app.route('/admin/settings')
+def admin_settings():
+    user = session.get('user')
+    if not user:
+        flash("You must log in as an admin to access settings.")
+        return redirect(url_for('login'))
+    return 'Admin Settings Page'
 
 
 if __name__ == '__main__':
