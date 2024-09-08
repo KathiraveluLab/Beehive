@@ -205,6 +205,9 @@ def logout():
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
 
+
+# Admin routes
+
 @app.route("/signingoogle")
 def signingoogle():
     return render_template("signingoogle.html")
