@@ -2,3 +2,6 @@ pymongo[srv]
 python-dotenv
 flask
 Authlib
+google-auth
+google-auth-oauthlib
+oauthlib

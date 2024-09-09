@@ -1,8 +1,15 @@
+import json
 import os
 import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+import pathlib
+from tkinter import ALL
+from flask import Flask, abort, render_template, request, redirect, url_for, flash, session
 from bson import ObjectId
-from authlib.integrations.flask_client import OAuth
+from google_auth_oauthlib.flow import Flow
+import requests
+from google.oauth2 import id_token
+import google.auth.transport.requests
+from pip._vendor import cachecontrol
 
 
 from Database.userdatahandler import (
@@ -18,30 +25,31 @@ from Database.userdatahandler import (
     update_image
 )
 
+
+from OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
 import users.valid_username as valid_username
 
 
 app = Flask(__name__)
 app.secret_key = 'beehive'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
 
-app.config['GOOGLE_CLIENT_ID'] = os.getenv('GOOGLE_CLIENT_ID')
-app.config['GOOGLE_CLIENT_SECRET'] = os.getenv('GOOGLE_CLIENT_SECRET')
-app.config['ADMIN_EMAILS'] = os.getenv('ADMIN_EMAILS').split(',')
-
-oauth = OAuth(app)
-google = oauth.register(
-    'google',
-    client_id=app.config['GOOGLE_CLIENT_ID'],
-    client_secret=app.config['GOOGLE_CLIENT_SECRET'],
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-    authorize_params=None,
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    access_token_params=None,
-    refresh_token_url=None,
-    redirect_uri='/admin/login/callback',
-    client_kwargs={'scope': 'openid profile email'},
+flow = Flow.from_client_secrets_file(
+    client_secrets_file=client_secrets_file,
+    scopes=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email", "openid"],
+    redirect_uri="http://127.0.0.1:5000/admin/login/callback"
 )
+
+def login_is_required(function):
+    def wrapper(*args, **kwargs):
+        if "google_id" not in session:
+            return abort(401)  
+        else:
+            return function()
+
+    return wrapper
 
 
 # Home page
@@ -198,33 +206,59 @@ def logout():
     return redirect(url_for('login'))
 
 
+# Admin routes
+
+@app.route("/signingoogle")
+def signingoogle():
+    return render_template("signingoogle.html")
 
 @app.route('/admin/login')
 def admin_login():
-    redirect_uri = url_for('admin_login_callback', _external=True)
-    return google.authorize_redirect(redirect_uri)
+    authorization_url, state = flow.authorization_url()
+    session["state"] = state
+    return redirect(authorization_url)
 
 @app.route('/admin/login/callback')
-def admin_login_callback():
-    token = google.authorize_access_token()
-    user = google.parse_id_token(token)
-    user_email = user.get('email')
-    
-    admin_emails = app.config['ADMIN_EMAILS']
-    if user_email in admin_emails:
-        session['user'] = user
-        return redirect(url_for('admin_dashboard'))
-    else:
-        flash("You are not an admin. Access denied.")
-        return redirect(url_for('login'))
+def authorize():
+    flow.fetch_token(authorization_response=request.url)
 
-@app.route('/admin/dashboard')
-def admin_dashboard():
-    user = session.get('user')
-    if not user:
-        flash("You must log in as an admin to access the dashboard.")
-        return redirect(url_for('login'))
-    return f'Hello {user["name"]}, welcome to the Admin Dashboard!'
+    if not session["state"] == request.args["state"]:
+        abort(500)  # State does not match!
+
+    credentials = flow.credentials
+    request_session = requests.session()
+    cached_session = cachecontrol.CacheControl(request_session)
+    token_request = google.auth.transport.requests.Request(session=cached_session)
+
+    id_info = id_token.verify_oauth2_token(
+        id_token=credentials._id_token,
+        request=token_request,
+        audience=GOOGLE_CLIENT_ID
+    )
+
+    session["google_id"] = id_info.get("sub")
+    session["name"] = id_info.get("name")
+    session["email"] = id_info.get("email")
+    if session["email"] in ALLOWED_EMAILS:
+        with open('user_info.json', 'w') as json_file:
+            json.dump(session, json_file, indent=4)
+        return redirect("/admin")
+    else:
+        flash("You are not authorized to access the admin dashboard.", "danger")
+        return redirect("/")
+
+
+
+@app.route("/admin")
+@login_is_required
+def protected_area():
+    return f'Hello {session["name"]}, welcome to the Admin Dashboard!'
+
+@app.route("/admin/logout")
+def adminlogout():
+    session.clear()
+    return redirect("/")
+
 
 # Additional routes for other admin functionalities
 @app.route('/admin/profile')
