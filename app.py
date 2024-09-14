@@ -10,6 +10,7 @@ import requests
 from google.oauth2 import id_token
 import google.auth.transport.requests
 from pip._vendor import cachecontrol
+from Database import userdatahandler
 
 
 from Database.userdatahandler import (
@@ -20,7 +21,8 @@ from Database.userdatahandler import (
     get_password_by_username, 
     get_user_by_username, 
     is_email_available, 
-    is_username_available, 
+    is_username_available,
+    isValidEmail, 
     save_image, 
     update_image
 )
@@ -89,16 +91,17 @@ def register():
         elif password != confirm_password:
             flash('Passwords do not match, please try again.', 'danger')
         else:
-            if is_email_available(email):
-                if is_username_available(username):
-                    account_created_at = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-                    create_user(first_name, last_name, email, username, password, account_created_at)
-                    flash('Registration successful!', 'success')
-                    return redirect(url_for('login'))
+                if isValidEmail(email) and is_email_available(email) and is_username_available(username):
+                    if is_username_available(username):
+                        account_created_at = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+                        create_user(first_name, last_name, email, username, password, account_created_at)
+                        flash('Registration successful!', 'success')
+                        return redirect(url_for('login'))
+                    else:
+                        flash('This Username already taken.', 'danger')
                 else:
-                    flash('This Username already taken.', 'danger')
-            else:
-                flash('This Email already signed in.', 'danger')
+                    flash('This Email is already in use!', 'danger')
+
 
     return render_template("register.html")
 
@@ -252,7 +255,9 @@ def authorize():
 @app.route("/admin")
 @login_is_required
 def protected_area():
-    return f'Hello {session["name"]}, welcome to the Admin Dashboard!'
+    admin_name = session.get("name")
+    return render_template("admin.html", admin_name=admin_name)
+
 
 @app.route("/admin/logout")
 def adminlogout():
@@ -276,6 +281,11 @@ def admin_settings():
         flash("You must log in as an admin to access settings.")
         return redirect(url_for('login'))
     return 'Admin Settings Page'
+
+@app.route('/admin/users')
+def getallusers():
+    users = userdatahandler.getallusers()
+    return render_template('users.html', users=users)
 
 
 if __name__ == '__main__':

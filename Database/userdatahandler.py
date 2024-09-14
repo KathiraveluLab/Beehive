@@ -1,4 +1,5 @@
 from datetime import datetime
+import re
 
 from Database import DatabaseConfig
 
@@ -37,6 +38,13 @@ def is_email_available(email: str):
     count = beehive_user_collection.count_documents(query)
     return count == 0
 
+def isValidEmail(email):
+  regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+
+  if re.fullmatch(regex, email):
+    return True
+
+  return False
 # Get password by username from MongoDB
 def get_password_by_username(username: str):
     query = {
@@ -65,6 +73,11 @@ def save_image(username, filename, title, description):
         'description': description
     }
     beehive_image_collection.insert_one(image)
+
+
+def getallusers():
+    users = beehive_user_collection.find()
+    return users
 
 # Get all images from MongoDB
 def get_images_by_user(username):
