@@ -1,0 +1,109 @@
+/* General styling */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+}
+
+/* Navigation and profile info */
+.nav {
+    background-color: #007bff;
+    color: white;
+    padding: 10px;
+    text-align: center;
+}
+
+.profile-info {
+    text-align: center;
+    margin: 20px;
+}
+
+/* Image gallery */
+.image-gallery {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    justify-content: center;
+    padding: 20px;
+}
+
+.image-card {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    width: 200px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.image-card img {
+    width: 100%;
+    height: auto;
+}
+
+.image-card h3 {
+    margin: 10px 0;
+    font-size: 16px;
+}
+
+.image-card p {
+    margin: 0 10px 10px;
+    color: #555;
+}
+
+/* Edit form */
+.edit-form {
+    background-color: #fff;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    margin-bottom: 10px;
+}
+
+.edit-form input, .edit-form textarea {
+    display: block;
+    margin: 10px auto;
+    width: 100%;
+}
+
+.edit-form button {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.edit-form button:hover {
+    background-color: #0056b3;
+}
+
+.delete-button {
+    display: block;
+    margin-top: 10px;
+    color: #dc3545;
+    text-decoration: none;
+}
+
+.delete-button:hover {
+    text-decoration: underline;
+}
+
+.back-button {
+    display: inline-block;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    color: white;
+    background-color: #007bff;
+    text-decoration: none;
+    transition: background-color 0.3s ease;
+}
+
+.back-button:hover {
+    background-color: #0056b3;
+}

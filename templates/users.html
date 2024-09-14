@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/userlist.css') }}">
+    <title>Beehive Users</title>
+</head>
+<body>
+    <div class="nav">
+        <h1>Beehive Users</h1>
+    </div>
+    
+
+    <div class="user-list">
+        {% for user in users %}
+            <div class="user-container">
+                <p>@{{ user.username }}</p>
+                <button><a href="{{ url_for('profile') }}">View Profile</a></button>
+            </div>
+        {% endfor %}
+    </div>
+    
+</body>
+</html>

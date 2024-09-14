@@ -107,6 +107,7 @@ def register():
 
 # Display the user's profile page
 @app.route('/profile')
+@login_is_required()
 def profile():
     if 'username' not in session:
         flash('Please log in to access the profile page.', 'danger')
@@ -120,7 +121,12 @@ def profile():
 
     images = get_images_by_user(username)  # Fetch images uploaded by the user
 
-    return render_template("profile.html", username=user['username'], full_name=f"{user['first_name']} {user['last_name']}", images=images)
+    return render_template(
+        "profile.html", 
+        username=user['username'], 
+        full_name=f"{user['first_name']} {user['last_name']}", 
+        images=images
+    )
 
 @app.route('/upload', methods=['POST'])
 def upload_image():
@@ -265,27 +271,11 @@ def adminlogout():
     return redirect("/")
 
 
-# Additional routes for other admin functionalities
-@app.route('/admin/profile')
-def admin_profile():
-    user = session.get('user')
-    if not user:
-        flash("You must log in as an admin to view your profile.")
-        return redirect(url_for('login'))
-    return f'Admin Profile: {user["name"]}'
-
-@app.route('/admin/settings')
-def admin_settings():
-    user = session.get('user')
-    if not user:
-        flash("You must log in as an admin to access settings.")
-        return redirect(url_for('login'))
-    return 'Admin Settings Page'
-
 @app.route('/admin/users')
 def getallusers():
     users = userdatahandler.getallusers()
     return render_template('users.html', users=users)
+
 
 
 if __name__ == '__main__':

@@ -21,7 +21,7 @@ body {
 }
 
 .view-users {
-    background-color: #00bb1f;
+    background-color: #004a9a;
     color: #fff;
     border: none;
     padding: 10px 20px;
@@ -39,7 +39,7 @@ body {
 }
 
 .view-users:hover {
-    background-color: #008c14;
+    background-color: #0064ce;
 }
 
 .logout-button {
@@ -61,3 +61,4 @@ body {
 .logout-button:hover {
     background-color: #d60400;
 }
+
