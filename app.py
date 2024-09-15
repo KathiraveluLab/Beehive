@@ -2,6 +2,7 @@ import json
 import os
 import datetime
 import pathlib
+import re
 from tkinter import ALL
 from flask import Flask, abort, render_template, request, redirect, url_for, flash, session
 from bson import ObjectId
@@ -13,6 +14,7 @@ from pip._vendor import cachecontrol
 from Database import userdatahandler
 
 
+from Database.admindatahandler import check_admin_available, create_admin
 from Database.userdatahandler import (
     create_user, 
     delete_image, 
@@ -107,7 +109,6 @@ def register():
 
 # Display the user's profile page
 @app.route('/profile')
-@login_is_required()
 def profile():
     if 'username' not in session:
         flash('Please log in to access the profile page.', 'danger')
@@ -157,54 +158,65 @@ def upload_image():
 # Edit images uploaded by the user
 @app.route('/edit/<image_id>', methods=['POST'])
 def edit_image(image_id):
-    if 'username' not in session:
+    
+    if 'username' in session or 'google_id' in session:
+        title = request.form['title']
+        description = request.form['description']
+
+        try:
+            image_id = ObjectId(image_id)
+        except Exception as e:
+            flash(f'Invalid image ID format: {str(e)}', 'danger')
+            return redirect(url_for('profile'))
+
+        update_image(image_id, title, description)
+        flash('Image updated successfully!', 'success')
+        if 'username' in session:
+            return redirect(url_for('profile'))
+        elif 'google_id' in session:
+            return redirect(url_for('getallusers'))
+        return redirect(url_for('login'))
+    else:
         flash('Please log in to edit images.', 'danger')
         return redirect(url_for('login'))
-
-    title = request.form['title']
-    description = request.form['description']
-
-    try:
-        image_id = ObjectId(image_id)
-    except Exception as e:
-        flash(f'Invalid image ID format: {str(e)}', 'danger')
-        return redirect(url_for('profile'))
-
-    update_image(image_id, title, description)
-    flash('Image updated successfully!', 'success')
-    return redirect(url_for('profile'))
-
+    
 # Delete images uploaded by the user
 @app.route('/delete/<image_id>')
 def delete_image_route(image_id):
-    if 'username' not in session:
+
+    if 'username' in session or 'google_id' in session:
+        
+        try:
+            image_id = ObjectId(image_id)
+        except Exception as e:
+            flash(f'Invalid image ID format: {str(e)}', 'danger')
+            return redirect(url_for('profile'))
+
+        image = get_image_by_id(image_id)
+        if not image:
+            flash('Image not found.', 'danger')
+            return redirect(url_for('profile'))
+        # Delete image file from upload directory
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], image['filename'])
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            flash(f'Image file deleted: {image["filename"]}', 'success')
+        else:
+            flash('Image file not found in upload directory.', 'danger')
+
+        # Delete image record from database
+        delete_image(image_id)
+        flash('Image record deleted from database.', 'success')
+        if 'username' in session:
+            return redirect(url_for('profile'))
+        elif 'google_id' in session:
+            return redirect(url_for('getallusers'))
+        return redirect(url_for('login'))
+    else:
         flash('Please log in to delete images.', 'danger')
         return redirect(url_for('login'))
 
-    try:
-        image_id = ObjectId(image_id)
-    except Exception as e:
-        flash(f'Invalid image ID format: {str(e)}', 'danger')
-        return redirect(url_for('profile'))
-
-    image = get_image_by_id(image_id)
-    if not image:
-        flash('Image not found.', 'danger')
-        return redirect(url_for('profile'))
-
-    # Delete image file from upload directory
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], image['filename'])
-    if os.path.exists(filepath):
-        os.remove(filepath)
-        flash(f'Image file deleted: {image["filename"]}', 'success')
-    else:
-        flash('Image file not found in upload directory.', 'danger')
-
-    # Delete image record from database
-    delete_image(image_id)
-    flash('Image record deleted from database.', 'success')
-
-    return redirect(url_for('profile'))
+    
 
 
 # Logout the user
@@ -248,7 +260,9 @@ def authorize():
     session["google_id"] = id_info.get("sub")
     session["name"] = id_info.get("name")
     session["email"] = id_info.get("email")
-    if session["email"] in ALLOWED_EMAILS:
+    if session["email"] in ALLOWED_EMAILS :
+        if check_admin_available(session["google_id"]):
+            create_admin(session["name"], session["email"], session["google_id"], datetime.datetime.now())
         with open('user_info.json', 'w') as json_file:
             json.dump(session, json_file, indent=4)
         return redirect("/admin")
@@ -275,6 +289,11 @@ def adminlogout():
 def getallusers():
     users = userdatahandler.getallusers()
     return render_template('users.html', users=users)
+
+@app.route('/admin/users/<username>')
+def user_images_show(username):
+    images = get_images_by_user(username)
+    return render_template('user_images.html', images=images, username=username)
 
 
 

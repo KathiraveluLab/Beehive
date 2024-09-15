@@ -17,7 +17,7 @@
         {% for user in users %}
             <div class="user-container">
                 <p>@{{ user.username }}</p>
-                <button><a href="{{ url_for('profile') }}">View Profile</a></button>
+                <button><a href="{{ url_for('user_images_show',username=user.username) }}">View Profile</a></button>
             </div>
         {% endfor %}
     </div>
