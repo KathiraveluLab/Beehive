@@ -2,6 +2,7 @@ import json
 import os
 import datetime
 import pathlib
+import re
 from tkinter import ALL
 from flask import Flask, abort, render_template, request, redirect, url_for, flash, session
 from bson import ObjectId
@@ -10,8 +11,10 @@ import requests
 from google.oauth2 import id_token
 import google.auth.transport.requests
 from pip._vendor import cachecontrol
+from Database import userdatahandler
 
 
+from Database.admindatahandler import check_admin_available, create_admin
 from Database.userdatahandler import (
     create_user, 
     delete_image, 
@@ -20,7 +23,8 @@ from Database.userdatahandler import (
     get_password_by_username, 
     get_user_by_username, 
     is_email_available, 
-    is_username_available, 
+    is_username_available,
+    isValidEmail, 
     save_image, 
     update_image
 )
@@ -89,16 +93,17 @@ def register():
         elif password != confirm_password:
             flash('Passwords do not match, please try again.', 'danger')
         else:
-            if is_email_available(email):
-                if is_username_available(username):
-                    account_created_at = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-                    create_user(first_name, last_name, email, username, password, account_created_at)
-                    flash('Registration successful!', 'success')
-                    return redirect(url_for('login'))
+                if isValidEmail(email) and is_email_available(email) and is_username_available(username):
+                    if is_username_available(username):
+                        account_created_at = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+                        create_user(first_name, last_name, email, username, password, account_created_at)
+                        flash('Registration successful!', 'success')
+                        return redirect(url_for('login'))
+                    else:
+                        flash('This Username already taken.', 'danger')
                 else:
-                    flash('This Username already taken.', 'danger')
-            else:
-                flash('This Email already signed in.', 'danger')
+                    flash('This Email is already in use!', 'danger')
+
 
     return render_template("register.html")
 
@@ -117,7 +122,12 @@ def profile():
 
     images = get_images_by_user(username)  # Fetch images uploaded by the user
 
-    return render_template("profile.html", username=user['username'], full_name=f"{user['first_name']} {user['last_name']}", images=images)
+    return render_template(
+        "profile.html", 
+        username=user['username'], 
+        full_name=f"{user['first_name']} {user['last_name']}", 
+        images=images
+    )
 
 @app.route('/upload', methods=['POST'])
 def upload_image():
@@ -148,54 +158,65 @@ def upload_image():
 # Edit images uploaded by the user
 @app.route('/edit/<image_id>', methods=['POST'])
 def edit_image(image_id):
-    if 'username' not in session:
+    
+    if 'username' in session or 'google_id' in session:
+        title = request.form['title']
+        description = request.form['description']
+
+        try:
+            image_id = ObjectId(image_id)
+        except Exception as e:
+            flash(f'Invalid image ID format: {str(e)}', 'danger')
+            return redirect(url_for('profile'))
+
+        update_image(image_id, title, description)
+        flash('Image updated successfully!', 'success')
+        if 'username' in session:
+            return redirect(url_for('profile'))
+        elif 'google_id' in session:
+            return redirect(url_for('getallusers'))
+        return redirect(url_for('login'))
+    else:
         flash('Please log in to edit images.', 'danger')
         return redirect(url_for('login'))
-
-    title = request.form['title']
-    description = request.form['description']
-
-    try:
-        image_id = ObjectId(image_id)
-    except Exception as e:
-        flash(f'Invalid image ID format: {str(e)}', 'danger')
-        return redirect(url_for('profile'))
-
-    update_image(image_id, title, description)
-    flash('Image updated successfully!', 'success')
-    return redirect(url_for('profile'))
-
+    
 # Delete images uploaded by the user
 @app.route('/delete/<image_id>')
 def delete_image_route(image_id):
-    if 'username' not in session:
+
+    if 'username' in session or 'google_id' in session:
+        
+        try:
+            image_id = ObjectId(image_id)
+        except Exception as e:
+            flash(f'Invalid image ID format: {str(e)}', 'danger')
+            return redirect(url_for('profile'))
+
+        image = get_image_by_id(image_id)
+        if not image:
+            flash('Image not found.', 'danger')
+            return redirect(url_for('profile'))
+        # Delete image file from upload directory
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], image['filename'])
+        if os.path.exists(filepath):
+            os.remove(filepath)
+            flash(f'Image file deleted: {image["filename"]}', 'success')
+        else:
+            flash('Image file not found in upload directory.', 'danger')
+
+        # Delete image record from database
+        delete_image(image_id)
+        flash('Image record deleted from database.', 'success')
+        if 'username' in session:
+            return redirect(url_for('profile'))
+        elif 'google_id' in session:
+            return redirect(url_for('getallusers'))
+        return redirect(url_for('login'))
+    else:
         flash('Please log in to delete images.', 'danger')
         return redirect(url_for('login'))
 
-    try:
-        image_id = ObjectId(image_id)
-    except Exception as e:
-        flash(f'Invalid image ID format: {str(e)}', 'danger')
-        return redirect(url_for('profile'))
-
-    image = get_image_by_id(image_id)
-    if not image:
-        flash('Image not found.', 'danger')
-        return redirect(url_for('profile'))
-
-    # Delete image file from upload directory
-    filepath = os.path.join(app.config['UPLOAD_FOLDER'], image['filename'])
-    if os.path.exists(filepath):
-        os.remove(filepath)
-        flash(f'Image file deleted: {image["filename"]}', 'success')
-    else:
-        flash('Image file not found in upload directory.', 'danger')
-
-    # Delete image record from database
-    delete_image(image_id)
-    flash('Image record deleted from database.', 'success')
-
-    return redirect(url_for('profile'))
+    
 
 
 # Logout the user
@@ -239,7 +260,9 @@ def authorize():
     session["google_id"] = id_info.get("sub")
     session["name"] = id_info.get("name")
     session["email"] = id_info.get("email")
-    if session["email"] in ALLOWED_EMAILS:
+    if session["email"] in ALLOWED_EMAILS :
+        if check_admin_available(session["google_id"]):
+            create_admin(session["name"], session["email"], session["google_id"], datetime.datetime.now())
         with open('user_info.json', 'w') as json_file:
             json.dump(session, json_file, indent=4)
         return redirect("/admin")
@@ -252,7 +275,9 @@ def authorize():
 @app.route("/admin")
 @login_is_required
 def protected_area():
-    return f'Hello {session["name"]}, welcome to the Admin Dashboard!'
+    admin_name = session.get("name")
+    return render_template("admin.html", admin_name=admin_name)
+
 
 @app.route("/admin/logout")
 def adminlogout():
@@ -260,22 +285,16 @@ def adminlogout():
     return redirect("/")
 
 
-# Additional routes for other admin functionalities
-@app.route('/admin/profile')
-def admin_profile():
-    user = session.get('user')
-    if not user:
-        flash("You must log in as an admin to view your profile.")
-        return redirect(url_for('login'))
-    return f'Admin Profile: {user["name"]}'
+@app.route('/admin/users')
+def getallusers():
+    users = userdatahandler.getallusers()
+    return render_template('users.html', users=users)
 
-@app.route('/admin/settings')
-def admin_settings():
-    user = session.get('user')
-    if not user:
-        flash("You must log in as an admin to access settings.")
-        return redirect(url_for('login'))
-    return 'Admin Settings Page'
+@app.route('/admin/users/<username>')
+def user_images_show(username):
+    images = get_images_by_user(username)
+    return render_template('user_images.html', images=images, username=username)
+
 
 
 if __name__ == '__main__':

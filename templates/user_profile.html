@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ user.username }}'s Profile</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/user_profile.css') }}">
+    <script>
+        function toggleEditForm(imageId) {
+            var editForm = document.getElementById('editForm_' + imageId);
+            if (editForm.style.display === 'none' || editForm.style.display === '') {
+                editForm.style.display = 'block';
+            } else {
+                editForm.style.display = 'none';
+            }
+        }
+    </script>
+</head>
+<body>
+    <div class="nav">
+        <h1>{{ user.username }}'s Profile</h1>
+    </div>
+
+    <div class="profile-info">
+        <p><strong>Email:</strong> {{ user.email }}</p>
+    </div>
+
+    <div class="image-gallery">
+        {% for image in images %}
+        <div class="image-card">
+            <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" alt="{{ image.title }}">
+            <h3>{{ image.title }}</h3>
+            <p>{{ image.description }}</p>
+            <button class="edit-button" onclick="toggleEditForm('{{ image.id }}')">Edit</button>
+            <div id="editForm_{{ image.id }}" class="edit-form" style="display: none;">
+                <form action="{{ url_for('edit_image', image_id=image.id) }}" method="post">
+                    <input type="text" name="title" value="{{ image.title }}" required>
+                    <textarea name="description" required>{{ image.description }}</textarea>
+                    <button type="submit">Update</button>
+                </form>
+            </div>
+            <a href="{{ url_for('delete_image_route', image_id=image.id) }}" class="delete-button">Delete</a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="button-container">
+        <a href="{{ url_for('getallusers') }}" class="back-button">Back to User List</a>
+    </div>
+</body>
+</html>
