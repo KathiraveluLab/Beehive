@@ -147,6 +147,7 @@ def upload_image():
     if file:
         filename = file.filename
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
         file.save(filepath)
         save_image(user['username'], filename, title, description)
         flash('Image uploaded successfully!', 'success')
