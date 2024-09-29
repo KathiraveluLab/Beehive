@@ -165,3 +165,6 @@ static/uploads/
 
 client_secret.json
 user_info.json
+
+
+.idea/
