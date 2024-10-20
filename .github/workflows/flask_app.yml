@@ -28,10 +28,11 @@ jobs:
     - name: Start Flask app
       run: |
         nohup python app.py &
+        sleep 10
+        tail -n 10 nohup.out
       env:
         FLASK_ENV: development
 
     - name: Check app status
       run: |
-        sleep 5
         curl -f http://127.0.0.1:5000/
