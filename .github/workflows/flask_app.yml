@@ -1,4 +1,4 @@
-name: Flask App CI
+name: Beehive Flask App
 on:
   push:
     branches:
@@ -25,12 +25,15 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
+    - name: Show current directory
+      run: pwd
+
     - name: Set environment variables
       run: |
         echo "ADMIN_EMAILS=${{ secrets.ADMIN_EMAILS }}" >> $GITHUB_ENV
         echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> $GITHUB_ENV
         echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> $GITHUB_ENV
-      
+        echo "FLASK_SECRET_KEY=${{ secrets.FLASK_SECRET_KEY }}" >> $GITHUB_ENV
       env:
         FLASK_ENV: development
 
@@ -45,4 +48,3 @@ jobs:
     - name: Check app status
       run: |
         curl -f http://127.0.0.1:5000/
-
