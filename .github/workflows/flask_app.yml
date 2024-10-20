@@ -28,6 +28,14 @@ jobs:
     - name: Show current directory
       run: pwd
 
+    - name: List project files
+      run: ls -R  # List all files recursively in the repository
+
+    - name: Print Python Path
+      run: python -c "import sys; print(sys.path)"
+
+    
+
     - name: Set environment variables
       run: |
         echo "ADMIN_EMAILS=${{ secrets.ADMIN_EMAILS }}" >> $GITHUB_ENV
