@@ -32,6 +32,7 @@ jobs:
         tail -n 10 nohup.out
       env:
         FLASK_ENV: development
+        ADMIN_EMAILS: "admin@example.com,anotheradmin@example.com"
 
     - name: Check app status
       run: |
