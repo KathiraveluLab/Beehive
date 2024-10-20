@@ -3,6 +3,7 @@ import os
 import datetime
 import pathlib
 import re
+import sys
 from tkinter import ALL
 from flask import Flask, abort, render_template, request, redirect, url_for, flash, session
 from bson import ObjectId
@@ -29,10 +30,10 @@ from Database.userdatahandler import (
     update_image
 )
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
-import users.valid_username as valid_username
-
+from usersutils import valid_username
 
 app = Flask(__name__)
 app.secret_key = 'beehive'
