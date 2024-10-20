@@ -25,6 +25,15 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
+    - name: Set environment variables
+      run: |
+        echo "ADMIN_EMAILS=${{ secrets.ADMIN_EMAILS }}" >> $GITHUB_ENV
+        echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> $GITHUB_ENV
+        echo "GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}" >> $GITHUB_ENV
+      
+      env:
+        FLASK_ENV: development
+
     - name: Start Flask app
       run: |
         nohup python app.py &
@@ -32,8 +41,8 @@ jobs:
         tail -n 10 nohup.out
       env:
         FLASK_ENV: development
-        ADMIN_EMAILS: "admin@example.com,anotheradmin@example.com"
 
     - name: Check app status
       run: |
         curl -f http://127.0.0.1:5000/
+
