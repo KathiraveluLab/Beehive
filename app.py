@@ -31,8 +31,7 @@ from Database.userdatahandler import (
 
 
 from OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
-import users.valid_username as valid_username
-
+from users import valid_username
 
 app = Flask(__name__)
 app.secret_key = 'beehive'
