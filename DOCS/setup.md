@@ -1,4 +1,12 @@
 ## If you are looking for setup this project.
+# Project Setup
+
+## Prerequisites
+- Python 3.x
+- MongoDB
+- Google OAuth2 credentials
+- IDE (VS Code recommended)
+
 # Setup Instructions
 
 Follow these steps to set up the project:
@@ -21,13 +29,11 @@ Follow these steps to set up the project:
 
 4. **Activate the Virtual Environment**
     - Activate the virtual environment.
-    ```bash
-    # On Windows
+    # Windows
     .\venv\Scripts\activate
 
-    # On macOS/Linux
+    # Unix/MacOS
     source venv/bin/activate
-    ```
 
 5. **Install Required Libraries**
     - Install all the libraries listed in `requirements.txt`.
@@ -45,6 +51,13 @@ Follow these steps to set up the project:
 
 8. **Update `.env` File**
     - Open the `.env` file and add the required credentials.
+    ```
+    MONGODB_CONNECTION_STRING=mongodb://...
+    GOOGLE_CLIENT_ID=your-client-id
+    GOOGLE_CLIENT_SECRET=your-client-secret
+    REDIRECT_URI=http://localhost:5000/admin/login/callback
+    ADMIN_EMAILS=admin1@example.com,admin2@example.com
+    ```
 
 9. **Run the Application**
     - Execute the `app.py` file to run the application.
