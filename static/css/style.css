@@ -1,11 +1,16 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
+
 body {
-    font-family: Arial, sans-serif;
+    font-family: "Playfair Display", serif;
     background-color: #f4f4f4;
     margin: 0;
     padding: 0;
 }
 
 .container {
+    font-family: "Hanken Grotesk", sans-serif;
     max-width: 400px;
     margin: 50px auto;
     padding: 20px;
@@ -37,7 +42,7 @@ input {
 button {
     width: 100%;
     padding: 10px;
-    background: #0012db;
+    background: #0f0f0f;
     border: none;
     border-radius: 4px;
     color: white;
@@ -48,7 +53,7 @@ button {
 }
 
 button:hover {
-    background: #2200ff;
+    background: #212121;
 }
 
 button:disabled {
