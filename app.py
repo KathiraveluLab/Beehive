@@ -269,8 +269,7 @@ def authorize():
             json.dump(session, json_file, indent=4)
         return redirect("/admin")
     else:
-        flash("You are not authorized to access the admin dashboard.", "danger")
-        return redirect("/")
+        return render_template("404.html")
 
 
 

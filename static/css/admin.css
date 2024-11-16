@@ -1,5 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+
+
 body {
-    font-family: Arial, sans-serif;
+    font-family: "Playfair Display", serif;
     background-color: #f4f4f4;
     margin: 0;
     padding: 0;
@@ -13,6 +17,7 @@ body {
     padding: 10px;
 }
 .button-container {
+    font-family: "Hanken Grotesk", sans-serif;
     display: flex;
     justify-content: flex-end; 
     gap: 40%; 
@@ -21,7 +26,8 @@ body {
 }
 
 .view-users {
-    background-color: #004a9a;
+    font-family: "Hanken Grotesk", sans-serif;
+    background-color: #0f0f0f;
     color: #fff;
     border: none;
     padding: 10px 20px;
@@ -39,7 +45,7 @@ body {
 }
 
 .view-users:hover {
-    background-color: #0064ce;
+    background-color: #212121;
 }
 
 .logout-button {
