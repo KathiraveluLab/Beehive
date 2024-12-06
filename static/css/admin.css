@@ -11,11 +11,23 @@ body {
 
 
 .nav{
-    background-color: #333;
+    background-color: #0e0e0e;
     color: #fff;
     text-align: center;
     padding: 10px;
+    font-size: 12px;
 }
+
+.badge {
+    margin-left: 20px;
+    color: #00d507; /* Green for Admin text */
+    border: 2px solid #00d507; /* Green border */
+    font-size: 14px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    text-align: center;
+}
+
 .button-container {
     font-family: "Hanken Grotesk", sans-serif;
     display: flex;
