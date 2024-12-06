@@ -31,7 +31,7 @@ from Database.userdatahandler import (
 
 
 from OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
-import users.valid_username as valid_username
+from Users import valid_username
 
 
 app = Flask(__name__)
