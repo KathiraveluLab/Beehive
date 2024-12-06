@@ -29,11 +29,12 @@ from Database.userdatahandler import (
     save_image, 
     update_image
 )
+from usersutils import valid_username
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
-from usersutils import valid_username
+
 
 app = Flask(__name__)
 app.secret_key = 'beehive'

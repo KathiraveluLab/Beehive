@@ -9,7 +9,7 @@ html, body {
     justify-content: center; 
     align-items: center; 
     text-align: center; 
-    background-color: #f9f8f4; 
+    background: linear-gradient(to bottom, #8a8aff, #0000ff);
 }
 
 h1 {
@@ -23,7 +23,7 @@ p {
     font-family: "Hanken Grotesk", sans-serif;
     margin: 10px 0; 
     padding: 0;
-    font-size: 1rem; /
+    font-size: large; 
 }
 
 button {
