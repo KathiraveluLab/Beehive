@@ -1,31 +1,35 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 html, body {
     height: 100%;
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: "Playfair Display", serif;
     display: flex;
     flex-direction: column; 
     justify-content: center; 
     align-items: center; 
     text-align: center; 
-    background-color: #f4f4f4; 
+    background-color: #f9f8f4; 
 }
 
 h1 {
+    font-weight: lighter;
     margin: 0;
     padding: 10px; 
-    font-size: 2rem; 
+    font-size: 2.5rem; 
 }
 
 p {
+    font-family: "Hanken Grotesk", sans-serif;
     margin: 10px 0; 
     padding: 0;
     font-size: 1rem; /
 }
 
 button {
-    
+    font-family: "Hanken Grotesk", sans-serif;
     padding: 10px;
-    background: #0012db;
+    background: #0f0f0f;
     border: none;
     border-radius: 4px;
     color: white;
@@ -36,5 +40,5 @@ button {
 }
 
 button:hover {
-    background: #2200ff;
+    background: #212121;
 }

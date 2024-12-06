@@ -3,6 +3,7 @@ import os
 import datetime
 import pathlib
 import re
+import sys
 from tkinter import ALL
 from flask import Flask, abort, render_template, request, redirect, url_for, flash, session
 from bson import ObjectId
@@ -29,9 +30,10 @@ from Database.userdatahandler import (
     update_image
 )
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
-from Users import valid_username
+import users.valid_username as valid_username
 
 
 app = Flask(__name__)
@@ -268,8 +270,7 @@ def authorize():
             json.dump(session, json_file, indent=4)
         return redirect("/admin")
     else:
-        flash("You are not authorized to access the admin dashboard.", "danger")
-        return redirect("/")
+        return render_template("404.html")
 
 
 
