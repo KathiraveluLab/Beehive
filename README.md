@@ -12,11 +12,11 @@ This project aims to analyze behavioral health and complement healthcare practic
 
 ## Setup Instructions
 
-If you want to run this project locally, See the [setup.md](Docs/setup.md).
+If you want to run this project locally, See the [setup.md](DOCS/setup.md).
 
 ## Contributing
 
-If you like to contribute on our project, See the [contributing.md](Docs/contributing.md).
+If you like to contribute on our project, See the [contributing.md](DOCS/contributing.md).
 
 
 
