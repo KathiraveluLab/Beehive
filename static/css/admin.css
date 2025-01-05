@@ -80,3 +80,26 @@ body {
     background-color: #d60400;
 }
 
+.card-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+    
+}
+.card {
+    height: 10rem;
+    width: 10rem;
+    border-radius: 2px;
+    border-style: solid;
+    border-color: #0e0e0e;
+    padding:0 7px 0 7px;
+    background-color: #fff;
+    text-align: center;
+}
+.stat {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #0e0e0e;
+    margin-top: 10px;
+}

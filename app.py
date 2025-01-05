@@ -27,7 +27,9 @@ from Database.userdatahandler import (
     is_username_available,
     isValidEmail, 
     save_image, 
-    update_image
+    update_image,
+    total_images,
+    todays_images,
 )
 from usersutils import valid_username
 
@@ -151,7 +153,8 @@ def upload_image():
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         file.save(filepath)
-        save_image(user['username'], filename, title, description)
+        time_created = datetime.datetime.now()
+        save_image(user['username'], filename, title, description, time_created)
         flash('Image uploaded successfully!', 'success')
     else:
         flash('No file selected.', 'danger')
@@ -278,7 +281,9 @@ def authorize():
 @login_is_required
 def protected_area():
     admin_name = session.get("name")
-    return render_template("admin.html", admin_name=admin_name)
+    total_img = total_images()
+    todays_image = todays_images()
+    return render_template("admin.html", admin_name=admin_name, total_img=total_img, todays_image = todays_image)
 
 
 @app.route("/admin/logout")

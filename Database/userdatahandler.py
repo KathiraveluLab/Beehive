@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 import re
 
 from Database import DatabaseConfig
@@ -65,15 +65,27 @@ def get_user_by_username(username: str):
     return user
 
 # Save image to MongoDB  
-def save_image(username, filename, title, description):
+def save_image(username, filename, title, description, time_created):
     image = {
         'username': username,
         'filename': filename,
         'title': title,
-        'description': description
+        'description': description,
+        'created_at': time_created,
     }
     beehive_image_collection.insert_one(image)
 
+# Count all images from MongoDB
+def total_images():
+    return beehive_image_collection.count_documents({})
+
+# Count all images from MongoDB uploaded today
+def todays_images():
+    last_24_hours = datetime.now() - timedelta(hours=24)
+    recent_images_count = beehive_image_collection.count_documents({
+    "created_at": {"$gte": last_24_hours}
+    })
+    return recent_images_count
 
 def getallusers():
     users = beehive_user_collection.find()
