@@ -11,16 +11,31 @@
     <div class="nav">
         <h1>Beehive Users</h1>
     </div>
-    
 
-    <div class="user-list">
-        {% for user in users %}
-            <div class="user-container">
-                <p>@{{ user.username }}</p>
-                <button><a href="{{ url_for('user_images_show',username=user.username) }}">View Profile</a></button>
-            </div>
-        {% endfor %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Full Name</th>
+                    <th>Category</th>
+                    <th>Account Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.first_name }} {{ user.last_name }}</td>
+                    <td>{{ user.category }}</td>
+                    <td>{{ user.account_created_at }}</td>
+                    <td>
+                        <a href="{{ url_for('user_images_show', username=user.username) }}">View Profile</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-    
 </body>
 </html>
+

@@ -82,4 +82,18 @@ button:disabled {
     color: #ff0400;
 }
 
+.category-dropdown {
+    background-color: #fff;
+    border: 1px solid #e5e7eb;
+    font-size: 16px;
+    color: #333;
+    border-radius: 6px;
+    padding: 12px 15px;
+    cursor: pointer;
+    transition: border-color 0.3s ease;
+}
+
+.category-dropdown:focus {
+    border-color: #3b82f6;
+}
 

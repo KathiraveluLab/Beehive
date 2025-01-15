@@ -17,5 +17,55 @@
         <button class="logout-button"><a href="{{ url_for('adminlogout') }}">Logout</a></button>
     </div>
 
+    <div class="filter-container">
+        <form method="POST" action="{{ url_for('protected_area') }}">
+            <div class="filter-date">
+                <label for="filter_date">Filter by Date:</label>
+                <input type="date" id="filter_date" name="filter_date" value="{{ filter_date }}">
+            </div>
+            <div class="filter-category">
+                <label for="filter_category">Filter by Category:</label>
+                <select id="filter_category" name="filter_category">
+                    <option value="">All Categories</option>
+                    {% for category in users_by_category.keys() %}
+                        <option value="{{ category }}" {% if filter_category == category %}selected{% endif %}>{{ category }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <button type="submit">Apply Filters</button>
+        </form>
+    </div>
+
+    <div class="stats-container">
+       
+        <h3>Total Users: {{ total_users }}</h3>
+        <div class="daily-image-count">
+            <h3>Images Shared Each Day:</h3>
+            <ul>
+                {% for date, count in image_counts_by_day.items() %}
+                    <li>{{ date }}: {{ count }} images</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="category-image-count">
+            <h3>Images Categorized by Tags:</h3>
+            <ul>
+                {% for category, count in image_counts_by_category.items() %}
+                    <li>{{ category }}: {{ count }} images</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+    <div class="user-stats">
+        <h3>Users in Each Category:</h3>
+        <ul>
+            {% for category, count in users_by_category.items() %}
+                <li>{{ category }}: {{ count }} users</li>
+            {% endfor %}
+        </ul>
+    </div>
+  </div>  
+
 </body>
 </html>

@@ -8,7 +8,7 @@ beehive_user_collection = DatabaseConfig.get_beehive_user_collection()
 beehive_image_collection = DatabaseConfig.get_beehive_image_collection()
 
 # Create user in MongoDB
-def create_user(firstname: str, lastname: str, email: str, username: str, password: str, accountcreatedtime: datetime):
+def create_user(firstname: str, lastname: str, email: str, username: str, password: str,category: str, accountcreatedtime: datetime):
     
     user_data = {
         "first_name" : firstname,
@@ -16,6 +16,7 @@ def create_user(firstname: str, lastname: str, email: str, username: str, passwo
         "mail_id" : email,
         "username" : username,
         "password" : password,
+        "category" : category,
         "account_created_at" : accountcreatedtime,
         "role" : "user"
     }
@@ -70,13 +71,15 @@ def save_image(username, filename, title, description):
         'username': username,
         'filename': filename,
         'title': title,
-        'description': description
+        'description': description,
     }
     beehive_image_collection.insert_one(image)
 
 
 def getallusers():
-    users = beehive_user_collection.find()
+    users = list(beehive_user_collection.find())
+    for user in users:
+        user['_id'] = str(user['_id'])  # Convert ObjectId to string
     return users
 
 # Get all images from MongoDB
@@ -97,3 +100,12 @@ def get_image_by_id(image_id):
     query = {'_id': image_id}
     image = beehive_image_collection.find_one(query)
     return image
+
+def getallimages():
+     images_collection = list(beehive_image_collection.find())
+     users_collection = list(beehive_user_collection.find())
+     print (images_collection)
+     print (users_collection)
+     return images_collection, users_collection
+    
+    

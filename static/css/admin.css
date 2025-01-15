@@ -80,3 +80,152 @@ body {
     background-color: #d60400;
 }
 
+/* Stats Container */
+.stats-container {
+    background-color: white;
+    padding: 30px;
+    margin-top: 40px;
+    margin-left:190px;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    width: 70%;
+}
+
+.stats-container h2 {
+    color: #2c3e50;
+    margin-bottom: 20px;
+}
+
+/* Daily Image Count Section */
+.daily-image-count {
+    margin-bottom: 30px;
+}
+
+.daily-image-count h3 {
+    color: #34495e;
+    margin-bottom: 10px;
+}
+
+/* List Styles */
+.daily-image-count ul, .category-image-count ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.daily-image-count li, .category-image-count li {
+    background-color: #ecf0f1;
+    color: #555;
+    margin-bottom: 10px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+.daily-image-count li:hover, .category-image-count li:hover {
+    background-color: #dfe6e9;
+}
+
+/* Category Image Count Section */
+.category-image-count h3 {
+    color: #34495e;
+    margin-bottom: 10px;
+}
+
+/* Total Users and Category Distribution */
+.user-stats {
+    margin-top: 30px;
+}
+
+.user-stats h3 {
+    color: #34495e;
+    margin-bottom: 10px;
+}
+
+.user-stats ul {
+    list-style-type: none;
+    padding: 0;
+}
+
+.user-stats li {
+    background-color: #ecf0f1;
+    color: #555;
+    margin-bottom: 10px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: background-color 0.3s ease;
+}
+
+.user-stats li:hover {
+    background-color: #dfe6e9;
+}
+
+/* Filter Options */
+.filter-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    margin-top: 20px;
+    margin-left: 190px;
+    width: 80%;
+}
+
+.filter-date,
+.filter-category {
+    flex: 1 1 45%;
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 20px;
+}
+
+.filter-date label,
+.filter-category label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.filter-date input,
+.filter-category select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+/* Buttons */
+button {
+    padding: 10px 20px;
+    background-color: #34495e;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 10px;
+    margin-right: 10px;
+    display: inline-block;
+}
+
+button a {
+    color: white;
+    text-decoration: none;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .filter-date,
+    .filter-category {
+        flex: 1 1 100%;
+    }
+
+    button {
+        width: 100%;
+        margin-top: 10px;
+        margin-right: 0;
+    }
+}

@@ -34,6 +34,8 @@ from usersutils import valid_username
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
+from datetime import datetime
+
 
 
 app = Flask(__name__)
@@ -88,6 +90,7 @@ def register():
         username = request.form['username']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
+        category = request.form['category']
         account_created_at = None
 
         if not valid_username.is_valid_username(username):
@@ -98,7 +101,7 @@ def register():
                 if isValidEmail(email) and is_email_available(email) and is_username_available(username):
                     if is_username_available(username):
                         account_created_at = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-                        create_user(first_name, last_name, email, username, password, account_created_at)
+                        create_user(first_name, last_name, email, username, password,category, account_created_at)
                         flash('Registration successful!', 'success')
                         return redirect(url_for('login'))
                     else:
@@ -272,13 +275,79 @@ def authorize():
     else:
         return render_template("404.html")
 
+def getallimages():
+     images_collection = list(beehive_image_collection.find())
+     users_collection = list(beehive_user_collection.find())
+     return images_collection, users_collection
 
-
-@app.route("/admin")
-@login_is_required
+@app.route("/admin", methods=["GET", "POST"])
+# @login_is_required
 def protected_area():
     admin_name = session.get("name")
-    return render_template("admin.html", admin_name=admin_name)
+    images, users_collection = userdatahandler.getallimages()
+    
+    image_counts_by_day = {}
+    image_counts_by_category = {}
+    
+    # Default values
+    filter_date = None
+    filter_category = None
+
+    # Checking if filter parameters are provided in the request
+    if request.method == "POST":
+        filter_date = request.form.get("filter_date")
+        filter_category = request.form.get("filter_category")
+        
+        if filter_date:
+            images = [img for img in images if img['_id'].generation_time.date() == datetime.strptime(filter_date, '%Y-%m-%d').date()]
+        if filter_category:
+            users_with_category = {user['username']: user for user in users_collection}
+            images = [img for img in images if users_with_category[img['username']]['category'] == filter_category]
+    
+    # Calculate image stats
+    for image in images:
+        username = image['username']  # Assuming the image has the 'username' field
+        user_details = next((user for user in users_collection if user['username'] == username), None)
+
+        if user_details:
+            category = user_details['category']  # Get category from user details
+        else:
+            category = 'Unknown'  # Handle case where username doesn't match
+
+        # Extracting the date from the `_id`
+        date = image['_id'].generation_time.date()
+        
+        # Counting images per day
+        if date not in image_counts_by_day:
+            image_counts_by_day[date] = 0
+        image_counts_by_day[date] += 1
+        
+        # Counting images per category
+        if category not in image_counts_by_category:
+            image_counts_by_category[category] = 0
+        image_counts_by_category[category] += 1
+
+    # Calculate total users
+    total_users = len(users_collection)
+    
+    # Calculate users by category
+    users_by_category = {}
+    for user in users_collection:
+        category = user['category']
+        if category not in users_by_category:
+            users_by_category[category] = 0
+        users_by_category[category] += 1
+
+    return render_template(
+        "admin.html", 
+        admin_name=admin_name, 
+        image_counts_by_day=image_counts_by_day, 
+        image_counts_by_category=image_counts_by_category,
+        total_users=total_users,
+        users_by_category=users_by_category,
+        filter_date=filter_date,
+        filter_category=filter_category
+    )
 
 
 @app.route("/admin/logout")
@@ -290,6 +359,7 @@ def adminlogout():
 @app.route('/admin/users')
 def getallusers():
     users = userdatahandler.getallusers()
+    # print(users)
     return render_template('users.html', users=users)
 
 @app.route('/admin/users/<username>')
