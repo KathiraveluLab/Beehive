@@ -13,6 +13,10 @@ from google.oauth2 import id_token
 import google.auth.transport.requests
 from pip._vendor import cachecontrol
 from Database import userdatahandler
+from flask import Flask, jsonify, send_from_directory
+from datetime import datetime
+from PIL import Image
+
 
 
 from Database.admindatahandler import check_admin_available, create_admin
@@ -131,6 +135,34 @@ def profile():
         images=images
     )
 
+# @app.route('/upload', methods=['POST'])
+# def upload_image():
+#     if 'username' not in session:
+#         flash('Please log in to upload images.', 'danger')
+#         return redirect(url_for('login'))
+
+#     user = get_user_by_username(session['username'])
+#     if not user:
+#         flash('User not found.', 'danger')
+#         return redirect(url_for('login'))
+
+#     file = request.files['file']
+#     title = request.form['title']
+#     description = request.form['description']
+
+#     if file:
+#         filename = file.filename
+#         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+#         os.makedirs(os.path.dirname(filepath), exist_ok=True)
+#         file.save(filepath)
+#         save_image(user['username'], filename, title, description)
+#         flash('Image uploaded successfully!', 'success')
+#     else:
+#         flash('No file selected.', 'danger')
+
+#     return redirect(url_for('profile'))
+
+
 @app.route('/upload', methods=['POST'])
 def upload_image():
     if 'username' not in session:
@@ -151,7 +183,20 @@ def upload_image():
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         file.save(filepath)
-        save_image(user['username'], filename, title, description)
+
+        # Extract metadata using Pillow
+        with Image.open(filepath) as img:
+            width, height = img.size
+            file_size = os.path.getsize(filepath)
+            metadata = {
+                "dimensions": f"{width}x{height}",
+                "size_kb": round(file_size / 1024, 2),
+                "upload_time": datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            }
+
+        print("DEBUG: Metadata being saved ->", metadata)  # Debugging line
+
+        save_image(user['username'], filename, title, description, metadata)
         flash('Image uploaded successfully!', 'success')
     else:
         flash('No file selected.', 'danger')
@@ -219,7 +264,17 @@ def delete_image_route(image_id):
         flash('Please log in to delete images.', 'danger')
         return redirect(url_for('login'))
 
+#Search images by title, desciption etc.  
+@app.route('/search', methods=['GET'])
+def search_images():
+    query = request.args.get('q')
+    username = session.get('username')
+    if not username:
+        flash('Please log in first.', 'danger')
+        return redirect(url_for('login'))
     
+    images = get_images_by_user(username, query)
+    return render_template('profile.html', username=username, images=images)
 
 
 # Logout the user

@@ -58,12 +58,40 @@
     </div>
 
     <h2 style="text-align: center;">Uploaded Images</h2>
+
+
+    <!-- Search Form -->
+    <form action="{{ url_for('search_images') }}" method="GET" style="text-align: center; margin-bottom: 20px;">
+        <input type="text" name="q" placeholder="Search images...">
+        <button type="submit">Search</button>
+    </form>
+
+    <!-- Go Back Button -->
+    {% if request.args.get('q') %}
+    <div style="text-align: center; margin-bottom: 20px;">
+        <a href="{{ url_for('profile') }}" style="text-decoration: none;">
+            <button type="button">Go Back</button>
+        </a>
+    </div>
+    {% endif %}
     <div class="image-container">
         {% for image in images %}
         <div class="image-card">
             <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" alt="{{ image.title }}">
             <h3>{{ image.title }}</h3>
-            <p>{{ image.description }}</p>
+            <p><strong>Title:</strong> {{ image.title }}</p>
+            <p><strong>Description:</strong> {{ image.description }}</p>
+    
+            {% if image.metadata %}
+                <p><strong>Dimensions:</strong> {{ image.metadata.dimensions }}</p>
+                <p><strong>Size:</strong> {{ image.metadata.size_kb }} KB</p>
+                <p><strong>Uploaded:</strong> {{ image.metadata.upload_time }}</p>
+            {% else %}
+                <p><strong>Dimensions:</strong> N/A</p>
+                <p><strong>Size:</strong> N/A KB</p>
+                <p><strong>Uploaded:</strong> Unknown</p>
+            {% endif %}
+    
             <button class="more-info-button" onclick="toggleMoreInfo('{{ image.id }}')">More Info</button>
             <div id="moreInfo_{{ image.id }}" class="more-info" style="display: none;">
                 <button class="edit-button" onclick="toggleEditForm('{{ image.id }}')">Edit</button>

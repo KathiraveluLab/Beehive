@@ -65,12 +65,13 @@ def get_user_by_username(username: str):
     return user
 
 # Save image to MongoDB  
-def save_image(username, filename, title, description):
+def save_image(username, filename, title, description, metadata):
     image = {
         'username': username,
         'filename': filename,
         'title': title,
-        'description': description
+        'description': description,
+        "metadata": metadata  # Add metadata to the document
     }
     beehive_image_collection.insert_one(image)
 
@@ -80,9 +81,33 @@ def getallusers():
     return users
 
 # Get all images from MongoDB
-def get_images_by_user(username):
-    images = beehive_image_collection.find({'username': username})
-    return [{'id': str(image['_id']), 'filename': image['filename'], 'title': image['title'], 'description': image['description']} for image in images]
+def get_images_by_user(username, query=None):
+    search_filter = {'username': username}
+    
+    if query:
+        # Search by title or description (case insensitive)
+        search_filter["$or"] = [
+            {"title": {"$regex": query, "$options": "i"}},
+            {"description": {"$regex": query, "$options": "i"}}
+        ]
+    
+    images = beehive_image_collection.find(search_filter)
+
+    return [
+        {
+            'id': str(image['_id']),
+            'filename': image['filename'],
+            'title': image['title'],
+            'description': image['description'],
+            'metadata': image.get('metadata', {
+                'dimensions': 'N/A',
+                'size_kb': 'N/A',
+                'upload_time': 'Unknown'
+            })
+        } 
+        for image in images
+    ]
+
 
 # Update image in MongoDB
 def update_image(image_id, title, description):
@@ -97,3 +122,4 @@ def get_image_by_id(image_id):
     query = {'_id': image_id}
     image = beehive_image_collection.find_one(query)
     return image
+
