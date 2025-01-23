@@ -294,9 +294,18 @@ def getallusers():
 
 @app.route('/admin/users/<username>')
 def user_images_show(username):
-    images = get_images_by_user(username)
-    return render_template('user_images.html', images=images, username=username)
+    user = get_user_by_username(username)
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for('getallusers'))
 
+    images = get_images_by_user(username)
+    return render_template(
+        'user_images.html',
+        username=username,
+        images=images,
+        full_name=f"{user['first_name']} {user['last_name']}"
+    )
 
 
 if __name__ == '__main__':

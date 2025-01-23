@@ -25,15 +25,39 @@
                 editForm.style.display = 'none';
             }
         }
+
+        function previewImage(imageSrc) {
+            var modal = document.getElementById('imagePreviewModal');
+            var previewImg = document.getElementById('previewImage');
+            previewImg.src = imageSrc; // Set the image source
+            modal.style.display = 'flex'; // Show the modal
+        }
+    
+        function closePreview() {
+            var modal = document.getElementById('imagePreviewModal');
+            modal.style.display = 'none'; // Hide the modal
+        }
+    
+        document.addEventListener('keydown', function (event) {
+            if (event.key === "Escape") {
+                closePreview();
+            }
+        });
     </script>
-    </script>
+
 </head>
 <body>
     <h2 style="text-align: center;">Uploaded Images</h2>
     <div class="image-container">
         {% for image in images %}
         <div class="image-card">
-            <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" alt="{{ image.title }}">
+            <img 
+            src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" 
+            alt="{{ image.title }}" 
+            onclick="previewImage(this.src)" 
+            style="cursor: pointer;"
+            >
+
             <h3>{{ image.title }}</h3>
             <p>{{ image.description }}</p>
             <button class="more-info-button" onclick="toggleMoreInfo('{{ image.id }}')">More Info</button>
@@ -51,6 +75,9 @@
         </div>
         {% endfor %}
     </div>
-    
+    <div id="imagePreviewModal" class="image-preview-modal">
+        <span class="close-btn" onclick="closePreview()">&times;</span>
+        <img id="previewImage" src="" alt="Preview">
+    </div>    
 </body>
 </html>
