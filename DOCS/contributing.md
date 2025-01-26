@@ -81,7 +81,7 @@ Added logic to check the session after a password reset and synchronize it with 
 
 ## 5. Code of Conduct
 
-Please ensure that you read and follow our [Code of Conduct](link-to-code-of-conduct), which outlines the expectations for respectful and inclusive behavior within the community.
+Please ensure that you read and follow our [Code of Conduct](/CODE_OF_CONDUCT.md), which outlines the expectations for respectful and inclusive behavior within the community.
 
 ## 6. Questions or Issues?
 
