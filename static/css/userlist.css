@@ -1,4 +1,8 @@
-/* body {
+
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
+body {
     font-family: Arial, sans-serif; 
     background-color: #f4f4f4; 
     color: #333; 
@@ -7,7 +11,8 @@
 }
 
 .nav{
-    background-color: #333;
+    font-family: "Playfair Display", serif;
+    background-color: #000000;
     color: #fff;
     text-align: center;
     padding: 10px;
