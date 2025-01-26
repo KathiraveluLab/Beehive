@@ -85,6 +85,6 @@ Please ensure that you read and follow our [Code of Conduct](link-to-code-of-con
 
 ## 6. Questions or Issues?
 
-If you have any questions, feel free to reach out by opening an issue, or ask in the project’s community channels. We are happy to help!
+If you have any questions, feel free to reach out by opening an issue, or ask in the project’s discussion channel. We are happy to help!
 
 Thank you for contributing, and we look forward to reviewing your changes!
