@@ -134,7 +134,7 @@ def profile():
     )
 
 @app.route('/upload', methods=['POST'])
-def upload_image():
+def upload_images():
     if 'username' not in session:
         flash('Please log in to upload images.', 'danger')
         return redirect(url_for('login'))
@@ -144,20 +144,19 @@ def upload_image():
         flash('User not found.', 'danger')
         return redirect(url_for('login'))
 
-    file = request.files['file']
-    title = request.form['title']
-    description = request.form['description']
-
-    if file:
-        filename = file.filename
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        file.save(filepath)
-        time_created = datetime.datetime.now()
-        save_image(user['username'], filename, title, description, time_created)
-        flash('Image uploaded successfully!', 'success')
-    else:
-        flash('No file selected.', 'danger')
+    files = request.files.getlist('files')
+    title = request.form.get('title','')
+    description = request.form.get('description','')
+    for file in files:
+        if file:
+            filename = file.filename
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            file.save(filepath)
+            save_image(user['username'], filename, title, description)
+            flash('Image uploaded successfully!', 'success')
+        else:
+            flash('No file selected.', 'danger')
 
     return redirect(url_for('profile'))
 
