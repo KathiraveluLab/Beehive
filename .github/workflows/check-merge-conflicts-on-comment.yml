@@ -1,0 +1,29 @@
+name: Check Merge Conflicts on Comment
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  check-conflicts:
+    runs-on: ubuntu-latest
+    if: |
+      github.event.issue.pull_request != null && 
+      contains(github.event.comment.body, '/conflict-check')
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Fetch the latest changes from the base branch
+        run: |
+          git fetch origin ${{ github.event.issue.pull_request.base.ref }}
+
+      - name: Check for merge conflicts
+        run: |
+          git merge --no-commit --no-ff origin/${{ github.event.issue.pull_request.base.ref }} || echo "Merge conflicts detected"
+
+      - name: Fail if merge conflicts found
+        if: failure()
+        run: |
+          echo "Merge conflicts detected, please resolve them before merging."
+          exit 1
