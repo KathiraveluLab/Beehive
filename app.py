@@ -144,22 +144,6 @@ def upload_images():
         flash('User not found.', 'danger')
         return redirect(url_for('login'))
 
-<<<<<<< HEAD
-    file = request.files['file']
-    title = request.form['title']
-    description = request.form['description']
-
-    if file:
-        filename = file.filename
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        file.save(filepath)
-        time_created = datetime.datetime.now()
-        save_image(user['username'], filename, title, description, time_created)
-        flash('Image uploaded successfully!', 'success')
-    else:
-        flash('No file selected.', 'danger')
-=======
     files = request.files.getlist('files')
     title = request.form.get('title','')
     description = request.form.get('description','')
@@ -173,7 +157,6 @@ def upload_images():
             flash('Image uploaded successfully!', 'success')
         else:
             flash('No file selected.', 'danger')
->>>>>>> 4fbc96a (feature update: Multiple Uploads)
 
     return redirect(url_for('profile'))
 
