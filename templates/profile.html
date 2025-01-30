@@ -35,6 +35,7 @@
             }
         }
 
+<<<<<<< HEAD
         function previewImage(imageSrc) {
             var modal = document.getElementById('imagePreviewModal');
             var previewImg = document.getElementById('previewImage');
@@ -61,6 +62,28 @@
         setTimeout(() => flashMessages.style.display = "none", 500);
       }
     }, 5000);
+=======
+        function validateFile(input) {
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heif'];
+            const uploadButton = document.getElementById('uploadButton');
+            const fileError = document.getElementById('fileError');
+            
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                
+                if (!allowedTypes.includes(file.type) || 
+                    !['jpg', 'jpeg', 'png', 'gif', 'webp', 'heif'].includes(fileExtension)) {
+                    uploadButton.disabled = true;
+                    fileError.style.display = 'block';
+                    input.value = ''; // Clear the file input
+                } else {
+                    uploadButton.disabled = false;
+                    fileError.style.display = 'none';
+                }
+            }
+        }
+>>>>>>> af7d8e3 (feat: Add image file type validation (.jpg, .jpeg, .png, .gif, .webp, .heif))
     </script>
 </head>
 <body>
@@ -88,10 +111,11 @@
     <div class="toggle-container">
         <div id="uploadForm" style="display: none;">
             <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data">
-                <input class="file-button" type="file" name="file" required><br>
+                <input class="file-button" type="file" name="file" id="fileInput" accept=".jpg,.jpeg,.png,.gif,.webp,.heif" required onchange="validateFile(this)"><br>
                 <input class="title-area" type="text" name="title" placeholder="Title" required><br>
                 <textarea class="description-area" name="description" placeholder="Description" required></textarea><br>
-                <button class="upload-button" type="submit">Upload</button>
+                <button class="upload-button" type="submit" id="uploadButton">Upload</button>
+                <div id="fileError" style="color: red; display: none;">Invalid file type. Only jpg, jpeg, png, gif, webp, and heif files are allowed.</div>
             </form>
         </div>
     </div>
