@@ -267,3 +267,109 @@ h2{
     cursor: pointer;
     font-weight: bold;
 }
+
+@media only screen and (max-width: 768px ) and (orientation: portrait)  {
+    /* Adjust navigation */
+    .nav {
+        font-size: 18px;
+        padding: 6px;
+    }
+
+    .button-container {
+        gap: 100px;
+        margin-right: 18px;
+        padding: 0px;
+    }
+
+    .toggle {
+        width: 150px;
+        text-align: center;
+        font-size: 16px;
+    }
+
+    .logout-button{
+      width: 100px;
+    }
+
+    /* Make the form full width */
+    .toggle-container form {
+        width: 80%;
+        margin-left: 15px;
+    }
+
+    input, textarea {
+        width: 100%;
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    /* Adjust image container */
+    .image-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-left: 0;
+    }
+
+    .image-card {
+        width: 70%;
+        padding: 12px;
+    }
+
+    .image-card img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Adjust modal for mobile */
+     .edit-modal .modal-content {
+        width: 70%;
+        padding: 10px;
+    }
+
+    .edit-form .text-input {
+       width: 90%;
+       margin-left: 5px;
+    }
+
+    .edit-button .update-button {
+        width: 50%;
+    }
+
+
+    /* Improve button spacing */
+    .more-info-button, .delete-button, .edit-button {
+        width: 50%;
+        font-size: 14px;
+        padding: 10px;
+    }
+
+}
+
+.flash-messages {
+    position: fixed;
+    top: 10px;
+    left: 20px;
+    z-index: 999; /* Above nav */
+    width: auto;
+    padding: 12px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.alert {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 14px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.alert-success {
+    background-color: #33984a; /* Green */
+}
+
