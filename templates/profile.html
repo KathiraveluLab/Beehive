@@ -53,12 +53,32 @@
                 closePreview();
             }
         });
+
+        setTimeout(function() {
+      var flashMessages = document.querySelector(".flash-messages");
+      if (flashMessages) {
+        flashMessages.style.opacity = "0";
+        setTimeout(() => flashMessages.style.display = "none", 500);
+      }
+    }, 5000);
     </script>
 </head>
 <body>
     <div class="nav">
         <h1>{{ username }}</h1>
     </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-messages">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
 
     <div class="button-container">
         <button class="toggle" onclick="toggleUploadForm()">Upload Images</button>
