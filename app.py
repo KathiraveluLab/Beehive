@@ -37,7 +37,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
 
-ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heif'}
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heif', 'pdf'}
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -161,7 +161,7 @@ def upload_image():
         save_image(user['username'], filename, title, description, time_created)
         flash('Image uploaded successfully!', 'success')
     else:
-        flash('Invalid file type. Allowed types are: jpg, jpeg, png, gif, webp, heif', 'danger')
+        flash('Invalid file type. Allowed types are: jpg, jpeg, png, gif, webp, heif, pdf', 'danger')
 
     return redirect(url_for('profile'))
 
