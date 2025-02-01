@@ -64,7 +64,7 @@
     }, 5000);
 
         function validateFile(input) {
-            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heif'];
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heif', 'application/pdf'];
             const uploadButton = document.getElementById('uploadButton');
             const fileError = document.getElementById('fileError');
             
@@ -73,7 +73,7 @@
                 const fileExtension = file.name.split('.').pop().toLowerCase();
                 
                 if (!allowedTypes.includes(file.type) || 
-                    !['jpg', 'jpeg', 'png', 'gif', 'webp', 'heif'].includes(fileExtension)) {
+                    !['jpg', 'jpeg', 'png', 'gif', 'webp', 'heif', 'pdf'].includes(fileExtension)) {
                     uploadButton.disabled = true;
                     fileError.style.display = 'block';
                     input.value = ''; // Clear the file input
@@ -111,11 +111,11 @@
     <div class="toggle-container">
         <div id="uploadForm" style="display: none;">
             <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data">
-                <input class="file-button" type="file" name="file" id="fileInput" accept=".jpg,.jpeg,.png,.gif,.webp,.heif" required onchange="validateFile(this)"><br>
+                <input class="file-button" type="file" name="file" id="fileInput" accept=".jpg,.jpeg,.png,.gif,.webp,.heif,.pdf" required onchange="validateFile(this)"><br>
                 <input class="title-area" type="text" name="title" placeholder="Title" required><br>
                 <textarea class="description-area" name="description" placeholder="Description" required></textarea><br>
                 <button class="upload-button" type="submit" id="uploadButton">Upload</button>
-                <div id="fileError" style="color: red; display: none;">Invalid file type. Only jpg, jpeg, png, gif, webp, and heif files are allowed.</div>
+                <div id="fileError" style="color: red; display: none;">Invalid file type. Only jpg, jpeg, png, gif, webp,heif and pdf files are allowed.</div>
             </form>
         </div>
     </div>
