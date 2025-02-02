@@ -209,3 +209,81 @@ h2{
 .edit-button:hover {
     background-color: #007906;
 }
+
+@media only screen and (max-width: 768px ) and (orientation: portrait)  {
+    /* Adjust navigation */
+    .nav {
+        font-size: 18px;
+        padding: 6px;
+    }
+
+    .button-container {
+        gap: 100px;
+        margin-right: 18px;
+        padding: 0px;
+    }
+
+    .toggle {
+        width: 150px;
+        text-align: center;
+        font-size: 16px;
+    }
+
+    .logout-button{
+      width: 100px;
+    }
+
+    /* Make the form full width */
+    .toggle-container form {
+        width: 80%;
+        margin-left: 15px;
+    }
+
+    input, textarea {
+        width: 100%;
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    /* Adjust image container */
+    .image-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin-left: 0;
+    }
+
+    .image-card {
+        width: 70%;
+        padding: 12px;
+    }
+
+    .image-card img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Adjust modal for mobile */
+     .edit-modal .modal-content {
+        width: 70%;
+        padding: 10px;
+    }
+
+    .edit-form .text-input {
+       width: 90%;
+       margin-left: 5px;
+    }
+
+    .edit-button .update-button {
+        width: 50%;
+    }
+
+
+    /* Improve button spacing */
+    .more-info-button, .delete-button, .edit-button {
+        width: 50%;
+        font-size: 14px;
+        padding: 10px;
+    }
+
+}

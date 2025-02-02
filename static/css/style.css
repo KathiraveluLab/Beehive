@@ -82,4 +82,28 @@ button:disabled {
     color: #ff0400;
 }
 
+@media (max-width: 480px) {
+    .container {
+        margin-top: 90px;
+        max-width: 80%;
+        padding: 15px;
+    }
 
+    h2 {
+        font-size: 30px;
+    }
+
+    input {
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    button {
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    p {
+        font-size: 15px;
+    }
+}
