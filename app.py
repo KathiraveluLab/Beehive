@@ -138,7 +138,7 @@ def profile():
     )
 
 @app.route('/upload', methods=['POST'])
-def upload_image():
+def upload_images():
     if 'username' not in session:
         flash('Please log in to upload images.', 'danger')
         return redirect(url_for('login'))
@@ -148,20 +148,24 @@ def upload_image():
         flash('User not found.', 'danger')
         return redirect(url_for('login'))
 
-    file = request.files['file']
-    title = request.form['title']
-    description = request.form['description']
-
-    if file and allowed_file(file.filename):
-        filename = file.filename
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        file.save(filepath)
-        time_created = datetime.datetime.now()
-        save_image(user['username'], filename, title, description, time_created)
-        flash('Image uploaded successfully!', 'success')
-    else:
-        flash('Invalid file type. Allowed types are: jpg, jpeg, png, gif, webp, heif, pdf', 'danger')
+    files = request.files.getlist('files')
+    title = request.form.get('title','')
+    description = request.form.get('description','')
+    
+    if not files or files[0].filename == '':
+        flash('No file selected.', 'danger')
+        return redirect(url_for('profile'))
+    
+    for file in files:
+        if file and allowed_file(file.filename):
+            filename = file.filename
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            file.save(filepath)
+            save_image(user['username'], filename, title, description, datetime.datetime.now())
+            flash('Image uploaded successfully!', 'success')
+        else:
+            flash(f'Invalid file type for "{file.filename}". Allowed types are: jpg, jpeg, png, gif, webp, heif, pdf', 'danger')
 
     return redirect(url_for('profile'))
 
