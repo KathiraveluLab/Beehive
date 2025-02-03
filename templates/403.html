@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beehive</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+
+</head>
+<body>
+    <i class="material-icons" style="font-size:100px;">admin_panel_settings</i>
+
+
+    <h2>You don't have permission to access this page. Only admins are allowed due to privacy restrictions.</h2>
+    <a href="{{ url_for('home') }}"><button>Go Home</button></a>
+</body>
+</html>

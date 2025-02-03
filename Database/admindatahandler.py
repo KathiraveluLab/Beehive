@@ -1,6 +1,8 @@
 from datetime import datetime
 import re
 
+from flask import session
+
 from Database import DatabaseConfig
 
 beehive_admin_collection = DatabaseConfig.get_beehive_admin_collection()
@@ -23,3 +25,13 @@ def check_admin_available(google_id: str):
 
     count = beehive_admin_collection.count_documents(query)
     return count == 0
+
+def is_admin():
+    if 'google_id' in session:
+        query = {
+            "google_id": session['google_id']
+        }
+        admin = beehive_admin_collection.find_one(query)
+        if admin and admin.get("role") == "admin":
+            return True
+    return False

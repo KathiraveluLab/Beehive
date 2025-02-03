@@ -1,3 +1,4 @@
+from functools import wraps
 import json
 import os
 import datetime
@@ -15,10 +16,11 @@ from pip._vendor import cachecontrol
 from Database import userdatahandler
 
 
-from Database.admindatahandler import check_admin_available, create_admin
+from Database.admindatahandler import check_admin_available, create_admin, is_admin
 from Database.userdatahandler import (
     create_user, 
-    delete_image, 
+    delete_image,
+    get_currentuser_from_session, 
     get_image_by_id, 
     get_images_by_user, 
     get_password_by_username, 
@@ -57,6 +59,32 @@ def login_is_required(function):
 
     return wrapper
 
+def role_required(required_role):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+
+            if "google_id" in session:
+                if required_role == 'admin' and not is_admin():
+                    return render_template('403.html')
+                
+            elif "username" in session:
+                user = get_currentuser_from_session()
+                
+                if user is None:
+                    print("User not found in session!")
+                    return render_template('403.html')  
+
+                if user.get('role') != required_role:
+                    return render_template('403.html')
+
+            else:
+                return render_template('403.html')
+
+            return func(*args, **kwargs)
+
+        return wrapper
+    return decorator
 
 # Home page
 @app.route('/')
@@ -270,29 +298,36 @@ def authorize():
             json.dump(session, json_file, indent=4)
         return redirect("/admin")
     else:
-        return render_template("404.html")
+        return render_template("403.html")
 
 
 
 @app.route("/admin")
+@role_required("admin")
 @login_is_required
 def protected_area():
     admin_name = session.get("name")
     return render_template("admin.html", admin_name=admin_name)
 
-
+@login_is_required
+@role_required("admin")
 @app.route("/admin/logout")
 def adminlogout():
     session.clear()
     return redirect("/")
 
 
+
 @app.route('/admin/users')
+@role_required("admin")
 def getallusers():
     users = userdatahandler.getallusers()
     return render_template('users.html', users=users)
 
+
+
 @app.route('/admin/users/<username>')
+@role_required("admin")
 def user_images_show(username):
     images = get_images_by_user(username)
     return render_template('user_images.html', images=images, username=username)

@@ -1,6 +1,8 @@
 from datetime import datetime
 import re
 
+from flask import session
+
 from Database import DatabaseConfig
 
 
@@ -78,6 +80,18 @@ def save_image(username, filename, title, description):
 def getallusers():
     users = beehive_user_collection.find()
     return users
+
+def get_currentuser_from_session():
+    user_data = session.get('user')
+    if user_data is None:
+        return None  
+    
+    user_id = user_data.get('user_id')  
+    if not user_id:
+        return None
+    
+    user = beehive_user_collection.find_one({'_id': user_id})
+    return user
 
 # Get all images from MongoDB
 def get_images_by_user(username):
