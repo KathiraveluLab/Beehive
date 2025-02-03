@@ -37,6 +37,10 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
 
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heif', 'pdf'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 app = Flask(__name__)
 app.secret_key = 'beehive'
@@ -144,36 +148,24 @@ def upload_images():
         flash('User not found.', 'danger')
         return redirect(url_for('login'))
 
-<<<<<<< HEAD
-    file = request.files['file']
-    title = request.form['title']
-    description = request.form['description']
-
-    if file:
-        filename = file.filename
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        file.save(filepath)
-        time_created = datetime.datetime.now()
-        save_image(user['username'], filename, title, description, time_created)
-        flash('Image uploaded successfully!', 'success')
-    else:
-        flash('No file selected.', 'danger')
-=======
     files = request.files.getlist('files')
     title = request.form.get('title','')
     description = request.form.get('description','')
+    
+    if not files or files[0].filename == '':
+        flash('No file selected.', 'danger')
+        return redirect(url_for('profile'))
+    
     for file in files:
-        if file:
+        if file and allowed_file(file.filename):
             filename = file.filename
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             file.save(filepath)
-            save_image(user['username'], filename, title, description)
+            save_image(user['username'], filename, title, description, datetime.datetime.now())
             flash('Image uploaded successfully!', 'success')
         else:
-            flash('No file selected.', 'danger')
->>>>>>> 4fbc96a (feature update: Multiple Uploads)
+            flash(f'Invalid file type for "{file.filename}". Allowed types are: jpg, jpeg, png, gif, webp, heif, pdf', 'danger')
 
     return redirect(url_for('profile'))
 
