@@ -37,6 +37,10 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
 
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heif', 'pdf'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 app = Flask(__name__)
 app.secret_key = 'beehive'
@@ -148,7 +152,7 @@ def upload_image():
     title = request.form['title']
     description = request.form['description']
 
-    if file:
+    if file and allowed_file(file.filename):
         filename = file.filename
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -157,7 +161,7 @@ def upload_image():
         save_image(user['username'], filename, title, description, time_created)
         flash('Image uploaded successfully!', 'success')
     else:
-        flash('No file selected.', 'danger')
+        flash('Invalid file type. Allowed types are: jpg, jpeg, png, gif, webp, heif, pdf', 'danger')
 
     return redirect(url_for('profile'))
 
