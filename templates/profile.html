@@ -84,6 +84,71 @@
             }
         }
 
+        let mediaRecorder;
+    let audioChunks = [];
+
+    function startRecording() {
+        var element = document.getElementById("recordingStatus");
+        if (element) console.log("true");
+        element.style.opacity = "1";
+        element.style.display = "block";
+        setTimeout(() => {
+                    document.getElementById("recordingStatus").style.opacity = '0';
+                    setTimeout(() => {
+                    document.getElementById("recordingStatus").style.display = 'none';
+                    }, 500); 
+                }, 1000);
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    document.getElementById('audioPlayback').src = audioUrl;
+                    document.getElementById('audioPlayback').style.display = 'block';
+
+                    // Convert to Base64
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = () => {
+                        document.getElementById('audioData').value = reader.result;
+                    };
+                };
+
+                mediaRecorder.start();
+                document.getElementById("stopBtn").disabled = false;
+            })
+            .catch(error => {
+                alert("Microphone access denied!");
+                console.error(error);
+            });
+    }
+
+    function stopRecording() {
+        if (mediaRecorder) {
+            mediaRecorder.stop();
+            document.getElementById("stopBtn").disabled = true;
+            var resetBtn = document.getElementById("resetBtn");
+            if (resetBtn) {
+                resetBtn.style.display = 'inline';
+            }
+        }
+    }
+
+    function resetRecording() {
+    document.getElementById('audioPlayback').src = "";
+    document.getElementById('audioPlayback').style.display = 'none';
+    document.getElementById('audioData').value = "";
+    var resetBtn = document.getElementById("resetBtn");
+    if(resetBtn) resetBtn.style.display = 'none';
+}
+
     </script>
 </head>
 <body>
@@ -114,6 +179,13 @@
                 <input class="file-button" type="file" name="file" id="fileInput" accept=".jpg,.jpeg,.png,.gif,.webp,.heif,.pdf" required onchange="validateFile(this)"><br>
                 <input class="title-area" type="text" name="title" placeholder="Title" required><br>
                 <textarea class="description-area" name="description" placeholder="Description" required></textarea><br>
+                
+                <button type="button" onclick="startRecording()" class="record-btn">Start Recording</button>
+                <button type="button" onclick="stopRecording()" class="stop-btn" disabled id="stopBtn">Stop Recording</button>
+                <button type="button" onclick="resetRecording()" id="resetBtn" class="reset-btn" style="display: none;"> Reset Recording</button>
+                <audio id="audioPlayback" controls style="display: none;"></audio>
+    
+                <input type="hidden" name="audioData" id="audioData">
                 <button class="upload-button" type="submit" id="uploadButton">Upload</button>
                 <div id="fileError" style="color: red; display: none;">Invalid file type. Only jpg, jpeg, png, gif, webp,heif and pdf files are allowed.</div>
             </form>
@@ -151,5 +223,8 @@
         <span class="close-btn" onclick="closePreview()">&times;</span>
         <img id="previewImage" src="" alt="Preview">
     </div>
+    <div class="recordingStatus" id="recordingStatus" style="display: none;">Recording in Progress...</div>
+
+    <script src="https://unpkg.com/wavesurfer.js"></script>
 </body>
 </html>

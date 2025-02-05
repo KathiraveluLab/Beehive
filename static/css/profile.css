@@ -373,3 +373,97 @@ h2{
     background-color: #33984a; /* Green */
 }
 
+.audio-recorder {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.record-btn, .stop-btn, .reset-btn {
+    background-color: #0077b6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: 0.3s;
+}
+
+.record-btn:hover { background-color: #00a8e8; }
+.stop-btn:hover { background-color: #ff4040; }
+.reset-btn:hover { background-color: #ffae42; }
+
+.waveform-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 20px auto;
+    height: 100px;
+    border-radius: 10px;
+    background: #222;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.hidden {
+    display: none;
+}
+
+.speaker-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #0077b6;
+    transition: transform 0.2s;
+}
+
+.speaker-button:hover {
+    transform: scale(1.2);
+    color: #00a8e8;
+}
+
+.recordingStatus{
+    position: fixed;
+    top: 10px;
+    left: 20px;
+    color: #ffffff;
+    font-weight: bold;
+    text-align: center;
+    z-index: 999;
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+}
+
+@media (max-width: 768px) {
+    .flash-messages {
+        top: 5px;
+        left: 30%;
+        transform: translateX(-50%);
+        max-width: 80%;
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    .controls {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .record-btn, .stop-btn, .reset-btn {
+        font-size: 12px;
+        padding: 12px;
+        width: 60%;
+    }
+
+    .recordingStatus {
+        top: 5px;
+        font-size: 14px;
+        padding: 8px;
+    }
+}
+
