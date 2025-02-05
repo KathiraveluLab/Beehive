@@ -58,7 +58,7 @@ def get_password_by_username(username: str):
     if user:
         return user.get("password")
     else:
-        return "user not found!"
+        return None
     
 # Get user by username from MongoDB
 def get_user_by_username(username: str):
