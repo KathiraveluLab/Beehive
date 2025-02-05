@@ -110,12 +110,22 @@ def login():
         username = request.form['username']
         password = request.form['password']
         stored_password = get_password_by_username(username)
-        if stored_password and bcrypt.checkpw(password.encode('utf-8'), stored_password):
-            session['username'] = username  # Store the username in session
-            flash('Login successful!', 'success')
-            return redirect(url_for("profile"))
-        else:
-            flash('Invalid credentials, please try again.', 'danger')
+        
+        if stored_password:
+            # Check if stored password is hashed
+            if isinstance(stored_password, bytes) and stored_password.startswith(b'$2b$'):
+                # Handle hashed password
+                is_valid = bcrypt.checkpw(password.encode('utf-8'), stored_password)
+            else:
+                # For plain text password
+                is_valid = (stored_password == password)
+            
+            if is_valid:
+                session['username'] = username
+                flash('Login successful!', 'success')
+                return redirect(url_for("profile"))
+                
+        flash('Invalid credentials, please try again.', 'danger')
     return render_template("login.html")
 
 # Register a new user
