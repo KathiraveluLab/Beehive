@@ -149,6 +149,24 @@
     if(resetBtn) resetBtn.style.display = 'none';
 }
 
+function handleUpload(event) {
+    event.preventDefault(); 
+
+    let button = document.getElementById("uploadButton");
+    let form = document.getElementById("upload-form");
+
+    if (!form.checkValidity()) {
+        form.reportValidity(); // Show validation messages if any before animation
+        return; 
+    }
+    button.classList.add("active");
+
+    setTimeout(() => {
+        button.classList.remove("active");
+        form.requestSubmit();
+    }, 2000); 
+}
+
     </script>
 </head>
 <body>
@@ -175,7 +193,7 @@
 
     <div class="toggle-container">
         <div id="uploadForm" style="display: none;">
-            <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data">
+            <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data" id="upload-form">
                 <input class="file-button" type="file" name="file" id="fileInput" accept=".jpg,.jpeg,.png,.gif,.webp,.heif,.pdf" required onchange="validateFile(this)"><br>
                 <input class="title-area" type="text" name="title" placeholder="Title" required><br>
                 <textarea class="description-area" name="description" placeholder="Description" required></textarea><br>
@@ -186,7 +204,13 @@
                 <audio id="audioPlayback" controls style="display: none;"></audio>
     
                 <input type="hidden" name="audioData" id="audioData">
-                <button class="upload-button" type="submit" id="uploadButton">Upload</button>
+                <button class="uploadButton" id="uploadButton" type="submit" onclick="handleUpload(event)">
+                    <svg xmlns="http://www.w3.org/2000/svg">
+                        <rect class="border" pathLength="100"></rect>
+                        <rect class="loading" pathLength="100"></rect>
+                    </svg>
+                    <div class="txt-upload">Upload</div>
+                </button>
                 <div id="fileError" style="color: red; display: none;">Invalid file type. Only jpg, jpeg, png, gif, webp,heif and pdf files are allowed.</div>
             </form>
         </div>
