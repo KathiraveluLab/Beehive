@@ -65,13 +65,14 @@ def get_user_by_username(username: str):
     return user
 
 # Save image to MongoDB  
-def save_image(username, filename, title, description, time_created):
+def save_image(username, filename, title, description, time_created,audio_filename=None):
     image = {
         'username': username,
         'filename': filename,
         'title': title,
         'description': description,
         'created_at': time_created,
+        'audio_filename': audio_filename,
     }
     beehive_image_collection.insert_one(image)
 
@@ -94,7 +95,7 @@ def getallusers():
 # Get all images from MongoDB
 def get_images_by_user(username):
     images = beehive_image_collection.find({'username': username})
-    return [{'id': str(image['_id']), 'filename': image['filename'], 'title': image['title'], 'description': image['description']} for image in images]
+    return [{'id': str(image['_id']), 'filename': image['filename'], 'title': image['title'], 'description': image['description'], 'audio_filename': image.get('audio_filename', "")} for image in images]
 
 # Update image in MongoDB
 def update_image(image_id, title, description):

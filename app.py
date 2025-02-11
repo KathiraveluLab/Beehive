@@ -1,3 +1,4 @@
+import base64
 import json
 import os
 import datetime
@@ -13,6 +14,7 @@ from google.oauth2 import id_token
 import google.auth.transport.requests
 from pip._vendor import cachecontrol
 from Database import userdatahandler
+from werkzeug.utils import secure_filename
 
 
 from Database.admindatahandler import check_admin_available, create_admin
@@ -151,14 +153,25 @@ def upload_image():
     file = request.files['file']
     title = request.form['title']
     description = request.form['description']
+    audio_data = request.form.get('audioData')
 
     if file and allowed_file(file.filename):
         filename = file.filename
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
         file.save(filepath)
+
+        audio_filename = None
+        if audio_data:
+            audio_filename = f"{secure_filename(title)}.wav"
+            audio_path = os.path.join(app.config['UPLOAD_FOLDER'], audio_filename)
+            os.makedirs(os.path.dirname(audio_path), exist_ok=True)
+            audio_binary = base64.b64decode(audio_data.split(',')[1])
+            with open(audio_path, "wb") as f:
+                f.write(audio_binary)
+
         time_created = datetime.datetime.now()
-        save_image(user['username'], filename, title, description, time_created)
+        save_image(user['username'], filename, title, description, time_created,audio_filename)
         flash('Image uploaded successfully!', 'success')
     else:
         flash('Invalid file type. Allowed types are: jpg, jpeg, png, gif, webp, heif, pdf', 'danger')
@@ -282,7 +295,7 @@ def authorize():
 
 
 @app.route("/admin")
-@login_is_required
+# @login_is_required
 def protected_area():
     admin_name = session.get("name")
     total_img = total_images()
