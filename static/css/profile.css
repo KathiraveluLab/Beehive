@@ -467,3 +467,146 @@ h2{
     }
 }
 
+.uploadButton {
+    position: relative;
+    margin-top: 20px;
+    width: 150px;
+    height: 40px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    outline: none;
+}
+
+/* Ensure the SVG resizes properly */
+.uploadButton svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+/* Border styling */
+.border {
+    width: 100%;
+    height: 100%;
+    stroke: black;
+    stroke-width: 2px;
+    fill: transparent;
+    rx: 1em;
+    ry: 1em;
+    stroke-dasharray: 25;
+    transition: fill 0.25s, stroke 0.3s ease;
+    animation: 4s linear infinite stroke-animation;
+}
+
+.uploadButton:hover .border {
+    fill: rgba(0, 0, 0, 0.1);
+}
+
+.uploadButton.active .border {
+    transition: fill 0.25s 7.75s;
+    fill: #0000;
+  }
+
+@keyframes stroke-animation {
+    0% {
+        stroke-dashoffset: 100;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.txt-upload {
+    position: absolute;
+    font-size: 16px;
+    font-weight: bold;
+    color: black;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.txt-upload::after {
+    content: "";
+  }
+  
+  .uploadButton.active .rect {
+    stroke-dasharray: 50;
+  }
+  .uploadButton.active .border {
+    stroke: #0000;
+  }
+  
+  .uploadButton.active .txt-upload {
+    opacity: 0;
+    transition: opacity 0.25s 8s;
+  }
+
+.uploadButton.active .txt-upload::after {
+    animation: 0.66666s anim step-end forwards,
+    1.33333s 0.6666s anim2 linear infinite alternate;
+}
+
+@keyframes anim {
+    0% {
+      content: "i";
+    }
+    50% {
+      content: "in";
+    }
+    to {
+      content: "ing";
+    }
+  }
+  
+  @keyframes anim2 {
+    0% {
+      content: "ing";
+    }
+    33% {
+      content: "ing.";
+    }
+    66% {
+      content: "ing..";
+    }
+    to {
+      content: "ing...";
+    }
+  }
+
+.loading {
+    width: 100%;
+    height: 100%;
+    stroke: #0055d4;
+    stroke-width: 2px;
+    fill: none;
+    rx: 1em;
+    ry: 1em;
+    stroke-dasharray: 0 100;
+}
+
+.uploadButton.active .loading {
+    stroke: #08ca08;
+    stroke-dasharray: 100 0;
+    transition: stroke 0.5s, stroke-dasharray 2s ease-out;
+}
+
+.done {
+    fill: none;
+    stroke: #000;
+    stroke-dasharray: 0 100;
+}
+
+.uploadButton.active {
+    transition: stroke-dasharray 0.75s 2.5s ease-out;
+    stroke-dasharray: 100 0;
+}
+
+.uploadButton.active  {
+    transition: stroke-dasharray 0.5s 3s ease-out;
+    stroke: #08ca08;
+    stroke-dasharray: 100 0;
+}
