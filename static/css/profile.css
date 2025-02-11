@@ -85,7 +85,7 @@ body {
     transition: background 0.3s ease;
     width: 100%;
 }
-/* .upload-button {
+.upload-button {
     background-color: #00bb1f;
     color: #fff;
     border: none;
@@ -100,7 +100,7 @@ body {
 
 .upload-button:hover {
     background-color: #007906;
-} */
+}
 
 .image-container {
     display: flex;
@@ -576,6 +576,17 @@ h2{
       content: "ing...";
     }
   }
+
+.loading {
+    width: 100%;
+    height: 100%;
+    stroke: #0055d4;
+    stroke-width: 2px;
+    fill: none;
+    rx: 1em;
+    ry: 1em;
+    stroke-dasharray: 0 100;
+}
 
 .uploadButton.active .loading {
     stroke: #08ca08;
