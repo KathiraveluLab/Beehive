@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beehive</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/footer.css') }}">
+</head>
+<body>
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-description">
+                <p>Beehive is a data-driven initiative enhancing behavioral health insights and healthcare practices in Alaska through a federated data approach.</p>
+            </div>
+            <div class="footer-links">
+                <a href="#">About</a>
+                <a href="#">Documentation</a>
+                <a href="#">Contribute</a>
+                <a href="#">Contact</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; <span id="year"></span> Beehive Project | All Rights Reserved</p>
+        </div>
+    </footer>
+</body>
+<script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+</script>
+</html>
