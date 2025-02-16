@@ -52,6 +52,39 @@
         audioPlayer.src = audioSrc;
         audioPlayer.play();
     }
+    function previewImage(imageSrc) {
+            var modal = document.getElementById('imagePreviewModal');
+            var previewImg = document.getElementById('previewImage');
+            var fileExtension = imageSrc.split('.').pop().toLowerCase();
+
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heif'].includes(fileExtension)) {
+             previewImg.src = imageSrc;
+             previewImg.style.display = "block";
+
+            if (document.getElementById("pdfPreview")) {
+             document.getElementById("pdfPreview").style.display = "none";
+            }
+            } else if (fileExtension === 'pdf') {
+            let pdfFrame = document.getElementById("pdfPreview");
+    
+             if (!pdfFrame) {
+             pdfFrame = document.createElement("iframe");
+             pdfFrame.id = "pdfPreview";
+             pdfFrame.style.width = "100%";
+             pdfFrame.style.height = "80vh";
+             modal.appendChild(pdfFrame);
+             }
+
+             pdfFrame.src = imageSrc;
+             pdfFrame.style.display = "block";
+
+            previewImg.style.display = "none";
+            }
+
+            modal.style.display = 'flex'; // Show the modal
+        }
+
+    
     </script>
     </script>
 </head>
@@ -60,12 +93,20 @@
     <div class="image-container">
         {% for image in images %}
         <div class="image-card">
+            {% if image.filename.endswith('.pdf') %}
             <img 
-            src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" 
-            alt="{{ image.title }}" 
-            onclick="previewImage(this.src)" 
+            src="{{ url_for('static', filename='uploads/thumbnails/' ~ image.filename.replace('.pdf', '.jpg')) }}" 
+            class="pdf-preview"
+            onclick="previewImage(this.dataset.pdfUrl, 'pdf')" 
+            data-pdf-url="{{ url_for('static', filename='uploads/' ~ image.filename) }}" 
             style="cursor: pointer;"
-            >
+        >
+            {%else%}
+            <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" 
+                 alt="{{ image.title }}" 
+                 onclick="previewImage(this.src, 'image')" 
+                 style="cursor: pointer;">
+            {%endif%}
             <!-- Speaker Icon for Audio -->
             {% set audio_path = url_for('static', filename='uploads/' ~ image.audio_filename) %}
             {% if image.audio_filename %}
@@ -95,7 +136,8 @@
     <div id="imagePreviewModal" class="image-preview-modal">
         <span class="close-btn" onclick="closePreview()">&times;</span>
         <img id="previewImage" src="" alt="Preview">
-    </div>  
+        <iframe id="previewPdf" src="" width="90%" height="600px" style="display: none; border: none;"></iframe>
+    </div> 
     {% include 'footer.html' %}
 </body>
 </html>
