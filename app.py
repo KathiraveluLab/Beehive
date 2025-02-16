@@ -6,7 +6,7 @@ import pathlib
 import re
 import sys
 from tkinter import ALL
-from flask import Flask, abort, render_template, request, redirect, url_for, flash, session
+from flask import Flask, abort, render_template, request, redirect, url_for, flash, session, jsonify
 from bson import ObjectId
 from google_auth_oauthlib.flow import Flow
 import requests
@@ -15,6 +15,8 @@ import google.auth.transport.requests
 from pip._vendor import cachecontrol
 from Database import userdatahandler
 from werkzeug.utils import secure_filename
+import fitz  
+from PIL import Image
 
 
 from Database.admindatahandler import check_admin_available, create_admin
@@ -47,6 +49,7 @@ def allowed_file(filename):
 app = Flask(__name__)
 app.secret_key = 'beehive'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
+app.config['PDF_THUMBNAIL_FOLDER'] = 'static/uploads/thumbnails/'
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
 
@@ -171,12 +174,43 @@ def upload_image():
                 f.write(audio_binary)
 
         time_created = datetime.datetime.now()
-        save_image(user['username'], filename, title, description, time_created,audio_filename)
+        save_image(user['username'], filename, title, description, time_created, audio_filename)
         flash('Image uploaded successfully!', 'success')
+
+        if filename.lower().endswith('.pdf'):
+            thumbnail_path = generate_pdf_thumbnail(filepath, filename)
+            return redirect(url_for('profile'))
+        
     else:
         flash('Invalid file type. Allowed types are: jpg, jpeg, png, gif, webp, heif, pdf', 'danger')
+        return redirect(url_for('profile'))
 
-    return redirect(url_for('profile'))
+def generate_pdf_thumbnail(pdf_path, filename):
+    """Generate an image from the first page of a PDF using PyMuPDF."""
+    # Ensure the thumbnails directory exists
+    thumbnails_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'thumbnails')
+    os.makedirs(thumbnails_dir, exist_ok=True) 
+
+    # Open the PDF file
+    pdf_document = fitz.open(pdf_path)
+    
+    # Get the first page
+    first_page = pdf_document.load_page(0)
+    
+    # Render the page to an image (zoom factor controls resolution)
+    zoom = 2  # Increase for higher resolution
+    mat = fitz.Matrix(zoom, zoom)
+    pix = first_page.get_pixmap(matrix=mat)
+    
+    # Convert to a PIL Image
+    image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    
+    # Save the thumbnail
+    thumbnail_filename = filename.replace('.pdf', '.jpg')
+    thumbnail_path = os.path.join(thumbnails_dir, thumbnail_filename)
+    image.save(thumbnail_path, 'JPEG')
+    
+    return thumbnail_path
 
 # Edit images uploaded by the user
 @app.route('/edit/<image_id>', methods=['POST'])

@@ -35,11 +35,35 @@
             }
         }
 
-
         function previewImage(imageSrc) {
             var modal = document.getElementById('imagePreviewModal');
             var previewImg = document.getElementById('previewImage');
-            previewImg.src = imageSrc;
+            var fileExtension = imageSrc.split('.').pop().toLowerCase();
+
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heif'].includes(fileExtension)) {
+             previewImg.src = imageSrc;
+             previewImg.style.display = "block";
+
+            if (document.getElementById("pdfPreview")) {
+             document.getElementById("pdfPreview").style.display = "none";
+            }
+            } else if (fileExtension === 'pdf') {
+            let pdfFrame = document.getElementById("pdfPreview");
+    
+             if (!pdfFrame) {
+             pdfFrame = document.createElement("iframe");
+             pdfFrame.id = "pdfPreview";
+             pdfFrame.style.width = "100%";
+             pdfFrame.style.height = "80vh";
+             modal.appendChild(pdfFrame);
+             }
+
+             pdfFrame.src = imageSrc;
+             pdfFrame.style.display = "block";
+
+            previewImg.style.display = "none";
+            }
+
             modal.style.display = 'flex'; // Show the modal
         }
 
@@ -156,7 +180,7 @@ function handleUpload(event) {
     let form = document.getElementById("upload-form");
 
     if (!form.checkValidity()) {
-        form.reportValidity(); // Show validation messages if any before animation
+        form.reportValidity(); 
         return; 
     }
     button.classList.add("active");
@@ -220,12 +244,21 @@ function handleUpload(event) {
     <div class="image-container">
         {% for image in images %}
         <div class="image-card">
+            {% if image.filename.endswith('.pdf') %}
             <img 
-                src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" 
-                alt="{{ image.title }}" 
-                onclick="previewImage(this.src)" 
-                style="cursor: pointer;"
-            >
+            src="{{ url_for('static', filename='uploads/thumbnails/' ~ image.filename.replace('.pdf', '.jpg')) }}" 
+            class="pdf-preview"
+            onclick="previewImage(this.dataset.pdfUrl, 'pdf')" 
+            data-pdf-url="{{ url_for('static', filename='uploads/' ~ image.filename) }}" 
+            style="cursor: pointer;"
+        >
+            {%else%}
+            <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" 
+                 alt="{{ image.title }}" 
+                 onclick="previewImage(this.src, 'image')" 
+                 style="cursor: pointer;">
+            {%endif%}
+
             <h3>{{ image.title }}</h3>
             <p>{{ image.description }}</p>
             <button class="more-info-button" onclick="toggleMoreInfo('{{ image.id }}')">More Info</button>
@@ -246,6 +279,7 @@ function handleUpload(event) {
     <div id="imagePreviewModal" class="image-preview-modal">
         <span class="close-btn" onclick="closePreview()">&times;</span>
         <img id="previewImage" src="" alt="Preview">
+        <iframe id="previewPdf" src="" width="90%" height="600px" style="display: none; border: none;"></iframe>
     </div>
     <div class="recordingStatus" id="recordingStatus" style="display: none;">Recording in Progress...</div>
     {% include 'footer.html' %}
