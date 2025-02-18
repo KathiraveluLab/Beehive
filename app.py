@@ -143,7 +143,6 @@ def profile():
     )
 
 @app.route('/upload', methods=['POST'])
-@app.route('/upload', methods=['POST'])
 def upload_image():
     if 'username' not in session:
         flash('Please log in to upload images.', 'danger')
@@ -184,14 +183,13 @@ def upload_image():
 
         flash('Image uploaded successfully!', 'success')
 
-        # Generate PDF thumbnail if it's a PDF file
         if filename.lower().endswith('.pdf'):
             generate_pdf_thumbnail(filepath, filename)
 
     else:
         flash('Invalid file type. Allowed types are: jpg, jpeg, png, gif, webp, heif, pdf', 'danger')
 
-    return redirect(url_for('profile'))  # Final redirect
+    return redirect(url_for('profile'))  
 
 def generate_pdf_thumbnail(pdf_path, filename):
     """Generate an image from the first page of a PDF using PyMuPDF."""
