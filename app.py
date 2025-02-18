@@ -6,7 +6,7 @@ import pathlib
 import re
 import sys
 from tkinter import ALL
-from flask import Flask, abort, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, abort, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
 from bson import ObjectId
 from google_auth_oauthlib.flow import Flow
 import requests
@@ -236,7 +236,11 @@ def edit_image(image_id):
     else:
         flash('Please log in to edit images.', 'danger')
         return redirect(url_for('login'))
-    
+ 
+@app.route('/audio/<filename>')
+def serve_audio(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+   
 # Delete images uploaded by the user
 @app.route('/delete/<image_id>')
 def delete_image_route(image_id):
