@@ -1,4 +1,5 @@
 import base64
+from functools import wraps
 import json
 import os
 import datetime
@@ -19,10 +20,11 @@ import fitz
 from PIL import Image
 
 
-from Database.admindatahandler import check_admin_available, create_admin
+from Database.admindatahandler import check_admin_available, create_admin, is_admin
 from Database.userdatahandler import (
     create_user, 
-    delete_image, 
+    delete_image,
+    get_currentuser_from_session, 
     get_image_by_id, 
     get_images_by_user, 
     get_password_by_username, 
@@ -68,6 +70,32 @@ def login_is_required(function):
 
     return wrapper
 
+def role_required(required_role):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+
+            if "google_id" in session:
+                if required_role == 'admin' and not is_admin():
+                    return render_template('403.html')
+                
+            elif "username" in session:
+                user = get_currentuser_from_session()
+                
+                if user is None:
+                    print("User not found in session!")
+                    return render_template('403.html')  
+
+                if user.get('role') != required_role:
+                    return render_template('403.html')
+
+            else:
+                return render_template('403.html')
+
+            return func(*args, **kwargs)
+
+        return wrapper
+    return decorator
 
 # Home page
 @app.route('/')
@@ -179,11 +207,11 @@ def upload_image():
 
         if filename.lower().endswith('.pdf'):
             thumbnail_path = generate_pdf_thumbnail(filepath, filename)
-            return redirect(url_for('profile'))
-        
+
     else:
         flash('Invalid file type. Allowed types are: jpg, jpeg, png, gif, webp, heif, pdf', 'danger')
-        return redirect(url_for('profile'))
+
+    return redirect(url_for('profile'))
 
 def generate_pdf_thumbnail(pdf_path, filename):
     """Generate an image from the first page of a PDF using PyMuPDF."""
@@ -324,31 +352,38 @@ def authorize():
             json.dump(session, json_file, indent=4)
         return redirect("/admin")
     else:
-        return render_template("404.html")
+        return render_template("403.html")
 
 
 
 @app.route("/admin")
-# @login_is_required
+@role_required("admin")
+@login_is_required
 def protected_area():
     admin_name = session.get("name")
     total_img = total_images()
     todays_image = todays_images()
     return render_template("admin.html", admin_name=admin_name, total_img=total_img, todays_image = todays_image)
 
-
+@login_is_required
+@role_required("admin")
 @app.route("/admin/logout")
 def adminlogout():
     session.clear()
     return redirect("/")
 
 
+
 @app.route('/admin/users')
+@role_required("admin")
 def getallusers():
     users = userdatahandler.getallusers()
     return render_template('users.html', users=users)
 
+
+
 @app.route('/admin/users/<username>')
+@role_required("admin")
 def user_images_show(username):
     user = get_user_by_username(username)
     if not user:

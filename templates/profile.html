@@ -192,6 +192,7 @@ function handleUpload(event) {
 }
 
     </script>
+    <script src="{{ url_for('static', filename='js/dragdrop.js') }}"></script>
 </head>
 <body>
     <div class="nav">
@@ -211,7 +212,7 @@ function handleUpload(event) {
   {% endwith %}
 
     <div class="button-container">
-        <button class="toggle" onclick="toggleUploadForm()">Upload Images</button>
+        <button class="toggle" onclick="toggleUploadForm()">Click to Upload or Drag & Drop Anywhere</button>
         <button class="logout-button"><a href="{{ url_for('logout') }}">Logout</a></button>
     </div>
 
@@ -230,8 +231,8 @@ function handleUpload(event) {
                 <input type="hidden" name="audioData" id="audioData">
                 <button class="uploadButton" id="uploadButton" type="submit" onclick="handleUpload(event)">
                     <svg xmlns="http://www.w3.org/2000/svg">
-                        <rect class="border" pathLength="100"></rect>
-                        <rect class="loading" pathLength="100"></rect>
+                        <rect class="border" pathLength="100" rx="10" ry="10"></rect>
+                        <rect class="loading" pathLength="100" rx="10" ry="10"></rect>
                     </svg>
                     <div class="txt-upload">Upload</div>
                 </button>

@@ -497,8 +497,6 @@ h2{
     stroke: black;
     stroke-width: 2px;
     fill: transparent;
-    rx: 1em;
-    ry: 1em;
     stroke-dasharray: 25;
     transition: fill 0.25s, stroke 0.3s ease;
     animation: 4s linear infinite stroke-animation;
@@ -584,8 +582,6 @@ h2{
     stroke: #0055d4;
     stroke-width: 2px;
     fill: none;
-    rx: 1em;
-    ry: 1em;
     stroke-dasharray: 0 100;
 }
 
