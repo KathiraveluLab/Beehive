@@ -65,4 +65,67 @@ Follow these steps to set up the project:
     python app.py
     ```
 
+10. **Setup Guide for Running Flask with MongoDB in Docker**
+
+This guide will help you set up and run your **Flask application with MongoDB** inside Docker using `docker-compose`.
+
+---
+
+## **Prerequisites**
+Before you begin, ensure you have installed:
+- **Docker**: [Download here](https://www.docker.com/get-started)
+
+---
+
+ - Run the following command to **build and start** the containers:
+```sh
+docker-compose up --build
+```
+
+ This will start both **Flask** and **MongoDB**.  
+ Flask will be available at `http://localhost:5000`.  
+ MongoDB will run inside Docker and be accessible on **port 27017**.
+
+---
+
+ - ## ** Verify MongoDB**
+To check if MongoDB is running inside Docker:
+
+```sh
+docker ps
+```
+
+To enter the MongoDB container and check data:
+
+```sh
+docker exec -it mongodb mongosh
+```
+
+If you want to use **MongoDB Compass**, connect to:
+
+```
+mongodb://localhost:27017
+```
+
+---
+
+ - ## ** Stopping the Containers**
+To **stop** the containers:
+
+```sh
+docker-compose down
+```
+
+This will stop and remove the containers, but **data will persist** due to the volume (`mongo-data`).
+
+---
+
+## **RUN command**
+You have successfully set up **Flask with MongoDB in Docker**!  
+Now, every time you want to run your project, just use:
+
+```sh
+docker-compose up
+```
+
 By following these steps, you will have the project set up and ready to use.
