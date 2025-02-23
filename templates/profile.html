@@ -218,8 +218,8 @@ function handleUpload(event) {
 
     <div class="toggle-container">
         <div id="uploadForm" style="display: none;">
-            <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data" id="upload-form">
-                <input class="file-button" type="file" name="file" id="fileInput" accept=".jpg,.jpeg,.png,.gif,.webp,.heif,.pdf" required onchange="validateFile(this)"><br>
+            <form action="{{ url_for('upload_images') }}" method="post" enctype="multipart/form-data" id="upload-form">
+                <input class="file-button" type="file" name="files" id="fileInput" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.heif,.pdf" required onchange="validateFile(this)"><br>            
                 <input class="title-area" type="text" name="title" placeholder="Title" required><br>
                 <textarea class="description-area" name="description" placeholder="Description" required></textarea><br>
                 
