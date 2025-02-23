@@ -259,7 +259,12 @@ function handleUpload(event) {
                  onclick="previewImage(this.src, 'image')" 
                  style="cursor: pointer;">
             {%endif%}
-
+            {% if image.audio_filename %}
+                <audio controls style="width: 100%; max-width: 260px;">
+                    <source src="{{ url_for('serve_audio', filename=image.audio_filename) }}" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            {% endif %}
             <h3>{{ image.title }}</h3>
             <p>{{ image.description }}</p>
             <button class="more-info-button" onclick="toggleMoreInfo('{{ image.id }}')">More Info</button>
