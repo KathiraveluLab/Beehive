@@ -219,21 +219,16 @@ def generate_pdf_thumbnail(pdf_path, filename):
     thumbnails_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'thumbnails')
     os.makedirs(thumbnails_dir, exist_ok=True) 
 
-    # Open the PDF file
     pdf_document = fitz.open(pdf_path)
     
-    # Get the first page
     first_page = pdf_document.load_page(0)
     
-    # Render the page to an image (zoom factor controls resolution)
     zoom = 2  # Increase for higher resolution
     mat = fitz.Matrix(zoom, zoom)
     pix = first_page.get_pixmap(matrix=mat)
     
-    # Convert to a PIL Image
     image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
     
-    # Save the thumbnail
     thumbnail_filename = filename.replace('.pdf', '.jpg')
     thumbnail_path = os.path.join(thumbnails_dir, thumbnail_filename)
     image.save(thumbnail_path, 'JPEG')
