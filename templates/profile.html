@@ -191,6 +191,19 @@ function handleUpload(event) {
     }, 2000); 
 }
 
+//function for fetching sentiments from sentiment.json
+fetch("{{ url_for('static', filename='sentiments.json') }}")
+        .then(response => response.json())
+        .then(data => {
+            const sentimentDropdown = document.getElementById("sentiment");
+            data.sentiments.forEach(sentiment => {
+                let option = document.createElement("option");
+                option.value = sentiment;
+                option.textContent = sentiment;
+                sentimentDropdown.appendChild(option);
+            });
+        })
+        .catch(error => console.error("Error loading sentiments:", error));
     </script>
     <script src="{{ url_for('static', filename='js/dragdrop.js') }}"></script>
 </head>
@@ -222,6 +235,11 @@ function handleUpload(event) {
                 <input class="file-button" type="file" name="files" id="fileInput" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.heif,.pdf" required onchange="validateFile(this)"><br>            
                 <input class="title-area" type="text" name="title" placeholder="Title" required><br>
                 <textarea class="description-area" name="description" placeholder="Description" required></textarea><br>
+                <label for="sentiment" class="dropdown-label">Select Sentiment with which you are uploading the image:</label>
+                <select name="sentiment" id="sentiment" required class="dropdown">
+                 <option value="" disabled selected>Choose a Sentiment</option>
+                </select>
+               
                 
                 <button type="button" onclick="startRecording()" class="record-btn">Start Recording</button>
                 <button type="button" onclick="stopRecording()" class="stop-btn" disabled id="stopBtn">Stop Recording</button>
@@ -267,6 +285,7 @@ function handleUpload(event) {
             {% endif %}
             <h3>{{ image.title }}</h3>
             <p>{{ image.description }}</p>
+            <div class="sentiment">sentiment : {{ image.sentiment }}</div>
             <button class="more-info-button" onclick="toggleMoreInfo('{{ image.id }}')">More Info</button>
             <div id="moreInfo_{{ image.id }}" class="more-info" style="display: none;">
                 <button class="edit-button" onclick="toggleEditForm('{{ image.id }}')">Edit</button>
@@ -278,7 +297,7 @@ function handleUpload(event) {
                     </form>
                 </div><br><br>
                 <a href="{{ url_for('delete_image_route', image_id=image.id) }}" class="delete-button">Delete</a>
-                <br><br>
+                <br><br>    
                 <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" 
                 download="{{ image.filename }}" 
                 class="download-button">

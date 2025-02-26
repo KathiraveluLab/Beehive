@@ -183,8 +183,9 @@ def upload_images():
 
     files = request.files.getlist('files')  # Supports multiple file uploads
     title = request.form.get('title', '')
+    sentiment = request.form.get('sentiment')
     description = request.form.get('description', '')
-    audio_data = request.form.get('audioData')  # Retains audio support
+    audio_data = request.form.get('audioData')
 
     for file in files:
         if file and allowed_file(file.filename):
@@ -203,12 +204,12 @@ def upload_images():
                 with open(audio_path, "wb") as f:
                     f.write(audio_binary)
 
-            time_created = datetime.datetime.now()
-            save_image(user['username'], filename, title, description, time_created, audio_filename)
-            flash('Image uploaded successfully!', 'success')
+        time_created = datetime.datetime.now()
+        save_image(user['username'], filename, title, description, time_created, audio_filename, sentiment)
+        flash('Image uploaded successfully!', 'success')
 
             # Generate PDF thumbnail if applicable
-            if filename.lower().endswith('.pdf'):
+        if filename.lower().endswith('.pdf'):
                 generate_pdf_thumbnail(filepath, filename)
 
         else:
@@ -216,7 +217,7 @@ def upload_images():
 
     return redirect(url_for('profile'))
 
-
+# generate thumbnail for the pdf
 def generate_pdf_thumbnail(pdf_path, filename):
     """Generate an image from the first page of a PDF using PyMuPDF."""
     # Ensure the thumbnails directory exists
@@ -225,6 +226,7 @@ def generate_pdf_thumbnail(pdf_path, filename):
 
     pdf_document = fitz.open(pdf_path)
     
+    #select only the first page for the thumbnail
     first_page = pdf_document.load_page(0)
     
     zoom = 2  # Increase for higher resolution
