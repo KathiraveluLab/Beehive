@@ -116,7 +116,7 @@
             {% endif %}
             <h3>{{ image.title }}</h3>
             <p>{{ image.description }}</p>
-            
+            <div class="sentiment">sentiment : {{ image.sentiment }}</div>
             <button class="more-info-button" onclick="toggleMoreInfo('{{ image.id }}')">More Info</button>
             <div id="moreInfo_{{ image.id }}" class="more-info" style="display: none;">
                 <button class="edit-button" onclick="toggleEditForm('{{ image.id }}')">Edit</button>
