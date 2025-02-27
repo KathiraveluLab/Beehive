@@ -42,3 +42,16 @@ button {
 button:hover {
     background: #212121;
 }
+
+@media screen and (max-width: 600px) {
+    h2 {
+        font-size: 20px;
+        padding: 5px;
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+    .material-icons {
+        font-size: 50px;
+    }
+    
+}
