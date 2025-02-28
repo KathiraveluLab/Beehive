@@ -18,6 +18,7 @@ from Database import userdatahandler
 from werkzeug.utils import secure_filename
 import fitz  
 from PIL import Image
+import bcrypt
 
 
 from Database.admindatahandler import check_admin_available, create_admin, is_admin
@@ -109,7 +110,7 @@ def login():
         username = request.form['username']
         password = request.form['password']
         stored_password = get_password_by_username(username)
-        if stored_password == password:
+        if stored_password and bcrypt.checkpw(password.encode('utf-8'), stored_password):
             session['username'] = username  # Store the username in session
             flash('Login successful!', 'success')
             return redirect(url_for("profile"))
