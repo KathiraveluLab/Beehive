@@ -1,10 +1,9 @@
-from datetime import datetime, timedelta
 import re
+from datetime import datetime, timedelta
 
 from flask import session
 
 from Database import DatabaseConfig
-
 
 beehive_user_collection = DatabaseConfig.get_beehive_user_collection()
 beehive_image_collection = DatabaseConfig.get_beehive_image_collection()
