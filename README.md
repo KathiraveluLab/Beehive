@@ -8,7 +8,20 @@ This project aims to analyze behavioral health and complement healthcare practic
 ## Tech Stacks Used  
 - **Language/Framework**: Flask (Python)  
 - **Authentication**: Google OAuth2  
-- **Database**: MongoDB  
+- **Database**: MongoDB
+  
+## Workflow
+```mermaid
+graph TD;
+  User["User uploads an image with title, description, sentiment & voice note"] -->|POST request| Backend[Flask Backend]
+  Backend -->|Stores metadata| MongoDB[MongoDB Database]
+  Backend -->|Stores image & voice note| StaticFolder[Static Folder]
+  Admin["Admin views uploaded images & metadata"] -->|GET request| Backend
+  Backend -->|Fetches data| MongoDB
+  Backend -->|Serves images & voice notes| StaticFolder
+  User & Admin -->|Authenticated| Auth[Flask Authentication]
+
+```
 
 ## Setup Instructions  
 
