@@ -15,6 +15,7 @@ from google.oauth2 import id_token
 import google.auth.transport.requests
 from pip._vendor import cachecontrol
 from Database import userdatahandler
+import bcrypt
 from werkzeug.utils import secure_filename
 import fitz  
 from PIL import Image
@@ -178,7 +179,8 @@ def profile():
         "profile.html", 
         username=user['username'], 
         full_name=f"{user['first_name']} {user['last_name']}", 
-        images=images
+        images=images,
+        user_dp=user.get('profile_photo')  # Pass profile photo to template
     )
 
 @app.route('/upload', methods=['POST'])
@@ -226,6 +228,51 @@ def upload_images():
         else:
             flash('Invalid file type or no file selected.', 'danger')
 
+    return redirect(url_for('profile'))
+
+@app.route('/upload_profile_photo', methods=['POST'])
+def upload_profile_photo():
+    if 'username' not in session:
+        flash('Please log in to update your profile photo.', 'danger')
+        return redirect(url_for('login'))
+    
+    username = session['username']
+    user = get_user_by_username(username)
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('login'))
+    
+    if 'profile_photo' not in request.files:
+        flash('No file selected.', 'danger')
+        return redirect(url_for('profile'))
+    
+    file = request.files['profile_photo']
+    
+    if file.filename == '':
+        flash('No file selected.', 'danger')
+        return redirect(url_for('profile'))
+    
+    if file and allowed_file(file.filename):
+        # Use a consistent filename based on username to easily replace old photos
+        filename = f"{username}_profile.{file.filename.rsplit('.', 1)[1].lower()}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'profile', filename)
+        
+        # Remove old profile photo if it exists
+        if user.get('profile_photo'):
+            old_filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'profile', user['profile_photo'])
+            if os.path.exists(old_filepath):
+                os.remove(old_filepath)
+        
+        # Save the new file
+        file.save(filepath)
+        
+        # Update user record in database with the new profile photo filename
+        userdatahandler.update_profile_photo(username, filename)
+        
+        flash('Profile photo updated successfully!', 'success')
+    else:
+        flash('Invalid file type. Only jpg, jpeg, png, and gif files are allowed.', 'danger')
+    
     return redirect(url_for('profile'))
 
 # generate thumbnail for the pdf

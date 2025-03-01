@@ -206,11 +206,50 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
         .catch(error => console.error("Error loading sentiments:", error));
     </script>
     <script src="{{ url_for('static', filename='js/dragdrop.js') }}"></script>
+
+    <script>
+        function openSidebar() {
+            document.getElementById('profile-sidebar').classList.add('open');
+        }
+        
+        function closeSidebar() {
+            document.getElementById('profile-sidebar').classList.remove('open');
+        }
+        
+        function previewProfilePhoto(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    document.getElementById('photo-preview').src = e.target.result;
+                    document.getElementById('preview-container').style.display = 'block';
+                }
+                
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('profile-photo-container').addEventListener('click', openSidebar);
+        });
+    </script>
+
 </head>
 <body>
-    <div class="nav">
-        <h1>{{ username }}</h1>
+ 
+
+<div class="nav">
+    <h1>{{ username }}</h1>
+    <div class="profile-photo-container" id="profile-photo-container">
+        {% if user_dp %}
+            <img src="{{ url_for('static', filename='uploads/profile/' ~ user_dp) }}" alt="Profile Photo" class="profile-photo" id="profile-photo">
+        {% else %}
+            <div class="profile-photo default-avatar" id="profile-photo">
+                <span>{{ username|upper|first }}</span>
+            </div>
+        {% endif %}
     </div>
+</div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -318,5 +357,36 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
     <div class="recordingStatus" id="recordingStatus" style="display: none;">Recording in Progress...</div>
     {% include 'footer.html' %}
     <script src="https://unpkg.com/wavesurfer.js"></script>
+
+    <div id="profile-sidebar" class="profile-sidebar">
+        <div class="sidebar-close" onclick="closeSidebar()">&times;</div>
+        <div class="sidebar-content">
+            <h3>Profile Photo</h3>
+            <div class="current-photo">
+                {% if user_dp %}
+                    <img src="{{ url_for('static', filename='uploads/profile/' ~ user_dp) }}" alt="Current Profile Photo">
+                {% else %}
+                    <div class="default-avatar large">
+                        <span>{{ username|upper|first }}</span>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="user-info-sidebar">
+                <h3>{{ username }}</h3>
+                <p>{{ full_name }}</p>
+            </div>
+            <form action="{{ url_for('upload_profile_photo') }}" method="post" enctype="multipart/form-data" id="dp-form">
+                <div class="file-input-container">
+                    <label for="profile-photo-input" class="file-input-label">Choose Photo</label>
+                    <input type="file" id="profile-photo-input" name="profile_photo" accept=".jpg,.jpeg,.png,.gif" onchange="previewProfilePhoto(this)">
+                </div>
+                <div class="preview-container" id="preview-container" style="display: none;">
+                    <img id="photo-preview" src="#" alt="Preview">
+                </div>
+                <button type="submit" class="update-photo-btn">Update Photo</button>
+            </form>
+        </div>
+    </div>
+
 </body>
 </html>
