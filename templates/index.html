@@ -7,15 +7,17 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
 <body>
-    <h1>Beehive</h1>
-    <p>A Data Federation Approach to Analyze Behavioral Health and Supplement Healthcare Practice with 
-        Community Health Metrics in Alaska.</p>
-    
-    <p>This project aims to analyze behavioral health and supplement healthcare practice with
-        community health metrics in Alaska using a data federation approach.<br>
-        By leveraging data from various sources,<br>
-         we can gain insights into behavioral health patterns and improve healthcare practices in the community.</p><br><br>
+    <div class="container">
+        <h1>Beehive</h1>
+        <p>A Data Federation Approach to Analyze Behavioral Health and Supplement Healthcare Practice with 
+            Community Health Metrics in Alaska.</p>
+        
+        <p>This project aims to analyze behavioral health and supplement healthcare practice with
+            community health metrics in Alaska using a data federation approach.<br>
+            By leveraging data from various sources,<br>
+            we can gain insights into behavioral health patterns and improve healthcare practices in the community.</p><br><br>
 
-         <a href="{{ url_for('login') }}"><button>Get Started</button></a>
+        <a href="{{ url_for('login') }}"><button>Get Started</button></a>
+    </div>
 </body>
 </html>
