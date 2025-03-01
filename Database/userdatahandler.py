@@ -1,8 +1,7 @@
 from datetime import datetime, timedelta
 import re
-
+import bcrypt
 from flask import session
-
 from Database import DatabaseConfig
 
 
@@ -12,12 +11,15 @@ beehive_image_collection = DatabaseConfig.get_beehive_image_collection()
 # Create user in MongoDB
 def create_user(firstname: str, lastname: str, email: str, username: str, password: str, accountcreatedtime: datetime):
     
+    # Hash the password before storing
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
     user_data = {
         "first_name" : firstname,
         "last_name" : lastname,
         "mail_id" : email,
         "username" : username,
-        "password" : password,
+        "password" : hashed_password,
         "account_created_at" : accountcreatedtime,
         "role" : "user"
     }
@@ -56,7 +58,7 @@ def get_password_by_username(username: str):
     if user:
         return user.get("password")
     else:
-        return "user not found!"
+        return None
     
 # Get user by username from MongoDB
 def get_user_by_username(username: str):
