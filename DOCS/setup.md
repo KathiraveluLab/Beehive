@@ -64,6 +64,13 @@ Follow these steps to set up the project:
     ```bash
     python app.py
     ```
+## Directory Structure
+The application expects certain directories to exist for proper operation:
+- `static/uploads` - For general file uploads
+- `static/uploads/profile` - For user and admin profile photos
+- `static/uploads/thumbnails` - For PDF thumbnails
+
+These directories will be created automatically if they don't exist, but for proper deployment you may want to ensure they're included in your repository or created during setup.
 
 10. **Setup Guide for Running Flask with MongoDB in Docker**
 
