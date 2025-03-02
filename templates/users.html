@@ -11,7 +11,7 @@
     <div class="nav">
         <h1>Beehive Users</h1>
     </div>
-    
+    <button id="downloadCsvBtn" class="download-btn">Download</button>
     <div class="table-container">
         <table>
             <thead>
@@ -41,4 +41,31 @@
     {% include 'footer.html' %}
     
 </body>
+<script>
+    document.getElementById("downloadCsvBtn").addEventListener("click", function () {
+        let table = document.querySelector("table"); 
+        let rows = table.querySelectorAll("tr"); 
+        let csvContent = "";
+
+        rows.forEach((row, rowIndex) => {
+            let cols = row.querySelectorAll("th, td"); 
+            let rowData = [];
+
+            cols.forEach((col, colIndex) => {
+                let totalCols = cols.length;
+                if (colIndex !== totalCols - 1) { // Exclude the last column (Actions)
+                    rowData.push(`"${col.innerText}"`);
+                }
+            });
+
+            csvContent += rowData.join(",") + "\n"; 
+        });
+
+        let blob = new Blob([csvContent], { type: "text/csv" });
+        let link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "beehive_users_list.csv"; 
+        link.click(); 
+    });
+</script>
 </html>
