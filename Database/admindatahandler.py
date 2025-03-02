@@ -35,3 +35,20 @@ def is_admin():
         if admin and admin.get("role") == "admin":
             return True
     return False
+
+def update_admin_profile_photo(google_id, filename):
+    """Update the profile photo filename for an admin."""
+    beehive_admin_collection = DatabaseConfig.get_beehive_admin_collection()
+    beehive_admin_collection.update_one(
+        {"google_id": google_id},
+        {"$set": {"profile_photo": filename}}
+    )
+
+def get_admin_by_google_id(google_id):
+    """Get admin details by Google ID."""
+    beehive_admin_collection = DatabaseConfig.get_beehive_admin_collection()
+    query = {
+        "google_id": google_id
+    }
+    admin = beehive_admin_collection.find_one(query)
+    return admin
