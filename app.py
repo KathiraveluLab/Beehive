@@ -253,7 +253,12 @@ def upload_profile_photo():
     
     if file and allowed_file(file.filename):
         filename = f"{username}_profile.{file.filename.rsplit('.', 1)[1].lower()}"
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'profile', filename)
+        upload_folder = os.path.join(app.config['UPLOAD_FOLDER'], 'profile')
+
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)  # Create missing directories
+        
+        filepath = os.path.join(upload_folder, filename)
         
         # Remove old profile photo if it exists
         if user.get('profile_photo'):
