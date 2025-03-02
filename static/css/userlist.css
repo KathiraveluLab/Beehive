@@ -79,6 +79,9 @@ table {
     border-collapse: collapse;
     font-size: 16px;
     color: #333;
+    overflow-x: auto;  
+    overflow-y: auto; 
+    max-height: 400px; 
 }
 
 thead {
@@ -131,13 +134,21 @@ a:hover {
 @media (max-width: 768px) {
     .table-container {
         padding: 10px;
+        overflow-x: auto;
     }
-
+    
     table {
+        width: 50%;
         font-size: 14px;
+        min-width: 600px;
     }
 
     th, td {
-        padding: 10px 12px;
+        padding: 5px 6px;
     }
+    #downloadCsvBtn {
+        margin-left: 10px;
+        float: left;
+    }
+
 }
