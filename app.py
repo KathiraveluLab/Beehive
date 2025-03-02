@@ -15,7 +15,6 @@ from google.oauth2 import id_token
 import google.auth.transport.requests
 from pip._vendor import cachecontrol
 from Database import userdatahandler
-import bcrypt
 from werkzeug.utils import secure_filename
 import fitz  
 from PIL import Image
