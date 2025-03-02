@@ -79,6 +79,9 @@ table {
     border-collapse: collapse;
     font-size: 16px;
     color: #333;
+    overflow-x: auto;  
+    overflow-y: auto; 
+    max-height: 400px; 
 }
 
 thead {
@@ -110,17 +113,42 @@ a:hover {
     text-decoration: underline;
 }
 
+/* Download Button styling */
+#downloadCsvBtn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 10px;
+    margin-right: 148px;
+    float: right; 
+}
+
+#downloadCsvBtn:hover {
+    background-color: #0056b3;
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
     .table-container {
         padding: 10px;
+        overflow-x: auto;
     }
-
+    
     table {
+        width: 50%;
         font-size: 14px;
+        min-width: 600px;
     }
 
     th, td {
-        padding: 10px 12px;
+        padding: 5px 6px;
     }
+    #downloadCsvBtn {
+        margin-left: 10px;
+        float: left;
+    }
+
 }
