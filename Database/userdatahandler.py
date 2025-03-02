@@ -68,6 +68,13 @@ def get_user_by_username(username: str):
     user = beehive_user_collection.find_one(query)
     return user
 
+def update_profile_photo(username, filename):
+    """Update the profile photo filename for a user."""
+    beehive_user_collection.update_one(
+        {"username": username},
+        {"$set": {"profile_photo": filename}}
+    )
+    
 # Save image to MongoDB  
 def save_image(username, filename, title, description, time_created,audio_filename=None,sentiment=None):
     image = {

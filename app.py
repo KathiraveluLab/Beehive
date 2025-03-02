@@ -178,7 +178,8 @@ def profile():
         "profile.html", 
         username=user['username'], 
         full_name=f"{user['first_name']} {user['last_name']}", 
-        images=images
+        images=images,
+        user_dp=user.get('profile_photo')  # Pass profile photo to template
     )
 
 @app.route('/upload', methods=['POST'])
@@ -226,6 +227,50 @@ def upload_images():
         else:
             flash('Invalid file type or no file selected.', 'danger')
 
+    return redirect(url_for('profile'))
+
+@app.route('/upload_profile_photo', methods=['POST'])
+def upload_profile_photo():
+    if 'username' not in session:
+        flash('Please log in to update your profile photo.', 'danger')
+        return redirect(url_for('login'))
+    
+    username = session['username']
+    user = get_user_by_username(username)
+    if not user:
+        flash('User not found.', 'danger')
+        return redirect(url_for('login'))
+    
+    if 'profile_photo' not in request.files:
+        flash('No file selected.', 'danger')
+        return redirect(url_for('profile'))
+    
+    file = request.files['profile_photo']
+    
+    if file.filename == '':
+        flash('No file selected.', 'danger')
+        return redirect(url_for('profile'))
+    
+    if file and allowed_file(file.filename):
+        filename = f"{username}_profile.{file.filename.rsplit('.', 1)[1].lower()}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'profile', filename)
+        
+        # Remove old profile photo if it exists
+        if user.get('profile_photo'):
+            old_filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'profile', user['profile_photo'])
+            if os.path.exists(old_filepath):
+                os.remove(old_filepath)
+        
+        # Save the new file
+        file.save(filepath)
+        
+        # Update user record in database with the new profile photo filename
+        userdatahandler.update_profile_photo(username, filename)
+        
+        flash('Profile photo updated successfully!', 'success')
+    else:
+        flash('Invalid file type. Only jpg, jpeg, png, and gif files are allowed.', 'danger')
+    
     return redirect(url_for('profile'))
 
 # generate thumbnail for the pdf
@@ -323,7 +368,7 @@ def delete_image_route(image_id):
 # Logout the user
 @app.route('/logout')
 def logout():
-    session.pop('username', None)
+    session.pop('username', None) 
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
 
@@ -377,9 +422,17 @@ def authorize():
 @login_is_required
 def protected_area():
     admin_name = session.get("name")
+    google_id = session.get("google_id")
     total_img = total_images()
     todays_image = todays_images()
-    return render_template("admin.html", admin_name=admin_name, total_img=total_img, todays_image = todays_image)
+    
+    # Get admin profile photo
+    from Database.admindatahandler import get_admin_by_google_id
+    admin = get_admin_by_google_id(google_id)
+    admin_photo = admin.get('profile_photo') if admin else None
+    
+    return render_template("admin.html", admin_name=admin_name, total_img=total_img, 
+                          todays_image=todays_image, admin_photo=admin_photo)
 
 @login_is_required
 @role_required("admin")
@@ -414,7 +467,60 @@ def user_images_show(username):
         full_name=f"{user['first_name']} {user['last_name']}"
     )
 
-
+@app.route('/upload_admin_profile_photo', methods=['POST'])
+def upload_admin_profile_photo():
+    if 'google_id' not in session:
+        flash('Please log in to update your profile photo.', 'danger')
+        return redirect(url_for('admin_login'))
+    
+    # Manually check for admin role
+    from Database.admindatahandler import is_admin
+    if not is_admin():
+        return render_template('403.html')
+    
+    google_id = session["google_id"]
+    
+    if 'profile_photo' not in request.files:
+        flash('No file selected.', 'danger')
+        return redirect("/admin")
+    
+    file = request.files['profile_photo']
+    
+    if file.filename == '':
+        flash('No file selected.', 'danger')
+        return redirect("/admin")
+    
+    if file and allowed_file(file.filename):
+        filename = f"admin_{google_id}_profile.{file.filename.rsplit('.', 1)[1].lower()}"
+        profile_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'profile')
+        
+        # Create directory if it doesn't exist
+        os.makedirs(profile_dir, exist_ok=True)
+        
+        filepath = os.path.join(profile_dir, filename)
+        
+        # Get admin data to check if old profile photo exists
+        from Database.admindatahandler import get_admin_by_google_id
+        admin = get_admin_by_google_id(google_id)
+        
+        # Remove old profile photo if it exists
+        if admin and admin.get('profile_photo'):
+            old_filepath = os.path.join(profile_dir, admin['profile_photo'])
+            if os.path.exists(old_filepath):
+                os.remove(old_filepath)
+        
+        # Save the new file
+        file.save(filepath)
+        
+        # Update admin record in database
+        from Database.admindatahandler import update_admin_profile_photo
+        update_admin_profile_photo(google_id, filename)
+        
+        flash('Profile photo updated successfully!', 'success')
+    else:
+        flash('Invalid file type. Only jpg, jpeg, png, and gif files are allowed.', 'danger')
+    
+    return redirect("/admin")
 
 if __name__ == '__main__':
     app.run(debug=True)
