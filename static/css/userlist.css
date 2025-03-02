@@ -110,6 +110,23 @@ a:hover {
     text-decoration: underline;
 }
 
+/* Download Button styling */
+#downloadCsvBtn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 10px;
+    margin-right: 148px;
+    float: right; 
+}
+
+#downloadCsvBtn:hover {
+    background-color: #0056b3;
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
     .table-container {
