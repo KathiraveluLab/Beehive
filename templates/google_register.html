@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Complete Your Registration</h2>
+<p>Please fill in the remaining details to complete your registration with {{ session.email }}</p>
+<form method="POST" action="{{ url_for('google_register') }}">
+    <label for="firstname">First Name</label>
+    <input type="text" id="firstname" name="firstname" value="{{ session.name.split()[0] if session.name else '' }}" required>
+    
+    <label for="lastname">Last Name</label>
+    <input type="text" id="lastname" name="lastname" value="{{ session.name.split()[1] if session.name and ' ' in session.name else '' }}" required>
+    
+    <label for="username">Choose a Username</label>
+    <input type="text" id="username" name="username" placeholder="Username" required>
+    <small>Username must follow the rules (letters, numbers, underscores only)</small>
+    
+    <input type="hidden" name="email" value="{{ session.email }}">
+    
+    <button type="submit">Complete Registration</button>
+</form>
+{% endblock %}
