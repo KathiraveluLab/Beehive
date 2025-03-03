@@ -48,6 +48,7 @@ Follow these steps to set up the project:
 7. **Create Google OAuth API Key**
     - Create a Google OAuth API key.
     - Download the `client_secret.json` file and place it in the project directory.
+    - Update your Google Cloud Console to include the new redirect URI: ```http://localhost:5000/login/google/callback```
 
 8. **Update `.env` File**
     - Open the `.env` file and add the required credentials.
@@ -58,7 +59,7 @@ Follow these steps to set up the project:
     REDIRECT_URI=http://localhost:5000/admin/login/callback
     ADMIN_EMAILS=admin1@example.com,admin2@example.com
     ```
-
+    NOTE: Add or modify the ADMIN_EMAILS variable with comma-separated emails.Make sure there are no spaces before or after the commas.
 9. **Run the Application**
     - Execute the `app.py` file to run the application.
     ```bash
