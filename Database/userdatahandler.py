@@ -68,6 +68,28 @@ def get_user_by_username(username: str):
     user = beehive_user_collection.find_one(query)
     return user
 
+def get_user_by_email(email: str):
+    """Get user by email from MongoDB."""
+    query = {
+        "mail_id": email
+    }
+    user = beehive_user_collection.find_one(query)
+    return user
+
+def create_google_user(firstname: str, lastname: str, email: str, username: str, google_id: str, accountcreatedtime: str):
+    """Create a user that will authenticate via Google."""
+    user_data = {
+        "first_name": firstname,
+        "last_name": lastname,
+        "mail_id": email,
+        "username": username,
+        "google_id": google_id,
+        "account_created_at": accountcreatedtime,
+        "role": "user"
+    }
+    user_inserted_id = beehive_user_collection.insert_one(user_data).inserted_id
+    return user_inserted_id
+
 def update_profile_photo(username, filename):
     """Update the profile photo filename for a user."""
     beehive_user_collection.update_one(

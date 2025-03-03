@@ -23,13 +23,15 @@ import bcrypt
 
 from Database.admindatahandler import check_admin_available, create_admin, is_admin
 from Database.userdatahandler import (
-    create_user, 
+    create_user,
+    create_google_user,  
     delete_image,
     get_currentuser_from_session, 
     get_image_by_id, 
     get_images_by_user, 
     get_password_by_username, 
-    get_user_by_username, 
+    get_user_by_username,
+    get_user_by_email,  
     is_email_available, 
     is_username_available,
     isValidEmail, 
@@ -75,13 +77,14 @@ def role_required(required_role):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-
+            # Admin authentication via Google
             if "google_id" in session:
                 if required_role == 'admin' and not is_admin():
                     return render_template('403.html')
-                
+                    
+            # Regular user authentication - either via traditional login or Google SSO
             elif "username" in session:
-                user = get_currentuser_from_session()
+                user = get_user_by_username(session["username"])
                 
                 if user is None:
                     print("User not found in session!")
@@ -89,7 +92,6 @@ def role_required(required_role):
 
                 if user.get('role') != required_role:
                     return render_template('403.html')
-
             else:
                 return render_template('403.html')
 
@@ -109,24 +111,127 @@ def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        stored_password = get_password_by_username(username)
         
-        if stored_password:
-            # Check if stored password is hashed
-            if isinstance(stored_password, bytes) and stored_password.startswith(b'$2b$'):
-                # Handle hashed password
-                is_valid = bcrypt.checkpw(password.encode('utf-8'), stored_password)
-            else:
-                # For plain text password
-                is_valid = (stored_password == password)
-            
-            if is_valid:
-                session['username'] = username
-                flash('Login successful!', 'success')
-                return redirect(url_for("profile"))
+        user = get_user_by_username(username)
+        
+        if user:
+            # Check if this is a Google authenticated user (has no password)
+            if 'google_id' in user:
+                flash('This account uses Google Sign-In. Please use the "Sign in with Google" button.', 'info')
+                return render_template("login.html")
                 
+            stored_password = user.get('password')
+            
+            if stored_password:
+                # Check if stored password is hashed
+                if isinstance(stored_password, bytes) and stored_password.startswith(b'$2b$'):
+                    # Handle hashed password
+                    is_valid = bcrypt.checkpw(password.encode('utf-8'), stored_password)
+                else:
+                    # For plain text password
+                    is_valid = (stored_password == password)
+                
+                if is_valid:
+                    session['username'] = username
+                    flash('Login successful!', 'success')
+                    return redirect(url_for("profile"))
+                    
         flash('Invalid credentials, please try again.', 'danger')
     return render_template("login.html")
+
+@app.route('/login/google')
+def login_google():
+    # Create a flow instance for user authentication
+    user_flow = Flow.from_client_secrets_file(
+        client_secrets_file=client_secrets_file,
+        scopes=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email", "openid"],
+        redirect_uri="http://127.0.0.1:5000/login/google/callback"
+    )
+    
+    authorization_url, state = user_flow.authorization_url()
+    session["state"] = state
+    return redirect(authorization_url)
+
+@app.route('/login/google/callback')
+def user_authorize():
+    # Create a flow instance for the callback
+    user_flow = Flow.from_client_secrets_file(
+        client_secrets_file=client_secrets_file,
+        scopes=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email", "openid"],
+        redirect_uri="http://127.0.0.1:5000/login/google/callback"
+    )
+    
+    user_flow.fetch_token(authorization_response=request.url)
+
+    if not session["state"] == request.args["state"]:
+        abort(500)  # State does not match!
+
+    credentials = user_flow.credentials
+    request_session = requests.session()
+    cached_session = cachecontrol.CacheControl(request_session)
+    token_request = google.auth.transport.requests.Request(session=cached_session)
+
+    id_info = id_token.verify_oauth2_token(
+        id_token=credentials._id_token,
+        request=token_request,
+        audience=GOOGLE_CLIENT_ID
+    )
+
+    session["google_id"] = id_info.get("sub")
+    session["name"] = id_info.get("name")  
+    session["email"] = id_info.get("email")
+    
+    # Check if this is an admin email
+    if session["email"] in ALLOWED_EMAILS:
+        if check_admin_available(session["google_id"]):
+            create_admin(session["name"], session["email"], session["google_id"], datetime.datetime.now())
+        return redirect("/admin")
+    else:
+        # Handle regular user login via Google
+        user = get_user_by_email(session["email"])
+        
+        if user:
+            # User exists, set session and redirect to profile
+            session["username"] = user["username"]
+            flash('Login successful via Google!', 'success')
+            return redirect(url_for("profile"))
+        else:
+            # User doesn't exist yet
+            session["google_login_pending"] = True
+            flash('No account exists with this email. Would you like to create one?', 'info')
+            return redirect(url_for("google_register"))
+
+# Add this new route to handle Google registrations
+@app.route('/register/google', methods=['GET', 'POST'])
+def google_register():
+    if "google_login_pending" not in session or "email" not in session:
+        return redirect(url_for("login"))
+    
+    if request.method == 'POST':
+        # Process registration form
+        first_name = request.form['firstname']
+        last_name = request.form['lastname']
+        username = request.form['username']
+        email = session["email"]  # Use email from Google
+        google_id = session["google_id"]
+        
+        if not valid_username.is_valid_username(username):
+            flash("Username doesn't follow the rules", "danger")
+        else:
+            if is_username_available(username):
+                account_created_at = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
+                # Create user without password since they'll login with Google
+                create_google_user(first_name, last_name, email, username, google_id, account_created_at)
+                
+                # Set session and redirect
+                session["username"] = username
+                session.pop("google_login_pending", None)
+                flash('Registration successful!', 'success')
+                return redirect(url_for('profile'))
+            else:
+                flash('This Username is already taken.', 'danger')
+                
+    return render_template("google_register.html")
 
 # Register a new user
 @app.route('/register', methods=['GET', 'POST'])
@@ -370,13 +475,16 @@ def delete_image_route(image_id):
     
 
 
-# Logout the user
 @app.route('/logout')
 def logout():
-    session.pop('username', None) 
+    # Clear all user session data
+    session.pop('username', None)
+    session.pop('google_id', None)
+    session.pop('name', None)
+    session.pop('email', None)
+    session.pop('google_login_pending', None)
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
-
 
 # Admin routes
 
