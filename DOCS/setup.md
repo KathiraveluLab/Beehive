@@ -59,7 +59,7 @@ Follow these steps to set up the project:
     REDIRECT_URI=http://localhost:5000/admin/login/callback
     ADMIN_EMAILS=admin1@example.com,admin2@example.com
     ```
-    NOTE: Add or modify the ADMIN_EMAILS variable with comma-separated emails.
+    NOTE: Add or modify the ADMIN_EMAILS variable with comma-separated emails.Make sure there are no spaces before or after the commas.
 9. **Run the Application**
     - Execute the `app.py` file to run the application.
     ```bash
