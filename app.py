@@ -133,6 +133,30 @@ def login():
                 
                 if is_valid:
                     session['username'] = username
+                    
+                    # Check for email field with safe handling
+                    user_email = user.get('email')
+                    if user_email:
+                        session['email'] = user_email
+                        
+                        # Check if this user's email is in ALLOWED_EMAILS
+                        if user_email in ALLOWED_EMAILS:
+                            # If they're an admin, check if they exist in admin collection
+                            google_id = user.get('google_id', f"local_{username}")
+                            if check_admin_available(google_id):
+                                # Safely get user's name
+                                first_name = user.get('first_name', '')
+                                last_name = user.get('last_name', '')
+                                full_name = f"{first_name} {last_name}".strip()
+                                if not full_name:
+                                    full_name = username  # Use username if no name available
+                                    
+                                create_admin(full_name, user_email, google_id, datetime.datetime.now())
+                            session["google_id"] = google_id  # Set google_id for admin authorization
+                            flash('Login successful as admin!', 'success')
+                            return redirect(url_for("protected_area"))
+                    
+                    # Default path if not admin or email missing
                     flash('Login successful!', 'success')
                     return redirect(url_for("profile"))
                     

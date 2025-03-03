@@ -27,6 +27,7 @@ def check_admin_available(google_id: str):
     return count == 0
 
 def is_admin():
+    # Check admin based on google_id (for Google sign-in)
     if 'google_id' in session:
         query = {
             "google_id": session['google_id']
@@ -34,6 +35,15 @@ def is_admin():
         admin = beehive_admin_collection.find_one(query)
         if admin and admin.get("role") == "admin":
             return True
+    
+    # Check admin based on email (for regular login)
+    if 'email' in session:
+        email = session['email']
+        # Import the ALLOWED_EMAILS list if not available in this scope
+        from OAuth.config import ALLOWED_EMAILS
+        if email in ALLOWED_EMAILS:
+            return True
+        
     return False
 
 def update_admin_profile_photo(google_id, filename):
