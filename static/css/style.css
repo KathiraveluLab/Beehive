@@ -118,3 +118,18 @@ button:disabled {
     text-align: center;
     font-weight: bold; /* Optional: Makes "OR" stand out */
 }
+
+.password-container {
+    position: relative;
+    display: inline-block;
+  }
+
+  .toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 1.2em;
+    user-select: none;
+  }

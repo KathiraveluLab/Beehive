@@ -3,11 +3,16 @@
 {% block content %}
 <h2>Login</h2>
 <form method="POST" action="{{ url_for('login') }}">
-    <label for="username">Username</label>
-    <input type="text" id="username" name="username" placeholder="Username" required>
-    
-    <label for="password">Password</label>
-    <input type="password" id="password" name="password" placeholder="Password" required>
+    <div>
+        <label for="username">Username</label>
+        <input type="text" id="username" name="username" placeholder="Username" required>
+    </div>
+
+    <div style="position: relative;">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="Password" required>
+        <span id="togglePassword" style="position: absolute; right: 10px; top: 30px; cursor: pointer; font-size: 20px; user-select: none;">👁️</span>
+    </div>
     
     <button type="submit">Login</button>
 </form>
@@ -23,4 +28,27 @@
 
 <p>Don't have an account? <a href="{{ url_for('register') }}">Register here</a></p>
 <p>If you're admin, <a href="{{ url_for('signingoogle') }}">Sign in here.</a></p>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const togglePassword = document.getElementById('togglePassword');
+      const passwordInput = document.getElementById('password');
+  
+      if (togglePassword && passwordInput) {
+        console.log('Toggle password elements found');
+  
+        togglePassword.addEventListener('click', function() {
+          console.log('Toggle clicked');
+  
+          const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+          passwordInput.setAttribute('type', type);
+  
+          this.textContent = type === 'password' ? '👁️' : '👁️‍🗨️';
+        });
+      } else {
+        console.log('Toggle password elements not found');
+      }
+    });
+  </script>
+  
 {% endblock %}
