@@ -5,9 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Beehive</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="icon" type="image/png" sizes="64x64" href="{{ url_for('static', filename='favicon.png') }}">
 </head>
 <body>
     <div class="container">
+        <img src = "{{url_for('static', filename='Logo.svg')}}" alt="Beehive Logo" class="logo">
         <h1>Beehive</h1>
         <p>A Data Federation Approach to Analyze Behavioral Health and Supplement Healthcare Practice with 
             Community Health Metrics in Alaska.</p>
