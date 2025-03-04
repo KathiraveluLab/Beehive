@@ -2,6 +2,12 @@
 
 Thank you for considering contributing to our project! To ensure a smooth collaboration, please follow these guidelines when submitting contributions.
 
+## Before commiting it is recommended to run:
+```bash
+pre-commit run --all-files
+```
+This will ensure that black, flake and isort is run.
+
 ## 1. Sign off your commits
 
 We require contributors to **sign off** their commits to ensure that the commits are made in compliance with our Contributor License Agreement (CLA). This also helps maintain clarity about who made the changes.

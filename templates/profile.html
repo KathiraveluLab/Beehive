@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+    <link rel="icon" type="image/png" sizes="64x64" href="{{ url_for('static', filename='favicon.png') }}">
     <script>
         function toggleUploadForm() {
             var uploadForm = document.getElementById('uploadForm');
@@ -239,7 +240,9 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
  
 
 <div class="nav">
-    <h1>{{ username }}</h1>
+    <img src = "{{url_for('static', filename='Logo.svg')}}" alt="Beehive Logo" class="logo">
+    <div class="heading">Beehive</div>
+    <!-- <h1>{{ username }}</h1> -->
     <div class="profile-photo-container" id="profile-photo-container">
         {% if user_dp %}
             <img src="{{ url_for('static', filename='uploads/profile/' ~ user_dp) }}" alt="Profile Photo" class="profile-photo" id="profile-photo">

@@ -9,6 +9,11 @@ body {
     padding: 0;
 }
 
+.logo {
+    width: 60px;
+    height: 60px;
+    margin-left: -700px;
+}
 
 .nav{
     background-color: #0e0e0e;
@@ -144,7 +149,7 @@ body {
 }
 
 .admin-header h1 {
-    margin-left: 10px; 
+    margin-left: 600px; 
     font-size: 20px; 
 }
 

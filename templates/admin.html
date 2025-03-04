@@ -5,6 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="icon" type="image/png" sizes="64x64" href="{{ url_for('static', filename='favicon.png') }}">
     <title>Admin</title>
 </head>
 <body>
@@ -15,6 +16,7 @@
             {% else %}
                 <img src="{{ url_for('static', filename='uploads/profile/default_admin.jpg') }}" alt="Default Admin Profile Picture" class="admin-profile-picture" onclick="openSidebar()">
             {% endif %}
+            <img src = "{{url_for('static', filename='Logo.svg')}}" alt="Beehive Logo" class="logo">
             <h1>{{ admin_name }}<span class="badge">Admin</span></h1>
         </div>
     </div>
