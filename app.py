@@ -6,7 +6,6 @@ import datetime
 import pathlib
 import re
 import sys
-from tkinter import ALL
 from flask import Flask, abort, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
 from bson import ObjectId
 from google_auth_oauthlib.flow import Flow
