@@ -1,5 +1,7 @@
 # Beehive  
-A Data Federation Approach to Analyze Behavioral Health and Complement Healthcare Practice with Community Health Metrics in Alaska  
+<img align="left" src="static/favicon.png" width="30" title="Beehive Logo" alt="Beehive Logo">
+
+A Data Federation Approach to Analyze Behavioral Health and Complement Healthcare Practice with Community Health Metrics  
 
 ## Project Description  
 
