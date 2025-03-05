@@ -495,7 +495,67 @@ def delete_image_route(image_id):
         flash('Please log in to delete images.', 'danger')
         return redirect(url_for('login'))
 
+@app.route('/change-username', methods=['GET', 'POST'])
+def change_username():
+    username = session['username']
+    users_collection = get_user_by_username(username)
+    user_id = users_collection.get('_id')
+    if request.method == 'POST':
+        new_username = request.form.get('new_username')
+
+        # Check if username already exists
+        from Database.userdatahandler import is_username_available
+        if not is_username_available(new_username):
+            flash("Username already taken!", "danger")
+            return redirect(url_for('change_username'))
+
+        from Database.userdatahandler import update_username
+        update_username(user_id, new_username)
+        session['username'] = new_username
+        flash("Username updated successfully!", "success")
+        
+
+    return render_template('profile.html')
+
     
+@app.route('/change-email', methods=['GET', 'POST'])
+def change_email():
+
+    username = session['username']
+    users_collection = get_user_by_username(username)
+    user_id = users_collection.get('_id')
+
+    if request.method == 'POST':
+        new_email = request.form.get('new_email')
+
+        from Database.userdatahandler import update_email
+        update_email(user_id, new_email)
+        flash("Email updated successfully!", "success")
+        return redirect(url_for('profile'))
+
+    return render_template('profile.html')
+
+@app.route('/change-password', methods=['POST'])
+def change_password():
+
+    username = session['username']
+    users_collection = get_user_by_username(username)
+    user_id = users_collection.get('_id')
+
+    current_password = request.form.get("current_password")
+    new_password = request.form.get("new_password")
+    stored_password = users_collection["password"]
+    
+    # Verify the current password
+    if not bcrypt.checkpw(current_password.encode('utf-8'), stored_password):
+        flash("Current password is incorrect!", "danger")
+        return redirect(url_for('profile'))
+
+    from Database.userdatahandler import update_password
+    update_password(user_id, new_password)
+
+    flash("Password updated successfully!", "success")
+    return redirect(url_for('profile'))   
 
 
 @app.route('/logout')
