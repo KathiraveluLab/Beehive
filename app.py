@@ -18,6 +18,7 @@ from werkzeug.utils import secure_filename
 import fitz  
 from PIL import Image
 import bcrypt
+from routes import home_bp
 
 
 from Database.admindatahandler import check_admin_available, create_admin, is_admin
@@ -56,6 +57,8 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['PDF_THUMBNAIL_FOLDER'] = 'static/uploads/thumbnails/'
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
+
+app.register_blueprint(home_bp)
 
 flow = Flow.from_client_secrets_file(
     client_secrets_file=client_secrets_file,
@@ -98,11 +101,6 @@ def role_required(required_role):
 
         return wrapper
     return decorator
-
-# Home page
-@app.route('/')
-def home():
-    return render_template('index.html')
 
 # Login the user
 @app.route('/login', methods=['GET', 'POST'])
