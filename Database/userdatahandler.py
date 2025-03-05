@@ -96,6 +96,27 @@ def update_profile_photo(username, filename):
         {"username": username},
         {"$set": {"profile_photo": filename}}
     )
+
+def update_username(user_id, new_username):    
+    beehive_user_collection.update_one(
+        {"_id": user_id},
+        {"$set": {"username": new_username}}
+)
+    
+    
+def update_email(user_id, new_email):
+    beehive_user_collection.update_one(
+        {"_id": user_id},    
+        {"$set": {"mail_id": new_email}}
+    )
+
+def update_password(user_id, new_password):
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), salt)
+    beehive_user_collection.update_one(
+        {"_id": user_id},
+        {"$set": {"password": hashed_password}}
+    )
     
 # Save image to MongoDB  
 def save_image(username, filename, title, description, time_created,audio_filename=None,sentiment=None):
