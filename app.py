@@ -19,7 +19,7 @@ import fitz
 from PIL import Image
 import bcrypt
 from routes import home_bp
-
+from auth.auth import login_is_required 
 
 from Database.admindatahandler import check_admin_available, create_admin, is_admin
 from Database.userdatahandler import (
@@ -44,7 +44,7 @@ from usersutils import valid_username
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
+from auth.OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heif', 'pdf'}
 
@@ -66,14 +66,7 @@ flow = Flow.from_client_secrets_file(
     redirect_uri="http://127.0.0.1:5000/admin/login/callback"
 )
 
-def login_is_required(function):
-    def wrapper(*args, **kwargs):
-        if "google_id" not in session:
-            return abort(401)  
-        else:
-            return function()
 
-    return wrapper
 
 def role_required(required_role):
     def decorator(func):
