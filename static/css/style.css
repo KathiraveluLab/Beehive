@@ -4,7 +4,7 @@
 
 body {
     font-family: "Playfair Display", serif;
-    background-color: #f4f4f4;
+    background: linear-gradient(to bottom right, #f6e0a8, #f0d890);
     margin: 0;
     padding: 0;
 }
