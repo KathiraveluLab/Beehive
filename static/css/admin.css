@@ -36,10 +36,9 @@ body {
 .button-container {
     font-family: "Hanken Grotesk", sans-serif;
     display: flex;
-    justify-content: flex-end; 
-    gap: 40%; 
+    justify-content: center; /* Center align horizontally */
+    align-items: center; /* Center align vertically (if needed) */
     margin-top: 10px;
-    margin-right: 10px;
 }
 
 .view-users {
