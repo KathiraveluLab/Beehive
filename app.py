@@ -1,5 +1,4 @@
 import base64
-from functools import wraps
 import json
 import os
 import datetime
@@ -19,7 +18,7 @@ import fitz
 from PIL import Image
 import bcrypt
 from routes import home_bp
-from auth.auth import login_is_required 
+from auth.auth import login_is_required, role_required
 
 from Database.admindatahandler import check_admin_available, create_admin, is_admin
 from Database.userdatahandler import (
@@ -68,32 +67,6 @@ flow = Flow.from_client_secrets_file(
 
 
 
-def role_required(required_role):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            # Admin authentication via Google
-            if "google_id" in session:
-                if required_role == 'admin' and not is_admin():
-                    return render_template('403.html')
-                    
-            # Regular user authentication - either via traditional login or Google SSO
-            elif "username" in session:
-                user = get_user_by_username(session["username"])
-                
-                if user is None:
-                    print("User not found in session!")
-                    return render_template('403.html')  
-
-                if user.get('role') != required_role:
-                    return render_template('403.html')
-            else:
-                return render_template('403.html')
-
-            return func(*args, **kwargs)
-
-        return wrapper
-    return decorator
 
 # Login the user
 @app.route('/login', methods=['GET', 'POST'])
