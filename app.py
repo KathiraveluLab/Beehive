@@ -299,12 +299,12 @@ def forgot_password():
         user = get_user_by_username(username)
         if not user:
             flash("User not found!", "danger")
-            return redirect(url_for('forgotpassword'))
+            return redirect(url_for('forgot_password'))
 
         # Verify the security answer
         if not bcrypt.checkpw(security_answer.encode('utf-8'), user['security_answer']):
             flash("Incorrect security answer!", "danger")
-            return redirect(url_for('forgotpassword'))
+            return redirect(url_for('forgot_password'))
 
         # Hash the new password
         from Database.userdatahandler import update_password
