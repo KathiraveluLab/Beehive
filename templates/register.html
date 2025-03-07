@@ -22,6 +22,22 @@
     <label for="confirm_password">Confirm Password</label>
     <input type="password" id="confirm_password" name="confirm_password" placeholder="Repeat your Password" required>
 
+    <label for="security_question">Select a Security Question:</label>
+    <select id="security_question" name="security_question" required>
+        <option value="">-- Select a question --</option>
+        <option value="pet_name">What is the name of your first pet?</option>
+        <option value="mother_maiden">What is your mother's maiden name?</option>
+        <option value="first_car">What was your first car?</option>
+        <option value="favorite_movie?">What is your favorite movie?</option>
+        <option value="favorite_book?">What is your favorite book?</option>
+        <option value="favorite_song?">What is your favorite song?</option>
+    </select>
+    <br><br>
+
+
+    <label for="security_answer">Your Answer:</label>
+    <input type="text" id="security_answer" name="security_answer" placeholder="Enter your answer" required>
+
     <button type="submit">Register</button>
 </form>
 <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
