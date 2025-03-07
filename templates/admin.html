@@ -21,18 +21,20 @@
         </div>
     </div>
     
-    <div class="button-container">
-        <button class="view-users"><a href="{{ url_for('getallusers') }}">View Users</a></button>
-        <button class="logout-button"><a href="{{ url_for('adminlogout') }}">Logout</a></button>
-    </div>
-    <div class="card-container">
-        <div class="card">
-            <h3>Total Images</h3>
-            <p class="stat">{{ total_img }}</p>
+    <div class="main-content">
+        <div class="button-container">
+            <button class="view-users"><a href="{{ url_for('getallusers') }}">View Users</a></button>
+            <button class="logout-button"><a href="{{ url_for('adminlogout') }}">Logout</a></button>
         </div>
-        <div class="card">
-            <h3>Uploaded Today</h3>
-            <p class="stat">{{ todays_image }}</p>
+        <div class="card-container">
+            <div class="card">
+                <h3>Total Images</h3>
+                <p class="stat">{{ total_img }}</p>
+            </div>
+            <div class="card">
+                <h3>Uploaded Today</h3>
+                <p class="stat">{{ todays_image }}</p>
+            </div>
         </div>
     </div>
 
