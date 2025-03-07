@@ -3,19 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Beehive - A Data Federation Approach to Analyze Behavioral Health and Supplement Healthcare Practice in Alaska.">
+    <meta name="keywords" content="Healthcare, Behavioral Health, Data Federation, Alaska, Community Health">
     <title>Beehive</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
 </head>
 <body>
-    <h1>Beehive</h1>
-    <p>A Data Federation Approach to Analyze Behavioral Health and Supplement Healthcare Practice with 
-        Community Health Metrics in Alaska.</p>
-    
-    <p>This project aims to analyze behavioral health and supplement healthcare practice with
-        community health metrics in Alaska using a data federation approach.<br>
-        By leveraging data from various sources,<br>
-         we can gain insights into behavioral health patterns and improve healthcare practices in the community.</p><br><br>
+    <div class="container">
+        <h1>🐝 Beehive</h1>
+        <p class="intro-text">
+            A Data Federation Approach to Analyze Behavioral Health and Supplement Healthcare Practice
+            with Community Health Metrics in Alaska.
+        </p>
 
-         <a href="{{ url_for('login') }}"><button>Get Started</button></a>
+        <div class="description">
+            <p>
+                This project aims to analyze behavioral health and supplement healthcare practice 
+                with community health metrics in Alaska using a data federation approach.
+                By leveraging data from various sources, we can gain insights into behavioral health patterns 
+                and improve healthcare practices in the community.
+            </p>
+        </div>
+
+        <a href="{{ url_for('login') }}">
+            <button class="start-btn">🚀 Get Started</button>
+        </a>
+    </div>
 </body>
 </html>
