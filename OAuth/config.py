@@ -10,9 +10,9 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 REDIRECT_URI = os.getenv("REDIRECT_URI", "")
 FLASK_SECRET_KEY = os.getenv("FLASK_SECRET_KEY", "supersecretkey")  # Default for security
 
-# Handle missing ADMIN_EMAILS
+# Handle ADMIN_EMAILS properly
 ADMIN_EMAILS_ENV = os.getenv("ADMIN_EMAILS", "")
-ALLOWED_EMAILS = ADMIN_EMAILS_ENV.split(",") if ADMIN_EMAILS_ENV else []
+ALLOWED_EMAILS = [email.strip() for email in ADMIN_EMAILS_ENV.split(",") if email.strip()]
 
 # Debugging: Warn if critical variables are missing
 if not GOOGLE_CLIENT_ID or not GOOGLE_CLIENT_SECRET or not REDIRECT_URI:

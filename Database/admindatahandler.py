@@ -35,9 +35,39 @@ def check_admin_available(google_id: str) -> bool:
 def is_admin() -> bool:
     """Checks if the current session user is an admin."""
     try:
+        # Check admin based on google_id (for Google sign-in)
         if 'google_id' in session:
             admin = beehive_admin_collection.find_one({"google_id": session['google_id']})
-            return admin is not None and admin.get("role") == "admin"
+            if admin and admin.get("role") == "admin":
+                return True
+        
+        # Check admin based on email (for regular login)
+        if 'email' in session:
+            email = session['email']
+            # Import ALLOWED_EMAILS list if not already available
+            from OAuth.config import ALLOWED_EMAILS
+            if email in ALLOWED_EMAILS:
+                return True
+
     except Exception as e:
         print(f"❌ Error checking admin status: {e}")
-    return False
+
+    return False  # Default return if no admin role is found
+
+
+def update_admin_profile_photo(google_id, filename):
+    """Update the profile photo filename for an admin."""
+    beehive_admin_collection = DatabaseConfig.get_beehive_admin_collection()
+    beehive_admin_collection.update_one(
+        {"google_id": google_id},
+        {"$set": {"profile_photo": filename}}
+    )
+
+def get_admin_by_google_id(google_id):
+    """Get admin details by Google ID."""
+    beehive_admin_collection = DatabaseConfig.get_beehive_admin_collection()
+    query = {
+        "google_id": google_id
+    }
+    admin = beehive_admin_collection.find_one(query)
+    return admin

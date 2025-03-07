@@ -5,22 +5,108 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/userlist.css') }}">
+    <link rel="icon" type="image/png" sizes="64x64" href="{{ url_for('static', filename='favicon.png') }}">
     <title>Beehive Users</title>
 </head>
 <body>
     <div class="nav">
         <h1>Beehive Users</h1>
     </div>
-    
-
-    <div class="user-list">
-        {% for user in users %}
-            <div class="user-container">
-                <p>@{{ user.username }}</p>
-                <button><a href="{{ url_for('user_images_show',username=user.username) }}">View Profile</a></button>
-            </div>
-        {% endfor %}
+    <div class="filter-container">
+        <input type="text" id="search-input" placeholder="Search by Name or Email">
+        <label for="dateFilter">Filter by Date:</label>
+        <input type="date" id="dateFilter">
     </div>
+    <button id="downloadCsvBtn" class="download-btn">Download</button>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>Username</th>
+                    <th>Full Name</th>
+                    <th>Mail ID</th>
+                    <th>Account Created At</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                <tr>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.first_name }} {{ user.last_name }}</td>
+                    <td>{{ user.mail_id }}</td>
+                    <td>{{ user.account_created_at }}</td>
+                    <td>
+                        <a href="{{ url_for('user_images_show', username=user.username) }}">View Profile</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% include 'footer.html' %}
     
 </body>
+<script>
+    document.getElementById("search-input").addEventListener("keyup", function () {
+    let searchText = this.value.toLowerCase();
+    let rows = document.querySelectorAll("table tbody tr");
+
+    rows.forEach((row) => {
+        let username = row.querySelector("td:nth-child(1)").innerText.toLowerCase();
+        let email = row.querySelector("td:nth-child(3)").innerText.toLowerCase();
+        let name = row.querySelector("td:nth-child(2)").innerText.toLowerCase();
+        
+        if (username.includes(searchText) || email.includes(searchText) || name.includes(searchText)) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+});
+
+    document.getElementById("dateFilter").addEventListener("input", function () {
+    let filterDate = this.value; 
+    let rows = document.querySelectorAll(".table-container tbody tr");
+
+    rows.forEach(row => {
+        let dateCell = row.querySelector("td:nth-child(4)");
+        let rowDate = dateCell.innerText.trim();
+        let rowDateParts = rowDate.split(" ")[0].split("-");
+        let formattedRowDate = `${rowDateParts[2]}-${rowDateParts[1]}-${rowDateParts[0]}`;
+
+        if (filterDate === "" || formattedRowDate === filterDate) {
+            row.style.display = "";
+        } else {
+            row.style.display = "none";
+        }
+    });
+});
+
+    document.getElementById("downloadCsvBtn").addEventListener("click", function () {
+        let table = document.querySelector("table"); 
+        let rows = table.querySelectorAll("tr"); 
+        let csvContent = "";
+
+        rows.forEach((row, rowIndex) => {
+            let cols = row.querySelectorAll("th, td"); 
+            let rowData = [];
+
+            cols.forEach((col, colIndex) => {
+                let totalCols = cols.length;
+                if (colIndex !== totalCols - 1) { // Exclude the last column (Actions)
+                    rowData.push(`"${col.innerText}"`);
+                }
+            });
+
+            csvContent += rowData.join(",") + "\n"; 
+        });
+
+        let blob = new Blob([csvContent], { type: "text/csv" });
+        let link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "beehive_users_list.csv"; 
+        link.click(); 
+    });
+</script>
 </html>

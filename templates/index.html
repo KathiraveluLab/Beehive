@@ -7,9 +7,11 @@
     <meta name="keywords" content="Healthcare, Behavioral Health, Data Federation, Alaska, Community Health">
     <title>Beehive</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+    <link rel="icon" type="image/png" sizes="64x64" href="{{ url_for('static', filename='favicon.png') }}">
 </head>
 <body>
     <div class="container">
+        <img src="{{ url_for('static', filename='Logo.svg') }}" alt="Beehive Logo" class="logo">
         <h1>🐝 Beehive</h1>
         <p class="intro-text">
             A Data Federation Approach to Analyze Behavioral Health and Supplement Healthcare Practice
@@ -18,9 +20,9 @@
 
         <div class="description">
             <p>
-                This project aims to analyze behavioral health and supplement healthcare practice 
+                This project aims to analyze behavioral health and supplement healthcare practices
                 with community health metrics in Alaska using a data federation approach.
-                By leveraging data from various sources, we can gain insights into behavioral health patterns 
+                By leveraging data from various sources, we can gain insights into behavioral health patterns
                 and improve healthcare practices in the community.
             </p>
         </div>
@@ -28,6 +30,7 @@
         <a href="{{ url_for('login') }}">
             <button class="start-btn">🚀 Get Started</button>
         </a>
+
     </div>
 </body>
 </html>

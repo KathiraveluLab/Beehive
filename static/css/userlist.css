@@ -2,7 +2,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,100..900;1,100..900&family=Playfair+Display:ital,wght@0,400..900;1,400..900&display=swap');
 body {
     font-family: Arial, sans-serif; 
-    background-color: #f4f4f4; 
+    background: linear-gradient(to bottom right, #f6e0a8, #f0d890);
     color: #333; 
     margin: 0;
     padding: 0;
@@ -63,3 +63,131 @@ body {
     color: #ffffff;
 }
 
+/* Table container */
+.table-container {
+    max-width: 1200px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    border-radius: 8px;
+}
+
+/* Table styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 16px;
+    color: #333;
+    overflow-x: auto;  
+    overflow-y: auto; 
+    max-height: 400px; 
+}
+
+thead {
+    background-color: #f1f1f1;
+    text-align: left;
+    font-weight: bold;
+}
+
+th, td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #ddd;
+}
+
+tr:hover {
+    background-color: #f9f9f9;
+}
+
+th {
+    border-bottom: 2px solid #ddd;
+}
+
+a {
+    text-decoration: none;
+    color: #007bff;
+    font-weight: bold;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Download Button styling */
+#downloadCsvBtn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 10px;
+    margin-right: 148px;
+    float: right; 
+}
+
+#downloadCsvBtn:hover {
+    background-color: #0056b3;
+}
+
+.filter-container {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 10px;
+    margin-left: 150px;
+}
+/* Date Filter */
+#dateFilter {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+/* Search Input */
+#search-input {
+    max-width: 250px;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 14px;
+    margin-right: 30px;
+}
+
+
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .table-container {
+        padding: 10px;
+        overflow-x: auto;
+    }
+    
+    table {
+        width: 50%;
+        font-size: 14px;
+        min-width: 600px;
+    }
+
+    th, td {
+        padding: 5px 6px;
+    }
+    #downloadCsvBtn {
+        margin-left: 10px;
+        float: left;
+    }
+
+    .filter-container {
+        flex-direction: column;
+        gap: 10px;
+        margin-left:-20px;
+    }
+
+    #search-input, #dateFilter {
+        width: 50%;
+        max-width: 100%;
+    }
+
+}

@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  flask-app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=app.py
+      - MONGODB_CONNECTION_STRING=mongodb://mongo:27017/beehive 
+      - ADMIN_EMAILS = test1@test.com,test2@test.com
+      - REDIRECT_URI = http://localhost:5000/admin/login/callback
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:latest
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=beehive
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
