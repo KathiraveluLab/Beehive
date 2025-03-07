@@ -12,7 +12,8 @@ body {
 .logo {
     width: 60px;
     height: 60px;
-    margin-left: -700px;
+    position: absolute;
+    left: 20px;
 }
 
 .nav{
@@ -149,8 +150,8 @@ body {
 }
 
 .admin-header h1 {
-    margin-left: 600px; 
-    font-size: 20px; 
+    margin: 10 auto; /* Center the heading */
+    font-size: 20px;
 }
 
 .admin-profile-picture {
