@@ -266,6 +266,8 @@ def register():
         username = request.form['username']
         password = request.form['password']
         confirm_password = request.form['confirm_password']
+        security_question = request.form['security_question']
+        security_answer = request.form['security_answer']
         account_created_at = None
 
         if not valid_username.is_valid_username(username):
@@ -276,7 +278,7 @@ def register():
                 if isValidEmail(email) and is_email_available(email) and is_username_available(username):
                     if is_username_available(username):
                         account_created_at = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-                        create_user(first_name, last_name, email, username, password, account_created_at)
+                        create_user(first_name, last_name, email, username, password, security_question, security_answer, account_created_at)
                         flash('Registration successful!', 'success')
                         return redirect(url_for('login'))
                     else:
@@ -286,6 +288,32 @@ def register():
 
 
     return render_template("register.html")
+
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        security_answer = request.form.get('security_answer')
+        new_password = request.form.get('new_password')
+        user = get_user_by_username(username)
+        if not user:
+            flash("User not found!", "danger")
+            return redirect(url_for('forgot_password'))
+
+        # Verify the security answer
+        if not bcrypt.checkpw(security_answer.encode('utf-8'), user['security_answer']):
+            flash("Incorrect security answer!", "danger")
+            return redirect(url_for('forgot_password'))
+
+        # Hash the new password
+        from Database.userdatahandler import update_password
+        update_password(user['_id'], new_password)
+
+        flash("Password reset successful!", "success")
+        return redirect(url_for('login'))
+
+    return render_template('forgotpassword.html')
 
 # Display the user's profile page
 @app.route('/profile')

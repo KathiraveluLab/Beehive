@@ -9,17 +9,20 @@ beehive_user_collection = DatabaseConfig.get_beehive_user_collection()
 beehive_image_collection = DatabaseConfig.get_beehive_image_collection()
 
 # Create user in MongoDB
-def create_user(firstname: str, lastname: str, email: str, username: str, password: str, accountcreatedtime: datetime):
+def create_user(firstname: str, lastname: str, email: str, username: str, password: str, security_question: str, security_answer: str, accountcreatedtime: datetime):
     
     # Hash the password before storing
     salt = bcrypt.gensalt()
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
+    hashed_answer = bcrypt.hashpw(security_answer.encode('utf-8'), salt)
     user_data = {
         "first_name" : firstname,
         "last_name" : lastname,
         "mail_id" : email,
         "username" : username,
         "password" : hashed_password,
+        "security_question": security_question,
+        "security_answer": hashed_answer,  
         "account_created_at" : accountcreatedtime,
         "role" : "user"
     }
