@@ -282,3 +282,9 @@ body {
 footer {
     margin-top: auto;
 }
+.heading {
+    font-size: 20px;
+    position: absolute;
+    left: 90px;
+    color: #fff;
+}
