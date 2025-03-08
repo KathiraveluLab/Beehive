@@ -18,6 +18,15 @@ If you want to run this project locally, See the [setup.md](DOCS/setup.md).
 
 If you like to contribute on our project, See the [contributing.md](DOCS/contributing.md).
 
+> **NOTE:**  
+> We currently have **two active branches** for development:  
+>  
+> - **`modular` Branch** – Focused on modularizing the codebase.  
+> - **`dev` Branch** – General development and feature updates.  
+>  
+> You are welcome to contribute to **either of these branches** based on your interest.  
+> However, please note that the **`main` branch is frozen for now** and not open for direct contributions.  
+
 
 
 ## License
