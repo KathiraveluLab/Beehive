@@ -7,12 +7,17 @@ body {
     background: linear-gradient(to bottom right, #f6e0a8, #f0d890);
     margin: 0;
     padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
 }
 
 .logo {
     width: 60px;
     height: 60px;
-    margin-left: -700px;
+    position: absolute;
+    left: 20px;
+    margin-left: 0;
 }
 
 .nav{
@@ -147,8 +152,15 @@ body {
     width: 100%;
 }
 
+.heading {
+    position: absolute;
+    left: 90px;
+    font-size: 20px;  /* Increase this value as needed */
+    font-weight: bold;
+}
+
 .admin-header h1 {
-    margin-left: 600px; 
+    margin-left: 0; 
     font-size: 20px; 
 }
 
@@ -329,4 +341,18 @@ body {
 /* button click effect*/
 .Btn:active {
     transform: translate(2px, 2px);
+}
+
+/* Sticky footer implementation */
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+.main-content {
+    flex: 1;
+}
+
+footer {
+    margin-top: auto;
 }

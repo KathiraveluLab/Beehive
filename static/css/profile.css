@@ -13,7 +13,7 @@ body {
     height: 60px;
 }
 .heading{
-    margin-right:1275px ;
+    margin-right:1575px ;
     font-size: 20px;
 }
 
@@ -25,13 +25,10 @@ body {
 }
 .button-container {
     display: flex;
-    justify-content: flex-end; 
-    gap: 35%; 
+    justify-content: center; /* Changed from flex-end to center */
     margin-top: 10px;
-    margin-right: 10px;
+    margin-bottom: 20px; /* Added to create space between button and "Uploaded Images" */
 }
-
-
 
 .toggle {
     background-color: #0044ff;
@@ -42,7 +39,7 @@ body {
     border-radius: 4px;
     text-decoration: none;
     transition: background 0.3s ease;
-    margin-right: 600px;
+    margin-right: 0; /* Changed from 600px to 0 */
 }
 
 .toggle:hover {
