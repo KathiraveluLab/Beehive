@@ -267,8 +267,11 @@ def register():
         password = request.form['password']
         confirm_password = request.form['confirm_password']
         security_question = request.form['security_question']
+        custom_question = request.form.get("custom_security_question")
         security_answer = request.form['security_answer']
         account_created_at = None
+
+        final_question = custom_question if custom_question else security_question
 
         if not valid_username.is_valid_username(username):
             flash("Username doesn't follow the rules", "danger")
@@ -278,7 +281,7 @@ def register():
                 if isValidEmail(email) and is_email_available(email) and is_username_available(username):
                     if is_username_available(username):
                         account_created_at = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-                        create_user(first_name, last_name, email, username, password, security_question, security_answer, account_created_at)
+                        create_user(first_name, last_name, email, username, password, final_question, security_answer, account_created_at)
                         flash('Registration successful!', 'success')
                         return redirect(url_for('login'))
                     else:
@@ -315,6 +318,18 @@ def forgot_password():
 
     return render_template('forgotpassword.html')
 
+
+@app.route('/get_security_question', methods=['GET'])
+def get_security_question():
+    username = request.args.get('username')
+    user = get_user_by_username(username)
+
+    if user:
+        return jsonify({'question': user['security_question']})
+    else:
+        return jsonify({'question': None})  # Handle user not found case
+
+    
 # Display the user's profile page
 @app.route('/profile')
 def profile():
