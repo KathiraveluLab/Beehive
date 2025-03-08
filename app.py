@@ -5,7 +5,7 @@ import datetime
 import pathlib
 import re
 import sys
-from flask import Flask, abort, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
+from flask import Flask, abort, render_template, request, redirect, url_for, flash, session, send_from_directory
 from bson import ObjectId
 from google_auth_oauthlib.flow import Flow
 import requests
@@ -17,7 +17,7 @@ from werkzeug.utils import secure_filename
 import fitz  
 from PIL import Image
 import bcrypt
-from routes import home_bp
+from routes import home_bp, register_bp
 from auth.auth import login_is_required, role_required
 
 from Database.admindatahandler import check_admin_available, create_admin, is_admin
@@ -58,6 +58,7 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
 
 app.register_blueprint(home_bp)
+app.register_blueprint(register_bp)
 
 flow = Flow.from_client_secrets_file(
     client_secrets_file=client_secrets_file,
@@ -188,68 +189,6 @@ def user_authorize():
             flash('No account exists with this email. Would you like to create one?', 'info')
             return redirect(url_for("google_register"))
 
-# Add this new route to handle Google registrations
-@app.route('/register/google', methods=['GET', 'POST'])
-def google_register():
-    if "google_login_pending" not in session or "email" not in session:
-        return redirect(url_for("login"))
-    
-    if request.method == 'POST':
-        # Process registration form
-        first_name = request.form['firstname']
-        last_name = request.form['lastname']
-        username = request.form['username']
-        email = session["email"]  # Use email from Google
-        google_id = session["google_id"]
-        
-        if not valid_username.is_valid_username(username):
-            flash("Username doesn't follow the rules", "danger")
-        else:
-            if is_username_available(username):
-                account_created_at = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-                # Create user without password since they'll login with Google
-                create_google_user(first_name, last_name, email, username, google_id, account_created_at)
-                
-                # Set session and redirect
-                session["username"] = username
-                session.pop("google_login_pending", None)
-                flash('Registration successful!', 'success')
-                return redirect(url_for('profile'))
-            else:
-                flash('This Username is already taken.', 'danger')
-                
-    return render_template("google_register.html")
-
-# Register a new user
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        first_name = request.form['firstname']
-        last_name = request.form['lastname']
-        email = request.form['email']
-        username = request.form['username']
-        password = request.form['password']
-        confirm_password = request.form['confirm_password']
-        account_created_at = None
-
-        if not valid_username.is_valid_username(username):
-            flash("Username doesn't follow the rules", "danger")
-        elif password != confirm_password:
-            flash('Passwords do not match, please try again.', 'danger')
-        else:
-                if isValidEmail(email) and is_email_available(email) and is_username_available(username):
-                    if is_username_available(username):
-                        account_created_at = datetime.datetime.now().strftime('%d-%m-%Y %H:%M:%S')
-                        create_user(first_name, last_name, email, username, password, account_created_at)
-                        flash('Registration successful!', 'success')
-                        return redirect(url_for('login'))
-                    else:
-                        flash('This Username already taken.', 'danger')
-                else:
-                    flash('This Email is already in use!', 'danger')
-
-
-    return render_template("register.html")
 
 # Display the user's profile page
 @app.route('/profile')
