@@ -32,6 +32,15 @@ If you want to run this project locally, see the [setup.md](DOCS/setup.md).
 ## Contributing  
 
 **Note**: This is the `dev` branch, which is our main development branch. Please make sure to create pull requests against this branch if you are contributing to ongoing development. For specific contribution guidelines, see the [contributing.md](DOCS/contributing.md).  
+> **NOTE:**  
+> We currently have **two active branches** for development:  
+>  
+> - **`modular` Branch** – Focused on modularizing the codebase.  
+> - **`dev` Branch** – General development and feature updates.  
+>  
+> You are welcome to contribute to **either of these branches** based on your interest.  
+> However, please note that the **`main` branch is frozen for now** and not open for direct contributions.  
+
 
 ## License  
 
