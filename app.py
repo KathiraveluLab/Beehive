@@ -706,6 +706,25 @@ def user_images_show(username):
         full_name=f"{user['first_name']} {user['last_name']}"
     )
 
+@app.route('/admin/reset_password', methods=['POST'])
+def admin_reset_password():
+
+    username = request.form.get('username')
+    new_password = request.form.get('new_password')
+
+    # Check if user exists
+    user = get_user_by_username(username)
+    if not user:
+        flash("User not found!", "danger")
+        return jsonify({"success": False, "message": "User not found!"})
+
+    from Database.userdatahandler import update_password
+    update_password(user['_id'], new_password)
+
+    flash( f"Password for {username} reset successfully!", "success")
+    return jsonify({"success": True, "redirect_url": url_for('getallusers')})
+
+    
 @app.route('/upload_admin_profile_photo', methods=['POST'])
 def upload_admin_profile_photo():
     if 'google_id' not in session:
