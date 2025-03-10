@@ -17,7 +17,7 @@ from werkzeug.utils import secure_filename
 import fitz  
 from PIL import Image
 import bcrypt
-from routes import home_bp, register_bp, login_pb
+from routes import home_bp, register_bp, login_pb, logout_pb
 from auth.auth import login_is_required, role_required
 
 from Database.admindatahandler import check_admin_available, create_admin
@@ -59,6 +59,7 @@ client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret
 app.register_blueprint(home_bp)
 app.register_blueprint(register_bp)
 app.register_blueprint(login_pb, url_prefix='/')
+app.register_blueprint(logout_pb)
 
 flow = Flow.from_client_secrets_file(
     client_secrets_file=client_secrets_file,
@@ -399,18 +400,6 @@ def change_password():
 
     flash("Password updated successfully!", "success")
     return redirect(url_for('profile'))   
-
-
-@app.route('/logout')
-def logout():
-    # Clear all user session data
-    session.pop('username', None)
-    session.pop('google_id', None)
-    session.pop('name', None)
-    session.pop('email', None)
-    session.pop('google_login_pending', None)
-    flash('You have been logged out.', 'success')
-    return redirect(url_for('login.login'))
 
 # Admin routes
 
