@@ -2,7 +2,7 @@
 
 {% block content %}
 <h2>Login</h2>
-<form method="POST" action="{{ url_for('login') }}">
+<form method="POST" action="{{ url_for('login.login') }}">
     <div>
         <label for="username">Username</label>
         <input type="text" id="username" name="username" placeholder="Username" required>

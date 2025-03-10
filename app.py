@@ -17,10 +17,10 @@ from werkzeug.utils import secure_filename
 import fitz  
 from PIL import Image
 import bcrypt
-from routes import home_bp, register_bp
+from routes import home_bp, register_bp, login_pb
 from auth.auth import login_is_required, role_required
 
-from Database.admindatahandler import check_admin_available, create_admin, is_admin
+from Database.admindatahandler import check_admin_available, create_admin
 from Database.userdatahandler import (
     create_user,
     create_google_user,  
@@ -39,7 +39,6 @@ from Database.userdatahandler import (
     total_images,
     todays_images,
 )
-from usersutils import valid_username
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -59,6 +58,7 @@ client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret
 
 app.register_blueprint(home_bp)
 app.register_blueprint(register_bp)
+app.register_blueprint(login_pb, url_prefix='/')
 
 flow = Flow.from_client_secrets_file(
     client_secrets_file=client_secrets_file,
@@ -66,66 +66,6 @@ flow = Flow.from_client_secrets_file(
     redirect_uri="http://127.0.0.1:5000/admin/login/callback"
 )
 
-
-
-
-# Login the user
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        
-        user = get_user_by_username(username)
-        
-        if user:
-            # Check if this is a Google authenticated user (has no password)
-            if 'google_id' in user:
-                flash('This account uses Google Sign-In. Please use the "Sign in with Google" button.', 'info')
-                return render_template("login.html")
-                
-            stored_password = user.get('password')
-            
-            if stored_password:
-                # Check if stored password is hashed
-                if isinstance(stored_password, bytes) and stored_password.startswith(b'$2b$'):
-                    # Handle hashed password
-                    is_valid = bcrypt.checkpw(password.encode('utf-8'), stored_password)
-                else:
-                    # For plain text password
-                    is_valid = (stored_password == password)
-                
-                if is_valid:
-                    session['username'] = username
-                    
-                    # Check for email field with safe handling
-                    user_email = user.get('email')
-                    if user_email:
-                        session['email'] = user_email
-                        
-                        # Check if this user's email is in ALLOWED_EMAILS
-                        if user_email in ALLOWED_EMAILS:
-                            # If they're an admin, check if they exist in admin collection
-                            google_id = user.get('google_id', f"local_{username}")
-                            if check_admin_available(google_id):
-                                # Safely get user's name
-                                first_name = user.get('first_name', '')
-                                last_name = user.get('last_name', '')
-                                full_name = f"{first_name} {last_name}".strip()
-                                if not full_name:
-                                    full_name = username  # Use username if no name available
-                                    
-                                create_admin(full_name, user_email, google_id, datetime.datetime.now())
-                            session["google_id"] = google_id  # Set google_id for admin authorization
-                            flash('Login successful as admin!', 'success')
-                            return redirect(url_for("protected_area"))
-                    
-                    # Default path if not admin or email missing
-                    flash('Login successful!', 'success')
-                    return redirect(url_for("profile"))
-                    
-        flash('Invalid credentials, please try again.', 'danger')
-    return render_template("login.html")
 
 @app.route('/login/google')
 def login_google():
@@ -470,7 +410,7 @@ def logout():
     session.pop('email', None)
     session.pop('google_login_pending', None)
     flash('You have been logged out.', 'success')
-    return redirect(url_for('login'))
+    return redirect(url_for('login.login'))
 
 # Admin routes
 
