@@ -68,7 +68,7 @@ def login():
                     
                     # Default path if not admin or email missing
                     flash('Login successful!', 'success')
-                    return redirect(url_for("profile"))
+                    return redirect(url_for("profile.profile"))
                     
         flash('Invalid credentials, please try again.', 'danger')
     return render_template("login.html")

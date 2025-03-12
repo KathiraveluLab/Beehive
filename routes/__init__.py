@@ -3,3 +3,4 @@ from .register import register_bp
 from .login import login_pb
 from .logout import logout_pb
 from .login_google import google_login
+from .profile import profile_pb
