@@ -17,7 +17,7 @@ from werkzeug.utils import secure_filename
 import fitz  
 from PIL import Image
 import bcrypt
-from routes import home_bp, register_bp, login_pb, logout_pb
+from routes import home_bp, register_bp, login_pb, logout_pb, google_login
 from auth.auth import login_is_required, role_required
 
 from Database.admindatahandler import check_admin_available, create_admin
@@ -60,6 +60,7 @@ app.register_blueprint(home_bp)
 app.register_blueprint(register_bp)
 app.register_blueprint(login_pb, url_prefix='/')
 app.register_blueprint(logout_pb)
+app.register_blueprint(google_login)
 
 flow = Flow.from_client_secrets_file(
     client_secrets_file=client_secrets_file,
