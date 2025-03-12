@@ -11,7 +11,7 @@ body {
     justify-content: center; 
     align-items: center; 
     text-align: center; 
-    background-color: #f4f4f4; 
+    background: linear-gradient(to bottom right, #f6e0a8, #f0d890);
 }
 
 

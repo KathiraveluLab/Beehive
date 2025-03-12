@@ -3,11 +3,19 @@
 
 body {
     font-family: "Playfair Display", serif;
-    background-color: #f4f4f4;
+    background: linear-gradient(to bottom right, #f6e0a8, #f0d890);
     margin: 0;
     padding: 0;
 }
 
+.logo {
+    width: 60px;
+    height: 60px;
+}
+.heading{
+    margin-right:1575px ;
+    font-size: 20px;
+}
 
 .nav{
     background-color: #333;
@@ -17,13 +25,10 @@ body {
 }
 .button-container {
     display: flex;
-    justify-content: flex-end; 
-    gap: 40%; 
+    justify-content: center; /* Changed from flex-end to center */
     margin-top: 10px;
-    margin-right: 10px;
+    margin-bottom: 20px; /* Added to create space between button and "Uploaded Images" */
 }
-
-
 
 .toggle {
     background-color: #0044ff;
@@ -34,6 +39,7 @@ body {
     border-radius: 4px;
     text-decoration: none;
     transition: background 0.3s ease;
+    margin-right: 0; /* Changed from 600px to 0 */
 }
 
 .toggle:hover {
@@ -211,6 +217,64 @@ h2{
     background-color: #007906;
 }
 
+.image-preview-modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+
+.image-preview-modal img {
+    max-width: 90%;
+    max-height: 90%;
+    border-radius: 10px;
+}
+
+.image-preview-modal .close-btn {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    color: white;
+    font-size: 30px;
+    cursor: pointer;
+}
+
+.image-preview-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.image-preview-modal img {
+    max-width: 90%;
+    max-height: 90%;
+    border: none;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.5);
+}
+
+.image-preview-modal .close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    font-size: 30px;
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+}
+
 @media only screen and (max-width: 768px ) and (orientation: portrait)  {
     /* Adjust navigation */
     .nav {
@@ -225,9 +289,10 @@ h2{
     }
 
     .toggle {
-        width: 150px;
+        width: 300px;
         text-align: center;
         font-size: 16px;
+        margin-right: 25px;
     }
 
     .logout-button{
@@ -288,3 +353,663 @@ h2{
     }
 
 }
+
+.flash-messages {
+    position: fixed;
+    top: 10px;
+    left: 20px;
+    z-index: 999; /* Above nav */
+    width: auto;
+    padding: 12px 20px;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    color: white;
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+}
+
+.alert {
+    display: inline-block;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 14px;
+    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.alert-success {
+    background-color: #33984a; /* Green */
+}
+
+.audio-recorder {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+}
+
+.record-btn, .stop-btn, .reset-btn {
+    background-color: #0077b6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    font-size: 12px;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: 0.3s;
+}
+
+.record-btn:hover { background-color: #00a8e8; }
+.stop-btn:hover { background-color: #ff4040; }
+.reset-btn:hover { background-color: #ffae42; }
+
+.waveform-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 20px auto;
+    height: 100px;
+    border-radius: 10px;
+    background: #222;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.hidden {
+    display: none;
+}
+
+.speaker-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+    color: #0077b6;
+    transition: transform 0.2s;
+}
+
+.speaker-button:hover {
+    transform: scale(1.2);
+    color: #00a8e8;
+}
+
+.recordingStatus{
+    position: fixed;
+    top: 10px;
+    left: 20px;
+    color: #ffffff;
+    font-weight: bold;
+    text-align: center;
+    z-index: 999;
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+}
+
+@media (max-width: 768px) {
+    .flash-messages {
+        top: 5px;
+        left: 30%;
+        transform: translateX(-50%);
+        max-width: 80%;
+        font-size: 14px;
+        padding: 10px;
+    }
+
+    .controls {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .record-btn, .stop-btn, .reset-btn {
+        font-size: 12px;
+        padding: 12px;
+        width: 60%;
+    }
+
+    .recordingStatus {
+        top: 5px;
+        font-size: 14px;
+        padding: 8px;
+    }
+
+    .heading{
+        font-size: 20px;
+        margin-right: 150px;
+    }
+}
+
+.uploadButton {
+    position: relative;
+    margin-top: 20px;
+    width: 150px;
+    height: 40px;
+    cursor: pointer;
+    border: none;
+    background: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    outline: none;
+}
+
+/* Ensure the SVG resizes properly */
+.uploadButton svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+/* Border styling */
+.border {
+    width: 100%;
+    height: 100%;
+    stroke: black;
+    stroke-width: 2px;
+    fill: transparent;
+    stroke-dasharray: 25;
+    transition: fill 0.25s, stroke 0.3s ease;
+    animation: 4s linear infinite stroke-animation;
+}
+
+.uploadButton:hover .border {
+    fill: rgba(0, 0, 0, 0.1);
+}
+
+.uploadButton.active .border {
+    transition: fill 0.25s 7.75s;
+    fill: #0000;
+  }
+
+@keyframes stroke-animation {
+    0% {
+        stroke-dashoffset: 100;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+
+.txt-upload {
+    position: absolute;
+    font-size: 16px;
+    font-weight: bold;
+    color: black;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.txt-upload::after {
+    content: "";
+  }
+  
+  .uploadButton.active .rect {
+    stroke-dasharray: 50;
+  }
+  .uploadButton.active .border {
+    stroke: #0000;
+  }
+  
+  .uploadButton.active .txt-upload {
+    opacity: 0;
+    transition: opacity 0.25s 8s;
+  }
+
+.uploadButton.active .txt-upload::after {
+    animation: 0.66666s anim step-end forwards,
+    1.33333s 0.6666s anim2 linear infinite alternate;
+}
+
+@keyframes anim {
+    0% {
+      content: "i";
+    }
+    50% {
+      content: "in";
+    }
+    to {
+      content: "ing";
+    }
+  }
+  
+  @keyframes anim2 {
+    0% {
+      content: "ing";
+    }
+    33% {
+      content: "ing.";
+    }
+    66% {
+      content: "ing..";
+    }
+    to {
+      content: "ing...";
+    }
+  }
+
+.loading {
+    width: 100%;
+    height: 100%;
+    stroke: #0055d4;
+    stroke-width: 2px;
+    fill: none;
+    stroke-dasharray: 0 100;
+}
+
+.uploadButton.active .loading {
+    stroke: #08ca08;
+    stroke-dasharray: 100 0;
+    transition: stroke 0.5s, stroke-dasharray 2s ease-out;
+}
+
+.done {
+    fill: none;
+    stroke: #000;
+    stroke-dasharray: 0 100;
+}
+
+.uploadButton.active {
+    transition: stroke-dasharray 0.75s 2.5s ease-out;
+    stroke-dasharray: 100 0;
+}
+
+.uploadButton.active  {
+    transition: stroke-dasharray 0.5s 3s ease-out;
+    stroke: #08ca08;
+    stroke-dasharray: 100 0;
+}
+
+/* donwload button */
+.button {
+    position: relative;
+    margin-left: 20px;
+    width: 150px;
+    height: 40px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    border: 1px solid #17795E;
+    background-color: #209978;
+    overflow: hidden;
+  }
+  
+  .button, .button__icon, .button__text {
+    transition: all 0.3s;
+  }
+  
+  .button .button__text {
+    transform: translateX(22px);
+    color: #fff;
+    font-weight: 600;
+  }
+  
+  .button .button__icon {
+    position: absolute;
+    transform: translateX(109px);
+    height: 100%;
+    width: 39px;
+    background-color: #17795E;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .button .svg {
+    width: 20px;
+    fill: #fff;
+  }
+  
+  .button:hover {
+    background: #17795E;
+  }
+  
+  .button:hover .button__text {
+    color: transparent;
+  }
+  
+  .button:hover .button__icon {
+    width: 148px;
+    transform: translateX(0);
+  }
+  
+  .button:active .button__icon {
+    background-color: #146c54;
+  }
+  
+  .button:active {
+    border: 1px solid #146c54;
+  }
+
+  /* Dropdown Label Styling */
+.dropdown-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 5px;
+    margin-top: 10px;
+}
+
+/* Dropdown Styling */
+.dropdown {
+    width: 80%;
+    max-width: 300px;
+    padding: 10px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #fff;
+    cursor: pointer;
+    transition: all 0.3s ease-in-out;
+    margin-bottom: 20px;
+}
+
+/* Hover and Focus Effects */
+.dropdown:hover {
+    border-color: #007bff;
+}
+
+.dropdown:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+    outline: none;
+}   
+
+.sentiment {
+    margin-bottom: 10px;
+    color: #6c52ff;
+    font-weight: bold;
+    font-size: 16px;
+}
+
+/* nav styling (from profile.html) */
+.nav {
+    background-color: #333;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: relative;
+}
+
+
+.nav h1 {
+    flex-grow: 1;  
+    text-align: center; 
+    margin: 0;  
+}
+
+.profile-photo-container {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: transform 0.3s ease;
+}
+
+.profile-photo-container:hover {
+    transform: scale(1.05);
+}
+
+.profile-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.default-avatar {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #3498db;
+    color: white;
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.default-avatar.large {
+    width: 150px;
+    height: 150px;
+    font-size: 3.5rem;
+    margin: 0 auto;
+}
+
+/* Sidebar styling */
+.profile-sidebar {
+    position: fixed;
+    top: 0;
+    right: -360px;
+    width: 350px;
+    height: 100%;
+    background-color: white;
+    box-shadow: -2px 0 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    transition: right 0.3s ease;
+    overflow-y: auto;
+}
+
+.profile-sidebar.open {
+    right: 0;
+}
+
+.sidebar-close {
+    position: absolute;
+    top: 10px;
+    right: 20px;
+    font-size: 24px;
+    cursor: pointer;
+    color: #333;
+}
+
+.sidebar-content {
+    padding: 20px;
+    margin-top: 40px;
+}
+
+.sidebar-content h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+.current-photo {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.current-photo img {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.user-info-sidebar {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.user-info-sidebar h3 {
+    margin: 5px 0;
+    font-size: 1.5rem;
+    color: #333;
+}
+
+.user-info-sidebar p {
+    margin: 5px 0;
+    color: #666;
+    font-size: 1.1rem;
+}
+
+.file-input-container {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.file-input-label {
+    display: inline-block;
+    padding: 10px 15px;
+    background-color: #3498db;
+    color: white;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.file-input-label:hover {
+    background-color: #2980b9;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+.preview-container {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+#photo-preview {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.update-photo-btn {
+    display: block;
+    width: 100%;
+    padding: 10px;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+}
+
+.update-photo-btn:hover {
+    background-color: #219653;
+}
+
+form {
+    margin-bottom: 20px;
+}
+
+label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+.formbutton {
+    width: 100%;
+    padding: 10px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.formbutton:hover {
+    background-color: #0056b3;
+}
+
+/* Logout button */
+.Btn {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    width: 45px;
+    height: 45px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition-duration: .3s;
+    box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.199);
+    background-color: rgb(255, 65, 65);
+    top: 2%;
+  }
+  
+  /* plus sign */
+  .sign {
+    width: 100%;
+    transition-duration: .3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .sign svg {
+    width: 17px;
+  }
+  
+  .sign svg path {
+    fill: white;
+  }
+  /* text */
+  .text {
+    position: absolute;
+    right: -5%;
+    width: 0%;
+    opacity: 0;
+    color: white;
+    font-size: 1.2em;
+    font-weight: 600;
+    transition-duration: .3s;
+  }
+  /* hover effect on button width */
+  .Btn:hover {
+    width: 125px;
+    border-radius: 40px;
+    transition-duration: .3s;
+  }
+  
+  .Btn:hover .sign {
+    width: 30%;
+    transition-duration: .3s;
+    padding-left: 10px;
+  }
+  /* hover effect button's text */
+  .Btn:hover .text {
+    opacity: 1;
+    width: 70%;
+    transition-duration: .3s;
+    padding-right: 10px;
+  }
+  /* button click effect*/
+  .Btn:active {
+    transform: translate(2px ,2px);
+  }
+
+  .sidebar-close{
+    top: 10px;
+    right: 295px;
+    cursor: pointer;
+    color:rgb(255, 0, 0);
+    font-size: 32px;  
+    font-weight: bold; 
+    font-family: Arial, sans-serif; 
+  }

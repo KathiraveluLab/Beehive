@@ -22,7 +22,62 @@
     <label for="confirm_password">Confirm Password</label>
     <input type="password" id="confirm_password" name="confirm_password" placeholder="Repeat your Password" required>
 
+    <!-- Security Question Dropdown -->
+    <label for="security_question">Select a Security Question:</label>
+    <select id="security_question" name="security_question" onchange="toggleCustomQuestion()" required>
+        <option value="">-- Select a question --</option>
+    </select>
+
+    <br><br>
+
+    <label for="custom_security_question" id="custom_question_label" style="display: none;">Your Custom Question:</label>
+    <input type="text" id="custom_security_question" name="custom_security_question" placeholder="Enter your question" style="display: none;">
+
+    <label for="security_answer">Your Answer:</label>
+    <input type="text" id="security_answer" name="security_answer" placeholder="Enter your answer" required>
+
     <button type="submit">Register</button>
 </form>
+
 <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+
+<script>
+    // Fetch security questions from the static JSON file
+    fetch("{{ url_for('static', filename='security_questions.json') }}")
+        .then(response => response.json())
+        .then(data => {
+            const dropdown = document.getElementById("security_question");
+            
+            data.questions.forEach(question => {
+                let option = document.createElement("option");
+                option.value = question;
+                option.textContent = question;
+                dropdown.appendChild(option);
+            });
+
+            // Add custom question option
+            let customOption = document.createElement("option");
+            customOption.value = "custom";
+            customOption.textContent = "Custom Question";
+            dropdown.appendChild(customOption);
+        })
+        .catch(error => console.error("Error loading security questions:", error));
+
+    function toggleCustomQuestion() {
+        var select = document.getElementById("security_question");
+        var customLabel = document.getElementById("custom_question_label");
+        var customInput = document.getElementById("custom_security_question");
+
+        if (select.value === "custom") {
+            customLabel.style.display = "block";
+            customInput.style.display = "block";
+            customInput.required = true;
+        } else {
+            customLabel.style.display = "none";
+            customInput.style.display = "none";
+            customInput.required = false;
+        }
+    }
+</script>
+
 {% endblock %}

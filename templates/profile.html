@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Profile</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/profile.css') }}">
+    <link rel="icon" type="image/png" sizes="64x64" href="{{ url_for('static', filename='favicon.png') }}">
     <script>
         function toggleUploadForm() {
             var uploadForm = document.getElementById('uploadForm');
@@ -35,15 +36,67 @@
             }
         }
 
+        function previewImage(imageSrc) {
+            var modal = document.getElementById('imagePreviewModal');
+            var previewImg = document.getElementById('previewImage');
+            var fileExtension = imageSrc.split('.').pop().toLowerCase();
+
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'heif'].includes(fileExtension)) {
+             previewImg.src = imageSrc;
+             previewImg.style.display = "block";
+
+            if (document.getElementById("pdfPreview")) {
+             document.getElementById("pdfPreview").style.display = "none";
+            }
+            } else if (fileExtension === 'pdf') {
+            let pdfFrame = document.getElementById("pdfPreview");
+    
+             if (!pdfFrame) {
+             pdfFrame = document.createElement("iframe");
+             pdfFrame.id = "pdfPreview";
+             pdfFrame.style.width = "100%";
+             pdfFrame.style.height = "80vh";
+             modal.appendChild(pdfFrame);
+             }
+
+             pdfFrame.src = imageSrc;
+             pdfFrame.style.display = "block";
+
+            previewImg.style.display = "none";
+            }
+
+            modal.style.display = 'flex'; // Show the modal
+        }
+
+        function closePreview() {
+            var modal = document.getElementById('imagePreviewModal');
+            modal.style.display = 'none'; // Hide the modal
+        }
+
+        // Close modal on pressing ESC key
+        document.addEventListener('keydown', function (event) {
+            if (event.key === "Escape") {
+                closePreview();
+            }
+        });
+
+        setTimeout(function() {
+      var flashMessages = document.querySelector(".flash-messages");
+      if (flashMessages) {
+        flashMessages.style.opacity = "0";
+        setTimeout(() => flashMessages.style.display = "none", 500);
+      }
+    }, 5000);
+
         function validateFile(input) {
             const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp', 'image/heif', 'application/pdf'];
             const uploadButton = document.getElementById('uploadButton');
             const fileError = document.getElementById('fileError');
-
+            
             if (input.files && input.files[0]) {
                 const file = input.files[0];
                 const fileExtension = file.name.split('.').pop().toLowerCase();
-
+                
                 if (!allowedTypes.includes(file.type) || 
                     !['jpg', 'jpeg', 'png', 'gif', 'webp', 'heif', 'pdf'].includes(fileExtension)) {
                     uploadButton.disabled = true;
@@ -56,26 +109,192 @@
             }
         }
 
+        let mediaRecorder;
+    let audioChunks = [];
+
+    function startRecording() {
+        var element = document.getElementById("recordingStatus");
+        if (element) console.log("true");
+        element.style.opacity = "1";
+        element.style.display = "block";
+        setTimeout(() => {
+                    document.getElementById("recordingStatus").style.opacity = '0';
+                    setTimeout(() => {
+                    document.getElementById("recordingStatus").style.display = 'none';
+                    }, 500); 
+                }, 1000);
+        navigator.mediaDevices.getUserMedia({ audio: true })
+            .then(stream => {
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = () => {
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                    const audioUrl = URL.createObjectURL(audioBlob);
+                    document.getElementById('audioPlayback').src = audioUrl;
+                    document.getElementById('audioPlayback').style.display = 'block';
+
+                    // Convert to Base64
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = () => {
+                        document.getElementById('audioData').value = reader.result;
+                    };
+                };
+
+                mediaRecorder.start();
+                document.getElementById("stopBtn").disabled = false;
+            })
+            .catch(error => {
+                alert("Microphone access denied!");
+                console.error(error);
+            });
+    }
+
+    function stopRecording() {
+        if (mediaRecorder) {
+            mediaRecorder.stop();
+            document.getElementById("stopBtn").disabled = true;
+            var resetBtn = document.getElementById("resetBtn");
+            if (resetBtn) {
+                resetBtn.style.display = 'inline';
+            }
+        }
+    }
+
+    function resetRecording() {
+    document.getElementById('audioPlayback').src = "";
+    document.getElementById('audioPlayback').style.display = 'none';
+    document.getElementById('audioData').value = "";
+    var resetBtn = document.getElementById("resetBtn");
+    if(resetBtn) resetBtn.style.display = 'none';
+}
+
+function handleUpload(event) {
+    event.preventDefault(); 
+
+    let button = document.getElementById("uploadButton");
+    let form = document.getElementById("upload-form");
+
+    if (!form.checkValidity()) {
+        form.reportValidity(); 
+        return; 
+    }
+    button.classList.add("active");
+
+    setTimeout(() => {
+        button.classList.remove("active");
+        form.requestSubmit();
+    }, 2000); 
+}
+
+//function for fetching sentiments from sentiment.json
+fetch("{{ url_for('static', filename='sentiments.json') }}")
+        .then(response => response.json())
+        .then(data => {
+            const sentimentDropdown = document.getElementById("sentiment");
+            data.sentiments.forEach(sentiment => {
+                let option = document.createElement("option");
+                option.value = sentiment;
+                option.textContent = sentiment;
+                sentimentDropdown.appendChild(option);
+            });
+        })
+        .catch(error => console.error("Error loading sentiments:", error));
     </script>
     <script src="{{ url_for('static', filename='js/dragdrop.js') }}"></script>
+
+    <script>
+        function openSidebar() {
+            document.getElementById('profile-sidebar').classList.add('open');
+        }
+        
+        function closeSidebar() {
+            document.getElementById('profile-sidebar').classList.remove('open');
+        }
+        
+        function previewProfilePhoto(input) {
+            if (input.files && input.files[0]) {
+                var reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    document.getElementById('photo-preview').src = e.target.result;
+                    document.getElementById('preview-container').style.display = 'block';
+                }
+                
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('profile-photo-container').addEventListener('click', openSidebar);
+        });
+    </script>
+
 </head>
 <body>
-    <div class="nav">
-        <h1>{{ username }}</h1>
+ 
+
+<div class="nav">
+    <img src = "{{url_for('static', filename='Logo.svg')}}" alt="Beehive Logo" class="logo">
+    <div class="heading">Beehive</div>
+    <!-- <h1>{{ username }}</h1> -->
+    <div class="profile-photo-container" id="profile-photo-container">
+        {% if user_dp %}
+            <img src="{{ url_for('static', filename='uploads/profile/' ~ user_dp) }}" alt="Profile Photo" class="profile-photo" id="profile-photo">
+        {% else %}
+            <div class="profile-photo default-avatar" id="profile-photo">
+                <span>{{ username|upper|first }}</span>
+            </div>
+        {% endif %}
     </div>
+</div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="flash-messages">
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
 
     <div class="button-container">
         <button class="toggle" onclick="toggleUploadForm()">Click to Upload or Drag & Drop Anywhere</button>
-        <button class="logout-button"><a href="{{ url_for('logout') }}">Logout</a></button>
     </div>
 
     <div class="toggle-container">
         <div id="uploadForm" style="display: none;">
-            <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data">
-                <input class="file-button" type="file" name="file" id="fileInput" accept=".jpg,.jpeg,.png,.gif,.webp,.heif,.pdf" required onchange="validateFile(this)"><br>
+            <form action="{{ url_for('upload_images') }}" method="post" enctype="multipart/form-data" id="upload-form">
+                <input class="file-button" type="file" name="files" id="fileInput" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.heif,.pdf" required onchange="validateFile(this)"><br>            
                 <input class="title-area" type="text" name="title" placeholder="Title" required><br>
                 <textarea class="description-area" name="description" placeholder="Description" required></textarea><br>
-                <button class="upload-button" type="submit" id="uploadButton">Upload</button>
+                <label for="sentiment" class="dropdown-label">Select Sentiment with which you are uploading the image:</label>
+                <select name="sentiment" id="sentiment" required class="dropdown">
+                 <option value="" disabled selected>Choose a Sentiment</option>
+                </select>
+               
+                
+                <button type="button" onclick="startRecording()" class="record-btn">Start Recording</button>
+                <button type="button" onclick="stopRecording()" class="stop-btn" disabled id="stopBtn">Stop Recording</button>
+                <button type="button" onclick="resetRecording()" id="resetBtn" class="reset-btn" style="display: none;"> Reset Recording</button>
+                <audio id="audioPlayback" controls style="display: none;"></audio>
+    
+                <input type="hidden" name="audioData" id="audioData">
+                <button class="uploadButton" id="uploadButton" type="submit" onclick="handleUpload(event)">
+                    <svg xmlns="http://www.w3.org/2000/svg">
+                        <rect class="border" pathLength="100" rx="10" ry="10"></rect>
+                        <rect class="loading" pathLength="100" rx="10" ry="10"></rect>
+                    </svg>
+                    <div class="txt-upload">Upload</div>
+                </button>
                 <div id="fileError" style="color: red; display: none;">Invalid file type. Only jpg, jpeg, png, gif, webp,heif and pdf files are allowed.</div>
             </form>
         </div>
@@ -85,24 +304,129 @@
     <div class="image-container">
         {% for image in images %}
         <div class="image-card">
-            <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" alt="{{ image.title }}">
+            {% if image.filename.endswith('.pdf') %}
+            <img 
+            src="{{ url_for('static', filename='uploads/thumbnails/' ~ image.filename.replace('.pdf', '.jpg')) }}" 
+            class="pdf-preview"
+            onclick="previewImage(this.dataset.pdfUrl, 'pdf')" 
+            data-pdf-url="{{ url_for('static', filename='uploads/' ~ image.filename) }}" 
+            style="cursor: pointer;"
+        >
+            {%else%}
+            <img src="{{ url_for('static', filename='uploads/' ~ image.filename) }}" 
+                 alt="{{ image.title }}" 
+                 onclick="previewImage(this.src, 'image')" 
+                 style="cursor: pointer;">
+            {%endif%}
+            {% if image.audio_filename %}
+                <audio controls style="width: 100%; max-width: 260px;">
+                    <source src="{{ url_for('serve_audio', filename=image.audio_filename) }}" type="audio/wav">
+                    Your browser does not support the audio element.
+                </audio>
+            {% endif %}
             <h3>{{ image.title }}</h3>
             <p>{{ image.description }}</p>
+            <div class="sentiment">sentiment : {{ image.sentiment }}</div>
             <button class="more-info-button" onclick="toggleMoreInfo('{{ image.id }}')">More Info</button>
             <div id="moreInfo_{{ image.id }}" class="more-info" style="display: none;">
                 <button class="edit-button" onclick="toggleEditForm('{{ image.id }}')">Edit</button>
                 <div id="editForm_{{ image.id }}" class="edit-form" style="display: none;"><br><br>
                     <form action="{{ url_for('edit_image', image_id=image.id) }}" class="edit-form" method="post">
                         <input type="text" name="title" value="{{ image.title }}" class="text-input" required>
-                        <textarea name="description"class="text-input" required>{{ image.description }}</textarea>
+                        <textarea name="description" class="text-input" required>{{ image.description }}</textarea>
                         <button type="submit" class="update-button">Update</button>
                     </form>
                 </div><br><br>
                 <a href="{{ url_for('delete_image_route', image_id=image.id) }}" class="delete-button">Delete</a>
+                <br><br>    
+                <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" 
+                download="{{ image.filename }}" 
+                class="download-button">
+                    <button class="button" type="button">
+                        <span class="button__text">Download</span>
+                        <span class="button__icon"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 35 35" id="bdd05811-e15d-428c-bb53-8661459f9307" data-name="Layer 2" class="svg"><path d="M17.5,22.131a1.249,1.249,0,0,1-1.25-1.25V2.187a1.25,1.25,0,0,1,2.5,0V20.881A1.25,1.25,0,0,1,17.5,22.131Z"></path><path d="M17.5,22.693a3.189,3.189,0,0,1-2.262-.936L8.487,15.006a1.249,1.249,0,0,1,1.767-1.767l6.751,6.751a.7.7,0,0,0,.99,0l6.751-6.751a1.25,1.25,0,0,1,1.768,1.767l-6.752,6.751A3.191,3.191,0,0,1,17.5,22.693Z"></path><path d="M31.436,34.063H3.564A3.318,3.318,0,0,1,.25,30.749V22.011a1.25,1.25,0,0,1,2.5,0v8.738a.815.815,0,0,0,.814.814H31.436a.815.815,0,0,0,.814-.814V22.011a1.25,1.25,0,1,1,2.5,0v8.738A3.318,3.318,0,0,1,31.436,34.063Z"></path></svg></span>
+                    </button>
+                </a>
             </div>
         </div>
         {% endfor %}
     </div>
+    <div id="imagePreviewModal" class="image-preview-modal">
+        <span class="close-btn" onclick="closePreview()">&times;</span>
+        <img id="previewImage" src="" alt="Preview">
+        <iframe id="previewPdf" src="" width="90%" height="600px" style="display: none; border: none;"></iframe>
+    </div>
+    <div class="recordingStatus" id="recordingStatus" style="display: none;">Recording in Progress...</div>
     {% include 'footer.html' %}
+    <script src="https://unpkg.com/wavesurfer.js"></script>
+
+    <div id="profile-sidebar" class="profile-sidebar">
+        <div class="sidebar-close" onclick="closeSidebar()">&times;</div>
+        <!-- <a href="{{ url_for('logout') }}">
+        <button class="Btn">
+            <div class="sign"><svg viewBox="0 0 512 512"><path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path></svg></div> 
+            <div class="text">Logout</div>
+          </button>
+          </a> -->
+        <div class="sidebar-content">
+            <h3>Profile Photo</h3>
+            <div class="current-photo">
+                {% if user_dp %}
+                    <img src="{{ url_for('static', filename='uploads/profile/' ~ user_dp) }}" alt="Current Profile Photo">
+                {% else %}
+                    <div class="default-avatar large">
+                        <span>{{ username|upper|first }}</span>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="user-info-sidebar">
+                <h3>{{ username }}</h3>
+                <p>{{ full_name }}</p>
+            </div>
+            <form action="{{ url_for('upload_profile_photo') }}" method="post" enctype="multipart/form-data" id="dp-form">
+                <div class="file-input-container">
+                    <label for="profile-photo-input" class="file-input-label">Choose Photo</label>
+                    <input type="file" id="profile-photo-input" name="profile_photo" accept=".jpg,.jpeg,.png,.gif" onchange="previewProfilePhoto(this)">
+                </div>
+                <div class="preview-container" id="preview-container" style="display: none;">
+                    <img id="photo-preview" src="#" alt="Preview">
+                </div>
+                <button type="submit" class="update-photo-btn">Update Photo</button>
+            </form>
+            <div class="container">
+                <!-- <form action="{{ url_for('change_username') }}" method="POST">
+                    <label>New Username:</label>
+                    <input type="text" name="new_username" required>
+                    <button type="submit" class="formbutton">Update Username</button>
+                </form> -->
+            
+                <form action="{{ url_for('change_email') }}" method="POST">
+                    <label>New Email:</label>
+                    <input type="email" name="new_email" required>
+                    <button type="submit" class="formbutton">Update Email</button>
+                </form>
+            
+                <form action="{{ url_for('change_password') }}" method="POST">
+                    <label>Current Password:</label>
+                    <input type="password" name="current_password" required>
+            
+                    <label>New Password:</label>
+                    <input type="password" name="new_password" required>
+            
+                    <label>Confirm New Password:</label>
+                    <input type="password" name="confirm_password" required>
+            
+                    <button type="submit" class="formbutton">Update Password</button>
+                </form>
+            </div>  
+            <a href="{{ url_for('logout') }}">
+                <button class="Btn">
+                    <div class="sign"><svg viewBox="0 0 512 512"><path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path></svg></div> 
+                    <div class="text">Logout</div>
+                  </button>
+                  </a>   
+        </div>
+    </div>
+
 </body>
 </html>

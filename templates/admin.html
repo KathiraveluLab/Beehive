@@ -5,18 +5,80 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/admin.css') }}">
+    <link rel="icon" type="image/png" sizes="64x64" href="{{ url_for('static', filename='favicon.png') }}">
     <title>Admin</title>
 </head>
 <body>
     <div class="nav">
-        <h1>{{ admin_name }}<span class="badge">Admin</span></h1>
+        <div class="admin-header">
+            {% if admin_photo %}
+                <img src="{{ url_for('static', filename='uploads/profile/' + admin_photo) }}" alt="Admin Profile Picture" class="admin-profile-picture" onclick="openSidebar()">
+            {% else %}
+                <img src="{{ url_for('static', filename='uploads/profile/default_admin.jpg') }}" alt="Default Admin Profile Picture" class="admin-profile-picture" onclick="openSidebar()">
+            {% endif %}
+            <img src = "{{url_for('static', filename='Logo.svg')}}" alt="Beehive Logo" class="logo">
+            <div class="heading">Beehive</div>
+            <h1>{{ admin_name }}<span class="badge">Admin</span></h1>
+        </div>
     </div>
     
-    <div class="button-container">
-        <button class="view-users"><a href="{{ url_for('getallusers') }}">View Users</a></button>
-        <button class="logout-button"><a href="{{ url_for('adminlogout') }}">Logout</a></button>
+    <div class="main-content">
+        <div class="button-container">
+            <button class="view-users"><a href="{{ url_for('getallusers') }}">View Users</a></button>
+            <!-- Logout button removed from here as it's now in the sidebar -->
+        </div>
+        <div class="card-container">
+            <div class="card">
+                <h3>Total Images</h3>
+                <p class="stat">{{ total_img }}</p>
+            </div>
+            <div class="card">
+                <h3>Uploaded Today</h3>
+                <p class="stat">{{ todays_image }}</p>
+            </div>
+        </div>
     </div>
+
+    <!-- Sidebar for profile photo upload (InDisplay) -->
+    <div id="profile-sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <span class="close-btn" onclick="closeSidebar()">&times;</span>
+            <h3>Admin Profile Picture</h3>
+        </div>
+        <div class="sidebar-content">
+            {% if admin_photo %}
+                <img src="{{ url_for('static', filename='uploads/profile/' + admin_photo) }}" alt="Admin Profile Picture" class="sidebar-profile-picture">
+            {% else %}
+                <img src="{{ url_for('static', filename='uploads/profile/default_admin.jpg') }}" alt="Default Admin Profile Picture" class="sidebar-profile-picture">
+            {% endif %}
+            <form action="{{ url_for('upload_admin_profile_photo') }}" method="post" enctype="multipart/form-data">
+                <h3>{{ admin_name }}<span class="badge">Admin</span></h3>
+                <h4>Change Profile Picture</h4>
+                <input type="file" name="profile_photo" id="profile_photo" accept=".png, .jpg, .jpeg, .gif">
+                <button type="submit">Upload</button>
+            </form>
+            
+            <!-- Added logout button with same styling as profile.html -->
+            <a href="{{ url_for('adminlogout') }}">
+                <button class="Btn">
+                    <div class="sign"><svg viewBox="0 0 512 512"><path d="M377.9 105.9L500.7 228.7c7.2 7.2 11.3 17.1 11.3 27.3s-4.1 20.1-11.3 27.3L377.9 406.1c-6.4 6.4-15 9.9-24 9.9c-18.7 0-33.9-15.2-33.9-33.9l0-62.1-128 0c-17.7 0-32-14.3-32-32l0-64c0-17.7 14.3-32 32-32l128 0 0-62.1c0-18.7 15.2-33.9 33.9-33.9c9 0 17.6 3.6 24 9.9zM160 96L96 96c-17.7 0-32 14.3-32 32l0 256c0 17.7 14.3 32 32 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32l-64 0c-53 0-96-43-96-96L0 128C0 75 43 32 96 32l64 0c17.7 0 32 14.3 32 32s-14.3 32-32 32z"></path></svg></div> 
+                    <div class="text">Logout</div>
+                </button>
+            </a>
+        </div>
+    </div>
+
     {% include 'footer.html' %}
 
+    <!-- Add JavaScript for sidebar functionality -->
+    <script>
+        function openSidebar() {
+            document.getElementById("profile-sidebar").style.right = "0";
+        }
+        
+        function closeSidebar() {
+            document.getElementById("profile-sidebar").style.right = "-300px";
+        }
+    </script>
 </body>
 </html>

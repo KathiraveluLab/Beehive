@@ -4,7 +4,7 @@
 
 body {
     font-family: "Playfair Display", serif;
-    background-color: #f4f4f4;
+    background: linear-gradient(to bottom right, #f6e0a8, #f0d890);
     margin: 0;
     padding: 0;
 }
@@ -107,3 +107,29 @@ button:disabled {
         font-size: 15px;
     }
 }
+.google-signin {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px; /* Adds spacing between elements */
+}
+
+.google-signin p {
+    text-align: center;
+    font-weight: bold; /* Optional: Makes "OR" stand out */
+}
+
+.password-container {
+    position: relative;
+    display: inline-block;
+  }
+
+  .toggle-password {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    font-size: 1.2em;
+    user-select: none;
+  }
