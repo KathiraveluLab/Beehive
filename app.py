@@ -17,23 +17,16 @@ from werkzeug.utils import secure_filename
 import fitz  
 from PIL import Image
 import bcrypt
-from routes import home_bp, register_bp, login_pb, logout_pb, google_login
+from routes import home_bp, register_bp, login_pb, logout_pb, google_login, profile_pb
 from auth.auth import login_is_required, role_required
 
 from Database.admindatahandler import check_admin_available, create_admin
 from Database.userdatahandler import (
-    create_user,
-    create_google_user,  
     delete_image,
-    get_currentuser_from_session, 
     get_image_by_id, 
     get_images_by_user, 
-    get_password_by_username, 
     get_user_by_username,
     get_user_by_email,  
-    is_email_available, 
-    is_username_available,
-    isValidEmail, 
     save_image, 
     update_image,
     total_images,
@@ -61,6 +54,7 @@ app.register_blueprint(register_bp)
 app.register_blueprint(login_pb, url_prefix='/')
 app.register_blueprint(logout_pb)
 app.register_blueprint(google_login)
+app.register_blueprint(profile_pb)
 
 flow = Flow.from_client_secrets_file(
     client_secrets_file=client_secrets_file,
@@ -131,29 +125,6 @@ def user_authorize():
             flash('No account exists with this email. Would you like to create one?', 'info')
             return redirect(url_for("google_register"))
 
-
-# Display the user's profile page
-@app.route('/profile')
-def profile():
-    if 'username' not in session:
-        flash('Please log in to access the profile page.', 'danger')
-        return redirect(url_for('login'))
-
-    username = session['username']
-    user = get_user_by_username(username)
-    if not user:
-        flash('User not found.', 'danger')
-        return redirect(url_for('login'))
-
-    images = get_images_by_user(username)  # Fetch images uploaded by the user
-
-    return render_template(
-        "profile.html", 
-        username=user['username'], 
-        full_name=f"{user['first_name']} {user['last_name']}", 
-        images=images,
-        user_dp=user.get('profile_photo')  # Pass profile photo to template
-    )
 
 @app.route('/upload', methods=['POST'])
 def upload_images():
