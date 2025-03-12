@@ -11,23 +11,43 @@ body {
 .logo {
     width: 60px;
     height: 60px;
-}
-.heading{
-    margin-right:1575px ;
-    font-size: 20px;
+    margin-right: 10px;
 }
 
-.nav{
-    background-color: #333;
-    color: #fff;
-    text-align: center;
-    padding: 10px;
+.heading {
+    font-size: 20px;
+    margin: 0;
+    white-space: nowrap;
 }
+
+.nav {
+    background-color: #333;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    min-height: 60px;
+}
+
+.nav-brand {
+    display: flex;
+    align-items: center;
+    margin-right: auto;
+}
+
+.nav h1 {
+    flex-grow: 1;  
+    text-align: center; 
+    margin: 0;
+    padding: 0 60px;
+}
+
 .button-container {
     display: flex;
-    justify-content: center; /* Changed from flex-end to center */
+    justify-content: center; 
     margin-top: 10px;
-    margin-bottom: 20px; /* Added to create space between button and "Uploaded Images" */
+    margin-bottom: 20px; 
 }
 
 .toggle {
@@ -39,7 +59,7 @@ body {
     border-radius: 4px;
     text-decoration: none;
     transition: background 0.3s ease;
-    margin-right: 0; /* Changed from 600px to 0 */
+    margin-right: 0; 
 }
 
 .toggle:hover {
@@ -218,7 +238,7 @@ h2{
 }
 
 .image-preview-modal {
-    display: none; /* Hidden by default */
+    display: none; 
     position: fixed;
     top: 0;
     left: 0;
@@ -275,11 +295,19 @@ h2{
     font-weight: bold;
 }
 
-@media only screen and (max-width: 768px ) and (orientation: portrait)  {
-    /* Adjust navigation */
+@media only screen and (max-width: 768px) and (orientation: portrait) {
     .nav {
+        padding: 10px;
+    }
+    
+    .logo {
+        width: 50px;
+        height: 50px;
+        margin-right: 8px;
+    }
+    
+    .heading {
         font-size: 18px;
-        padding: 6px;
     }
 
     .button-container {
@@ -299,7 +327,7 @@ h2{
       width: 100px;
     }
 
-    /* Make the form full width */
+    
     .toggle-container form {
         width: 80%;
         margin-left: 15px;
@@ -311,7 +339,7 @@ h2{
         padding: 8px;
     }
 
-    /* Adjust image container */
+    
     .image-container {
         display: flex;
         flex-direction: column;
@@ -329,7 +357,7 @@ h2{
         height: auto;
     }
 
-    /* Adjust modal for mobile */
+    
      .edit-modal .modal-content {
         width: 70%;
         padding: 10px;
@@ -345,7 +373,7 @@ h2{
     }
 
 
-    /* Improve button spacing */
+    
     .more-info-button, .delete-button, .edit-button {
         width: 50%;
         font-size: 14px;
@@ -358,7 +386,7 @@ h2{
     position: fixed;
     top: 10px;
     left: 20px;
-    z-index: 999; /* Above nav */
+    z-index: 999; 
     width: auto;
     padding: 12px 20px;
     border-radius: 5px;
@@ -378,7 +406,7 @@ h2{
 }
 
 .alert-success {
-    background-color: #33984a; /* Green */
+    background-color: #33984a; 
 }
 
 .audio-recorder {
@@ -724,21 +752,11 @@ h2{
 }
 
 /* nav styling (from profile.html) */
-.nav {
-    background-color: #333;
-    color: white;
-    padding: 15px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: relative;
-}
-
-
 .nav h1 {
     flex-grow: 1;  
     text-align: center; 
-    margin: 0;  
+    margin: 0;
+    padding: 0 60px;  
 }
 
 .profile-photo-container {
@@ -748,11 +766,16 @@ h2{
     overflow: hidden;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
     cursor: pointer;
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 1;
     transition: transform 0.3s ease;
 }
 
 .profile-photo-container:hover {
-    transform: scale(1.05);
+    transform: translateY(-50%) scale(1.05);
 }
 
 .profile-photo {
