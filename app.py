@@ -18,6 +18,7 @@ from werkzeug.utils import secure_filename
 import fitz  
 from PIL import Image
 import bcrypt
+from datetime import timedelta
 
 
 from Database.admindatahandler import check_admin_available, create_admin, is_admin
@@ -51,6 +52,7 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 app = Flask(__name__)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 app.secret_key = 'beehive'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['PDF_THUMBNAIL_FOLDER'] = 'static/uploads/thumbnails/'
@@ -62,6 +64,14 @@ flow = Flow.from_client_secrets_file(
     scopes=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email", "openid"],
     redirect_uri="http://127.0.0.1:5000/admin/login/callback"
 )
+
+def is_mobile_device(user_agent_string):
+    mobile_patterns = [
+        'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'windows phone', 
+        'mobile', 'palm', 'symbian', 'opera mini', 'opera mobi', 'webos'
+    ]
+    user_agent_lower = user_agent_string.lower()
+    return any(pattern in user_agent_lower for pattern in mobile_patterns)
 
 def login_is_required(function):
     def wrapper(*args, **kwargs):
@@ -107,9 +117,14 @@ def home():
 # Login the user
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # Check if user is already logged in and redirect to profile
+    if 'username' in session:
+        return redirect(url_for('profile'))
+        
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        remember_me = 'remember_me' in request.form  # Check if checkbox is checked
         
         user = get_user_by_username(username)
         
@@ -132,6 +147,10 @@ def login():
                 
                 if is_valid:
                     session['username'] = username
+                    
+                    # Set session to permanent if "Remember Me" is checked
+                    if remember_me:
+                        session.permanent = True
                     
                     # Check for email field with safe handling
                     user_email = user.get('email')
@@ -164,6 +183,14 @@ def login():
 
 @app.route('/login/google')
 def login_google():
+    # Check if user is already logged in and redirect to profile
+    if 'username' in session:
+        return redirect(url_for('profile'))
+    
+    # Set session to permanent for mobile users (with Remember Me as default)
+    if request.user_agent and is_mobile_device(request.user_agent.string):
+        session.permanent = True
+    
     # Create a flow instance for user authentication
     user_flow = Flow.from_client_secrets_file(
         client_secrets_file=client_secrets_file,
@@ -203,6 +230,10 @@ def user_authorize():
     session["google_id"] = id_info.get("sub")
     session["name"] = id_info.get("name")  
     session["email"] = id_info.get("email")
+    
+    # Set session to permanent for mobile users
+    if request.user_agent and is_mobile_device(request.user_agent.string):
+        session.permanent = True
     
     # Check if this is an admin email
     if session["email"] in ALLOWED_EMAILS:
