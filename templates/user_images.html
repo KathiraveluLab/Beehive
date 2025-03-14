@@ -111,9 +111,10 @@
             <!-- Speaker Icon for Audio -->
             {% set audio_path = url_for('static', filename='uploads/' ~ image.audio_filename) %}
             {% if image.audio_filename %}
-            <button class="speaker-button" onclick="playAudio('{{ audio_path }}')">
-             🔊
-            </button>
+            <audio controls class="audio-player" style="width: 100%; margin-top: 5px;">
+                <source src="{{ audio_path }}" type="audio/mpeg">
+                Your browser does not support the audio element.
+            </audio>
             {% endif %}
             <h3>{{ image.title }}</h3>
             <p>{{ image.description }}</p>
