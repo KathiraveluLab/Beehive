@@ -22,7 +22,6 @@ graph TD;
   Backend -->|Fetches data| MongoDB
   Backend -->|Serves images & voice notes| StaticFolder
   User & Admin -->|Authenticated| Auth[Flask Authentication]
-
 ```
 
 ## Setup Instructions  
@@ -40,11 +39,6 @@ If you want to run this project locally, see the [setup.md](DOCS/setup.md).
 >  
 > You are welcome to contribute to **either of these branches** based on your interest.  
 > However, please note that the **`main` branch is frozen for now** and not open for direct contributions.  
-
-
-## License  
-
-This project is licensed under the BSD-3-Clause License. See the [LICENSE](LICENSE) file for more details.
 
 ## Testing
 
@@ -77,33 +71,6 @@ pytest --cov=app --cov-report=term-missing
 
 Tests are automatically run on all pull requests to main and dev branches using GitHub Actions. The workflow configuration can be found in `.github/workflows/tests.yml`.
 
-## Testing Framework Implementation (Issue #164)
+## License  
 
-This PR implements a comprehensive testing framework for the Beehive application, including:
-
-### Changes Made
-- Created and organized test directory structure
-- Implemented test fixtures in `conftest.py`
-- Added authentication tests in `test_auth.py`
-- Added file upload tests in `test_upload.py`
-- Improved test coverage to 64%
-- Added GitHub Actions workflow for automated testing
-
-### Test Coverage
-- Current coverage: 64% (326/508 statements)
-- Key areas covered:
-  - User authentication
-  - File uploads
-  - Admin functionality
-  - Route handling
-
-### Documentation
-- Added testing documentation to README.md
-- Included instructions for:
-  - Running tests
-  - Generating coverage reports
-  - Writing new tests
-
-### Notes
-- All core functionality tests are passing
-- Google OAuth tests need separate attention (tracked in separate issue)
+This project is licensed under the BSD-3-Clause License. See the [LICENSE](LICENSE) file for more details.
