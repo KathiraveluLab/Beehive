@@ -370,33 +370,40 @@ def upload_images():
     description = request.form.get('description', '')
     audio_data = request.form.get('audioData')
 
-    for file in files:
-        if file and allowed_file(file.filename):
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            os.makedirs(os.path.dirname(filepath), exist_ok=True)
-            file.save(filepath)
+    if not files:
+        flash('No files selected.', 'danger')
+        return redirect(url_for('profile'))
 
-            # Handle audio file if provided
-            audio_filename = None
-            if audio_data:
-                audio_filename = f"{secure_filename(title)}.wav"
-                audio_path = os.path.join(app.config['UPLOAD_FOLDER'], audio_filename)
-                os.makedirs(os.path.dirname(audio_path), exist_ok=True)
-                audio_binary = base64.b64decode(audio_data.split(',')[1])
-                with open(audio_path, "wb") as f:
-                    f.write(audio_binary)
+    for file in files:
+        if not file or not file.filename:
+            continue
+
+        if not allowed_file(file.filename):
+            flash('Invalid file type or no file selected.', 'danger')
+            continue
+
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        file.save(filepath)
+
+        # Handle audio file if provided
+        audio_filename = None
+        if audio_data:
+            audio_filename = f"{secure_filename(title)}.wav"
+            audio_path = os.path.join(app.config['UPLOAD_FOLDER'], audio_filename)
+            os.makedirs(os.path.dirname(audio_path), exist_ok=True)
+            audio_binary = base64.b64decode(audio_data.split(',')[1])
+            with open(audio_path, "wb") as f:
+                f.write(audio_binary)
 
         time_created = datetime.datetime.now()
         save_image(user['username'], filename, title, description, time_created, audio_filename, sentiment)
         flash('Image uploaded successfully!', 'success')
 
-            # Generate PDF thumbnail if applicable
+        # Generate PDF thumbnail if applicable
         if filename.lower().endswith('.pdf'):
-                generate_pdf_thumbnail(filepath, filename)
-
-        else:
-            flash('Invalid file type or no file selected.', 'danger')
+            generate_pdf_thumbnail(filepath, filename)
 
     return redirect(url_for('profile'))
 

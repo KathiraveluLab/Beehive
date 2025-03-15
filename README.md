@@ -45,3 +45,65 @@ If you want to run this project locally, see the [setup.md](DOCS/setup.md).
 ## License  
 
 This project is licensed under the BSD-3-Clause License. See the [LICENSE](LICENSE) file for more details.
+
+## Testing
+
+This project uses pytest as its testing framework. To run the tests:
+
+1. Install test dependencies:
+```bash
+pip install -r requirements.txt
+```
+
+2. Run the tests:
+```bash
+pytest
+```
+
+To run tests with coverage report:
+```bash
+pytest --cov=app --cov-report=term-missing
+```
+
+### Writing Tests
+
+- All tests are located in the `tests/` directory
+- Test files should be named `test_*.py`
+- Test functions should be named `test_*`
+- Use fixtures from `conftest.py` for common test setup
+- Follow the existing test structure and patterns
+
+### Continuous Integration
+
+Tests are automatically run on all pull requests to main and dev branches using GitHub Actions. The workflow configuration can be found in `.github/workflows/tests.yml`.
+
+## Testing Framework Implementation (Issue #164)
+
+This PR implements a comprehensive testing framework for the Beehive application, including:
+
+### Changes Made
+- Created and organized test directory structure
+- Implemented test fixtures in `conftest.py`
+- Added authentication tests in `test_auth.py`
+- Added file upload tests in `test_upload.py`
+- Improved test coverage to 64%
+- Added GitHub Actions workflow for automated testing
+
+### Test Coverage
+- Current coverage: 64% (326/508 statements)
+- Key areas covered:
+  - User authentication
+  - File uploads
+  - Admin functionality
+  - Route handling
+
+### Documentation
+- Added testing documentation to README.md
+- Included instructions for:
+  - Running tests
+  - Generating coverage reports
+  - Writing new tests
+
+### Notes
+- All core functionality tests are passing
+- Google OAuth tests need separate attention (tracked in separate issue)
