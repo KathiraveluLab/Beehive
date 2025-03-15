@@ -7,13 +7,24 @@ from app import app, create_user, get_user_by_username
 import datetime
 
 @pytest.fixture
-def client():
+def app():
+    app.config.update({
+        "TESTING": True,
+        "SECRET_KEY": "beehive",
+        "SERVER_NAME": "localhost"
+    })
+    yield app
+
+@pytest.fixture
+def client(app):
     """Create a test client for the Flask application."""
-    app.config['TESTING'] = True
-    app.config['SERVER_NAME'] = 'localhost'
     with app.test_client() as client:
         with app.app_context():
             yield client
+
+@pytest.fixture
+def runner(app):
+    return app.test_cli_runner()
 
 @pytest.fixture
 def app_context():
@@ -46,4 +57,4 @@ def test_user(client):
     if not get_user_by_username('testuser'):
         create_user(**user_data)
     
-    return user_data 
+    return user_data
