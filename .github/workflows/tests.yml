@@ -15,11 +15,6 @@ jobs:
         image: mongo:4.2
         ports:
           - 27017:27017
-        options: >-
-          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongo localhost:27017/test --quiet"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
 
     steps:
     - uses: actions/checkout@v3
@@ -28,6 +23,13 @@ jobs:
       uses: actions/setup-python@v4
       with:
         python-version: '3.11'
+        
+    - name: Install MongoDB Client
+      run: |
+        wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
+        echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
+        sudo apt-get update
+        sudo apt-get install -y mongodb-org-shell
         
     - name: Install dependencies
       run: |
@@ -38,7 +40,7 @@ jobs:
       run: |
         echo "Waiting for MongoDB to be ready..."
         for i in {1..30}; do
-          if echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet; then
+          if mongo --eval "db.runCommand('ping').ok" localhost:27017/test --quiet; then
             echo "MongoDB is ready!"
             exit 0
           fi
