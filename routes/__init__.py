@@ -4,3 +4,6 @@ from .login import login_pb
 from .logout import logout_pb
 from .login_google import google_login
 from .profile import profile_pb
+from .change_password import change_password_pb
+from .change_email import change_email_pb
+from .change_username import change_username_pb
