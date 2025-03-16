@@ -12,7 +12,7 @@ jobs:
     
     services:
       mongodb:
-        image: mongo:4.2
+        image: mongo:6.0
         ports:
           - 27017:27017
 
@@ -26,10 +26,10 @@ jobs:
         
     - name: Install MongoDB Client
       run: |
-        wget -qO - https://www.mongodb.org/static/pgp/server-4.2.asc | sudo apt-key add -
-        echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu bionic/mongodb-org/4.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.2.list
+        curl -fsSL https://pgp.mongodb.com/server-6.0.asc | sudo gpg -o /usr/share/keyrings/mongodb-server-6.0.gpg --dearmor
+        echo "deb [ arch=amd64,arm64 signed-by=/usr/share/keyrings/mongodb-server-6.0.gpg ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/6.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-6.0.list
         sudo apt-get update
-        sudo apt-get install -y mongodb-org-shell
+        sudo apt-get install -y mongodb-mongosh
         
     - name: Install dependencies
       run: |
@@ -40,7 +40,7 @@ jobs:
       run: |
         echo "Waiting for MongoDB to be ready..."
         for i in {1..30}; do
-          if mongo --eval "db.runCommand('ping').ok" localhost:27017/test --quiet; then
+          if mongosh --eval "db.runCommand('ping').ok" localhost:27017/test --quiet; then
             echo "MongoDB is ready!"
             exit 0
           fi
