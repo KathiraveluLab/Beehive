@@ -3,17 +3,17 @@ This file contains shared pytest fixtures that can be used across multiple test 
 """
 
 import pytest
-from app import app, create_user, get_user_by_username
+from app import app as flask_app, create_user, get_user_by_username
 import datetime
 
 @pytest.fixture
 def app():
-    app.config.update({
+    flask_app.config.update({
         "TESTING": True,
         "SECRET_KEY": "beehive",
         "SERVER_NAME": "localhost"
     })
-    yield app
+    yield flask_app
 
 @pytest.fixture
 def client(app):
@@ -29,7 +29,7 @@ def runner(app):
 @pytest.fixture
 def app_context():
     """Create an application context for testing."""
-    with app.app_context():
+    with flask_app.app_context():
         yield 
 
 @pytest.fixture
