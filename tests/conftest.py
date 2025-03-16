@@ -3,6 +3,7 @@ This file contains shared pytest fixtures that can be used across multiple test 
 """
 
 import pytest
+import bcrypt
 from app import app as flask_app, create_user, get_user_by_username
 import datetime
 
@@ -42,9 +43,13 @@ def authenticated_client(client, test_user):
 @pytest.fixture
 def test_user(client):
     """Create a test user for authentication tests."""
+    plain_password = 'testpass123'
+    salt = bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(plain_password.encode('utf-8'), salt)
+    
     user_data = {
         'username': 'testuser',
-        'password': 'testpass123',
+        'password': hashed_password,
         'email': 'test@example.com',
         'firstname': 'Test',
         'lastname': 'User',
@@ -57,4 +62,6 @@ def test_user(client):
     if not get_user_by_username('testuser'):
         create_user(**user_data)
     
+    # Return the data with plain password for tests
+    user_data['password'] = plain_password
     return user_data
