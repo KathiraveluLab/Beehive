@@ -15,6 +15,12 @@ jobs:
         image: mongo:6.0
         ports:
           - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          --health-start-period 20s
 
     steps:
     - uses: actions/checkout@v3
@@ -52,16 +58,19 @@ jobs:
         
     - name: Wait for MongoDB
       run: |
-        echo "Waiting for MongoDB to be ready..."
+        echo "Checking MongoDB connection..."
         for i in {1..30}; do
-          if mongosh --eval "db.runCommand('ping').ok" localhost:27017/test --quiet; then
+          if mongosh --eval "db.runCommand('ping').ok" mongodb://localhost:27017/test --quiet; then
             echo "MongoDB is ready!"
+            mongosh --eval "db.runCommand('serverStatus')" mongodb://localhost:27017/test
             exit 0
           fi
           echo "Attempt $i/30: MongoDB not ready yet..."
           sleep 2
         done
         echo "Error: MongoDB failed to become ready"
+        echo "Checking MongoDB logs..."
+        docker logs $(docker ps -q --filter "ancestor=mongo:6.0")
         exit 1
         
     - name: Run tests
@@ -73,7 +82,7 @@ jobs:
         GOOGLE_CLIENT_SECRET: dummy-client-secret
         PYTHONPATH: ${{ github.workspace }}
       run: |
-        pytest -v --cov=app --cov-report=xml
+        python -m pytest -v --cov=app --cov-report=xml
         
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
