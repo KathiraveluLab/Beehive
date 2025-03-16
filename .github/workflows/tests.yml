@@ -12,15 +12,14 @@ jobs:
     
     services:
       mongodb:
-        image: mongo:4.4
+        image: mongo:4.2
         ports:
           - 27017:27017
         options: >-
-          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
+          --health-cmd "echo 'db.runCommand(\"ping\").ok' | mongo localhost:27017/test --quiet"
           --health-interval 10s
-          --health-timeout 10s
-          --health-retries 10
-          --health-start-period 30s
+          --health-timeout 5s
+          --health-retries 5
 
     steps:
     - uses: actions/checkout@v3
@@ -37,15 +36,16 @@ jobs:
         
     - name: Wait for MongoDB
       run: |
-        for i in {1..60}; do
-          if mongosh --eval 'db.runCommand({ ping: 1 })' > /dev/null 2>&1; then
+        echo "Waiting for MongoDB to be ready..."
+        for i in {1..30}; do
+          if echo 'db.runCommand("ping").ok' | mongo localhost:27017/test --quiet; then
             echo "MongoDB is ready!"
             exit 0
           fi
-          echo "Waiting for MongoDB... (attempt $i/60)"
+          echo "Attempt $i/30: MongoDB not ready yet..."
           sleep 2
         done
-        echo "MongoDB did not become ready in time"
+        echo "Error: MongoDB failed to become ready"
         exit 1
         
     - name: Run tests
@@ -57,19 +57,6 @@ jobs:
         GOOGLE_CLIENT_SECRET: dummy-client-secret
         PYTHONPATH: ${{ github.workspace }}
       run: |
-        python -c "
-        import pymongo
-        import time
-        client = pymongo.MongoClient('mongodb://localhost:27017')
-        for i in range(5):
-            try:
-                client.admin.command('ping')
-                break
-            except:
-                if i == 4:
-                    raise
-                time.sleep(2)
-        "
         pytest -v --cov=app --cov-report=xml
         
     - name: Upload coverage to Codecov
