@@ -19,7 +19,7 @@ def test_register_success(client):
     }, follow_redirects=True)
 
     assert response.status_code == 200
-    assert "Registration successful!" in response.data.decode()
+    assert b"Registration successful!" in response.data
 
     # Check if user was added to the database
     user = get_user_by_username("testuser123")
@@ -40,7 +40,7 @@ def test_register_password_mismatch(client):
     })
 
     assert response.status_code == 200
-    assert "Passwords do not match" in response.data.decode()
+    assert b"Passwords do not match" in response.data
 
 def test_login_success(client, test_user):
     """Test successful login."""
@@ -50,7 +50,7 @@ def test_login_success(client, test_user):
     }, follow_redirects=True)
     
     assert response.status_code == 200
-    assert "Welcome" in response.data.decode()
+    assert b"Welcome" in response.data
 
 def test_login_invalid_credentials(client, test_user):
     """Test login with invalid credentials."""
@@ -60,13 +60,13 @@ def test_login_invalid_credentials(client, test_user):
     }, follow_redirects=True)
     
     assert response.status_code == 200
-    assert "Invalid username or password" in response.data.decode()
+    assert b"Invalid username or password" in response.data
 
 def test_logout(authenticated_client):
     """Test logout functionality."""
     response = authenticated_client.get("/logout", follow_redirects=True)
     assert response.status_code == 200
-    assert "You have been logged out" in response.data.decode()
+    assert b"You have been logged out" in response.data
 
 def test_forgot_password(client, test_user):
     """Test forgot password functionality."""
@@ -79,7 +79,7 @@ def test_forgot_password(client, test_user):
     }, follow_redirects=True)
     
     assert response.status_code == 200
-    assert "Password updated successfully" in response.data.decode()
+    assert b"Password updated successfully" in response.data
 
 def test_forgot_password_wrong_answer(client, test_user):
     """Test forgot password with wrong security answer."""
@@ -92,7 +92,7 @@ def test_forgot_password_wrong_answer(client, test_user):
     }, follow_redirects=True)
     
     assert response.status_code == 200
-    assert "Incorrect security answer" in response.data.decode()
+    assert b"Incorrect security answer" in response.data
 
 def test_change_password(authenticated_client, test_user):
     """Test password change functionality."""
@@ -103,7 +103,7 @@ def test_change_password(authenticated_client, test_user):
     }, follow_redirects=True)
     
     assert response.status_code == 200
-    assert "Password updated successfully" in response.data.decode()
+    assert b"Password updated successfully" in response.data
 
 def test_change_username(authenticated_client, test_user):
     """Test username change functionality."""
@@ -113,7 +113,7 @@ def test_change_username(authenticated_client, test_user):
     }, follow_redirects=True)
     
     assert response.status_code == 200
-    assert "Username updated successfully" in response.data.decode()
+    assert b"Username updated successfully" in response.data
 
 def test_change_email(authenticated_client, test_user):
     """Test email change functionality."""
@@ -123,7 +123,7 @@ def test_change_email(authenticated_client, test_user):
     }, follow_redirects=True)
     
     assert response.status_code == 200
-    assert "Email updated successfully" in response.data.decode()
+    assert b"Email updated successfully" in response.data
 
 # Google OAuth Tests
 def test_google_login_redirect(client):
@@ -141,7 +141,7 @@ def test_google_login_callback_admin(client, monkeypatch):
     
     response = client.get("/login/google/callback", follow_redirects=True)
     assert response.status_code == 200
-    assert "Welcome Admin" in response.data.decode()
+    assert b"Welcome Admin" in response.data
 
 def test_google_login_callback_regular_user(client, monkeypatch):
     """Test Google login callback for regular user."""
@@ -152,15 +152,15 @@ def test_google_login_callback_regular_user(client, monkeypatch):
     
     response = client.get("/login/google/callback", follow_redirects=True)
     assert response.status_code == 200
-    assert "Welcome" in response.data.decode()
+    assert b"Welcome" in response.data
 
 def test_google_register(client):
     """Test Google registration page."""
     with client.session_transaction() as session:
         session['google_user'] = {"email": "newuser@example.com"}
-    response = client.get("/register/google")
+    response = client.get("/register/google", follow_redirects=True)
     assert response.status_code == 200
-    assert "Complete Registration" in response.data.decode()
+    assert b"Complete Registration" in response.data
 
 def test_google_register_submit(client):
     """Test Google registration submission."""
@@ -174,7 +174,7 @@ def test_google_register_submit(client):
     }, follow_redirects=True)
     
     assert response.status_code == 200
-    assert "Registration successful" in response.data.decode()
+    assert b"Registration successful" in response.data
 
 
 
