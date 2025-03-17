@@ -49,7 +49,7 @@ Fix user authentication issue after password reset
 
 ## 3. Create Meaningful Pull Request Titles and Descriptions
 
-When submitting a pull request (PR), it's important to make the title and description clear and easy to understand. Here’s how to do it:
+When submitting a pull request (PR), it's important to make the title and description clear and easy to understand. Here's how to do it:
 
 ### Pull Request Title:
 - **Be specific**: Clearly describe what the pull request accomplishes. 
@@ -81,9 +81,9 @@ Added logic to check the session after a password reset and synchronize it with 
 ## 4. General Contribution Tips
 
 - **Keep your branches small and focused**: Try to limit each pull request to a single feature or bug fix.
-- **Test your changes**: Ensure that your code works as expected and passes all relevant tests before submitting a pull request.
-- **Follow the coding standards**: Make sure your code adheres to the project’s coding conventions. This includes naming conventions, code formatting, and structure.
-- **Be respectful and kind**: Our community values respectful collaboration. When reviewing others' code or responding to feedback, maintain a positive, constructive attitude.
+- **Test your changes**: Run `pytest tests/ --cov=./` and ensure proper test coverage
+- **Follow coding standards**: Adhere to project's conventions for naming and structure
+- **Be respectful**: Maintain positive and constructive communication
 
 ## 5. Code of Conduct
 
@@ -91,6 +91,6 @@ Please ensure that you read and follow our [Code of Conduct](/CODE_OF_CONDUCT.md
 
 ## 6. Questions or Issues?
 
-If you have any questions, feel free to reach out by opening an issue, or ask in the project’s discussion channel. We are happy to help!
+If you have any questions, feel free to reach out by opening an issue, or ask in the project's discussion channel. We are happy to help!
 
 Thank you for contributing, and we look forward to reviewing your changes!

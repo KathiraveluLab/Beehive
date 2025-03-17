@@ -2,11 +2,13 @@ from datetime import datetime, timedelta
 import re
 import bcrypt
 from flask import session
-from Database import DatabaseConfig
+from Database.DatabaseConfig import DatabaseConfig
 
+def get_user_collection():
+    return DatabaseConfig.get_beehive_user_collection()
 
-beehive_user_collection = DatabaseConfig.get_beehive_user_collection()
-beehive_image_collection = DatabaseConfig.get_beehive_image_collection()
+def get_image_collection():
+    return DatabaseConfig.get_beehive_image_collection()
 
 # Create user in MongoDB
 def create_user(firstname: str, lastname: str, email: str, username: str, password: str, security_question: str, security_answer: str, accountcreatedtime: datetime):
@@ -26,7 +28,7 @@ def create_user(firstname: str, lastname: str, email: str, username: str, passwo
         "account_created_at" : accountcreatedtime,
         "role" : "user"
     }
-    user_inserted_id = beehive_user_collection.insert_one(user_data).inserted_id
+    get_user_collection().insert_one(user_data)
 
 # Check if username is available in MongoDB for registration purpose
 def is_username_available(username: str):
@@ -34,7 +36,7 @@ def is_username_available(username: str):
         "username" : username
     }
 
-    count = beehive_user_collection.count_documents(query)
+    count = get_user_collection().count_documents(query)
     return count == 0
 
 def is_email_available(email: str):
@@ -42,7 +44,7 @@ def is_email_available(email: str):
         "mail_id" : email
     }
 
-    count = beehive_user_collection.count_documents(query)
+    count = get_user_collection().count_documents(query)
     return count == 0
 
 def isValidEmail(email):
@@ -57,7 +59,7 @@ def get_password_by_username(username: str):
     query = {
         "username" : username
     }
-    user = beehive_user_collection.find_one(query)
+    user = get_user_collection().find_one(query)
     if user:
         return user.get("password")
     else:
@@ -68,7 +70,7 @@ def get_user_by_username(username: str):
     query = {
         "username" : username
     }
-    user = beehive_user_collection.find_one(query)
+    user = get_user_collection().find_one(query)
     return user
 
 def get_user_by_email(email: str):
@@ -76,7 +78,7 @@ def get_user_by_email(email: str):
     query = {
         "mail_id": email
     }
-    user = beehive_user_collection.find_one(query)
+    user = get_user_collection().find_one(query)
     return user
 
 def create_google_user(firstname: str, lastname: str, email: str, username: str, google_id: str, accountcreatedtime: str):
@@ -90,25 +92,24 @@ def create_google_user(firstname: str, lastname: str, email: str, username: str,
         "account_created_at": accountcreatedtime,
         "role": "user"
     }
-    user_inserted_id = beehive_user_collection.insert_one(user_data).inserted_id
-    return user_inserted_id
+    get_user_collection().insert_one(user_data)
 
 def update_profile_photo(username, filename):
     """Update the profile photo filename for a user."""
-    beehive_user_collection.update_one(
+    get_user_collection().update_one(
         {"username": username},
         {"$set": {"profile_photo": filename}}
     )
 
 def update_username(user_id, new_username):    
-    beehive_user_collection.update_one(
+    get_user_collection().update_one(
         {"_id": user_id},
         {"$set": {"username": new_username}}
 )
     
     
 def update_email(user_id, new_email):
-    beehive_user_collection.update_one(
+    get_user_collection().update_one(
         {"_id": user_id},    
         {"$set": {"mail_id": new_email}}
     )
@@ -116,7 +117,7 @@ def update_email(user_id, new_email):
 def update_password(user_id, new_password):
     salt = bcrypt.gensalt()
     hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), salt)
-    beehive_user_collection.update_one(
+    get_user_collection().update_one(
         {"_id": user_id},
         {"$set": {"password": hashed_password}}
     )
@@ -132,22 +133,22 @@ def save_image(username, filename, title, description, time_created,audio_filena
         'audio_filename': audio_filename,
         'sentiment': sentiment
     }
-    beehive_image_collection.insert_one(image)
+    get_image_collection().insert_one(image)
 
 # Count all images from MongoDB
 def total_images():
-    return beehive_image_collection.count_documents({})
+    return get_image_collection().count_documents({})
 
 # Count all images from MongoDB uploaded today
 def todays_images():
     last_24_hours = datetime.now() - timedelta(hours=24)
-    recent_images_count = beehive_image_collection.count_documents({
+    recent_images_count = get_image_collection().count_documents({
     "created_at": {"$gte": last_24_hours}
     })
     return recent_images_count
 
 def getallusers():
-    users = beehive_user_collection.find()
+    users = get_user_collection().find()
     return users
 
 def get_currentuser_from_session():
@@ -159,24 +160,24 @@ def get_currentuser_from_session():
     if not user_id:
         return None
     
-    user = beehive_user_collection.find_one({'_id': user_id})
+    user = get_user_collection().find_one({'_id': user_id})
     return user
 
 # Get all images from MongoDB
 def get_images_by_user(username):
-    images = beehive_image_collection.find({'username': username})
+    images = get_image_collection().find({'username': username})
     return [{'id': str(image['_id']), 'filename': image['filename'], 'title': image['title'], 'description': image['description'], 'audio_filename': image.get('audio_filename', ""), 'sentiment':image.get('sentiment', "")} for image in images]
 
 # Update image in MongoDB
 def update_image(image_id, title, description):
-    beehive_image_collection.update_one({'_id': image_id}, {'$set': {'title': title, 'description': description}})
+    get_image_collection().update_one({'_id': image_id}, {'$set': {'title': title, 'description': description}})
 
 # Delete image from MongoDB
 def delete_image(image_id):
-    beehive_image_collection.delete_one({'_id': image_id})
+    get_image_collection().delete_one({'_id': image_id})
 
 # Get image by id from MongoDB
 def get_image_by_id(image_id):
     query = {'_id': image_id}
-    image = beehive_image_collection.find_one(query)
+    image = get_image_collection().find_one(query)
     return image

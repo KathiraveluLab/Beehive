@@ -41,6 +41,32 @@ If you want to run this project locally, see the [setup.md](DOCS/setup.md).
 > You are welcome to contribute to **either of these branches** based on your interest.  
 > However, please note that the **`main` branch is frozen for now** and not open for direct contributions.  
 
+## Testing
+
+1. Prerequisites:
+   - MongoDB running on localhost:27017
+   - `pip install -r requirements.txt pytest pytest-cov`
+
+2. Run Tests:
+```bash
+pytest tests/                                    # Run all tests
+pytest tests/ --cov=./ --cov-report=term-missing  # With coverage
+pytest tests/test_images.py                     # Single test file
+```
+
+### Test Files
+- `conftest.py`: Test fixtures and database setup
+- `test_basic.py`: Basic application tests
+- `test_database.py`: Database operations
+- `test_images.py`: Image handling
+- `test_routes.py`: Route accessibility
+- `test_user_utils.py`: User utilities
+
+### Contributing Tests
+1. Add tests for new features
+2. Use fixtures from `conftest.py`
+3. Ensure database cleanup
+4. Run full suite before PR
 
 ## License  
 

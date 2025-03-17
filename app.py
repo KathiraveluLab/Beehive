@@ -293,23 +293,29 @@ def register():
     return render_template("register.html")
 
 
-@app.route('/forgot_password', methods=['GET', 'POST'])
+@app.route('/forgot-password', methods=['GET', 'POST'])
 def forgot_password():
     if request.method == 'POST':
         username = request.form.get('username')
         security_answer = request.form.get('security_answer')
         new_password = request.form.get('new_password')
         user = get_user_by_username(username)
+        
         if not user:
             flash("User not found!", "danger")
             return redirect(url_for('forgot_password'))
+
+        # Check if this is a Google authenticated user
+        if 'google_id' in user:
+            flash('This account uses Google Sign-In. Please use the "Sign in with Google" button.', 'info')
+            return redirect(url_for('login'))
 
         # Verify the security answer
         if not bcrypt.checkpw(security_answer.encode('utf-8'), user['security_answer']):
             flash("Incorrect security answer!", "danger")
             return redirect(url_for('forgot_password'))
 
-        # Hash the new password
+        # Hash and update the new password
         from Database.userdatahandler import update_password
         update_password(user['_id'], new_password)
 
@@ -779,6 +785,12 @@ def upload_admin_profile_photo():
         flash('Invalid file type. Only jpg, jpeg, png, and gif files are allowed.', 'danger')
     
     return redirect("/admin")
+
+@app.route('/dashboard')
+def dashboard():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+    return render_template('dashboard.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
