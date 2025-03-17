@@ -11,18 +11,43 @@ body {
 .logo {
     width: 60px;
     height: 60px;
-}
-.heading{
-    margin-right:1575px ;
-    font-size: 20px;
+    margin-right: 15px;
 }
 
-.nav{
-    background-color: #333;
-    color: #fff;
-    text-align: center;
-    padding: 10px;
+.heading {
+    font-size: 20px;
+    margin: 0;
+    display: flex;
+    align-items: center;
 }
+
+.nav {
+    background-color: #333;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Update the nav items layout */
+.nav > * {
+    display: flex;
+    align-items: center;
+}
+
+/* Ensure proper spacing between logo and heading */
+.nav > :first-child {
+    margin-right: 15px;
+}
+
+/* Profile container positioning */
+.profile-photo-container {
+    margin-left: auto;
+}
+
 .button-container {
     display: flex;
     justify-content: center; /* Changed from flex-end to center */
@@ -724,17 +749,6 @@ h2{
 }
 
 /* nav styling (from profile.html) */
-.nav {
-    background-color: #333;
-    color: white;
-    padding: 15px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: relative;
-}
-
-
 .nav h1 {
     flex-grow: 1;  
     text-align: center; 
@@ -749,16 +763,16 @@ h2{
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
     cursor: pointer;
     transition: transform 0.3s ease;
-}
-
-.profile-photo-container:hover {
-    transform: scale(1.05);
+    position: relative;
+    margin-left: auto;
+    z-index: 100;
 }
 
 .profile-photo {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
 }
 
 .default-avatar {

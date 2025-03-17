@@ -13,9 +13,16 @@
         <input type="password" id="password" name="password" placeholder="Password" required>
         <span id="togglePassword" style="position: absolute; right: 10px; top: 30px; cursor: pointer; font-size: 20px; user-select: none;">👁️</span>
     </div>
-    <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
+    
+    <div style="display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; margin-bottom: 10px;">
+      <label for="remember_me" style="margin: 0;">Remember Me</label>
+      <input type="checkbox" id="remember_me" name="remember_me" style="margin: 0;">
+    </div>  
     
     <button type="submit">Login</button>
+    <div style="margin-top: 10px;">
+      <a href="{{ url_for('forgot_password') }}">Forgot Password?</a>
+    </div>
 </form>
 
 <div class="google-signin">
@@ -48,6 +55,12 @@
         });
       } else {
         console.log('Toggle password elements not found');
+      }
+      
+      // Auto-check "Remember Me" for mobile users
+      const rememberMeCheckbox = document.getElementById('remember_me');
+      if (rememberMeCheckbox && (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent))) {
+        rememberMeCheckbox.checked = true;
       }
     });
   </script>

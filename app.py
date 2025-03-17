@@ -18,6 +18,7 @@ from werkzeug.utils import secure_filename
 import fitz  
 from PIL import Image
 import bcrypt
+from datetime import timedelta
 
 
 from Database.admindatahandler import check_admin_available, create_admin, is_admin
@@ -51,6 +52,7 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 app = Flask(__name__)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 app.secret_key = 'beehive'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['PDF_THUMBNAIL_FOLDER'] = 'static/uploads/thumbnails/'
@@ -63,14 +65,22 @@ flow = Flow.from_client_secrets_file(
     redirect_uri="http://127.0.0.1:5000/admin/login/callback"
 )
 
+def is_mobile_device(user_agent_string):
+    mobile_patterns = [
+        'android', 'iphone', 'ipad', 'ipod', 'blackberry', 'windows phone', 
+        'mobile', 'palm', 'symbian', 'opera mini', 'opera mobi', 'webos'
+    ]
+    user_agent_lower = user_agent_string.lower()
+    return any(pattern in user_agent_lower for pattern in mobile_patterns)
+
 def login_is_required(function):
-    def wrapper(*args, **kwargs):
+    @wraps(function)  # Add this import from functools
+    def login_wrapper(*args, **kwargs):
         if "google_id" not in session:
             return abort(401)  
         else:
             return function()
-
-    return wrapper
+    return login_wrapper
 
 def role_required(required_role):
     def decorator(func):
@@ -107,9 +117,16 @@ def home():
 # Login the user
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # If user is already logged in and has remember_me enabled (permanent session)
+    if 'username' in session:
+        if session.get('remember_me', False) or session.permanent:
+            return redirect(url_for('profile'))
+        # If remember_me wasn't checked, keep them on login page despite being logged in
+    
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
+        remember_me = 'remember_me' in request.form  # Check if checkbox is checked
         
         user = get_user_by_username(username)
         
@@ -132,6 +149,15 @@ def login():
                 
                 if is_valid:
                     session['username'] = username
+                    
+                    # Set remember_me flag in session
+                    session['remember_me'] = remember_me
+                    
+                    # Set session to permanent if "Remember Me" is checked
+                    if remember_me:
+                        session.permanent = True
+                    else:
+                        session.permanent = False
                     
                     # Check for email field with safe handling
                     user_email = user.get('email')
@@ -164,6 +190,15 @@ def login():
 
 @app.route('/login/google')
 def login_google():
+    # Check if user is already logged in and redirect to profile
+    if 'username' in session:
+        return redirect(url_for('profile'))
+    
+    # Set session to permanent for mobile users or by default for Google login
+    session.permanent = True
+    # Set remember_me flag for Google logins
+    session['remember_me'] = True
+    
     # Create a flow instance for user authentication
     user_flow = Flow.from_client_secrets_file(
         client_secrets_file=client_secrets_file,
@@ -203,6 +238,10 @@ def user_authorize():
     session["google_id"] = id_info.get("sub")
     session["name"] = id_info.get("name")  
     session["email"] = id_info.get("email")
+    session["remember_me"] = True
+    
+    # Set session to permanent for all Google logins
+    session.permanent = True
     
     # Check if this is an admin email
     if session["email"] in ALLOWED_EMAILS:
@@ -610,11 +649,7 @@ def change_password():
 @app.route('/logout')
 def logout():
     # Clear all user session data
-    session.pop('username', None)
-    session.pop('google_id', None)
-    session.pop('name', None)
-    session.pop('email', None)
-    session.pop('google_login_pending', None)
+    session.clear()  # This will remove all session data including remember_me
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
 
@@ -651,7 +686,10 @@ def authorize():
     session["google_id"] = id_info.get("sub")
     session["name"] = id_info.get("name")
     session["email"] = id_info.get("email")
-    if session["email"] in ALLOWED_EMAILS :
+    session["remember_me"] = True
+    session.permanent = True
+    
+    if session["email"] in ALLOWED_EMAILS:
         if check_admin_available(session["google_id"]):
             create_admin(session["name"], session["email"], session["google_id"], datetime.datetime.now())
         with open('user_info.json', 'w') as json_file:
@@ -679,9 +717,9 @@ def protected_area():
     return render_template("admin.html", admin_name=admin_name, total_img=total_img, 
                           todays_image=todays_image, admin_photo=admin_photo)
 
+@app.route("/admin/logout")
 @login_is_required
 @role_required("admin")
-@app.route("/admin/logout")
 def adminlogout():
     session.clear()
     return redirect("/")
