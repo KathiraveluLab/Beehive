@@ -136,10 +136,20 @@ def test_google_login_callback_admin(client, monkeypatch):
     """Test Google login callback for admin user."""
     # Mock the Google OAuth response
     def mock_google_oauth():
-        return {"email": "admin@example.com"}
+        return {
+            "email": "admin@example.com",
+            "given_name": "Admin",
+            "family_name": "User",
+            "sub": "123456789"  # This is the Google ID
+        }
     monkeypatch.setattr("app.google_oauth.get_user_info", mock_google_oauth)
     
-    response = client.get("/login/google/callback", follow_redirects=True)
+    with client.session_transaction() as session:
+        session['google_id'] = "123456789"
+        session['name'] = "Admin User"
+        session['email'] = "admin@example.com"
+    
+    response = client.get("/admin/login/callback", follow_redirects=True)
     assert response.status_code == 200
     assert b"Welcome Admin" in response.data
 
@@ -147,17 +157,30 @@ def test_google_login_callback_regular_user(client, monkeypatch):
     """Test Google login callback for regular user."""
     # Mock the Google OAuth response
     def mock_google_oauth():
-        return {"email": "user@example.com"}
+        return {
+            "email": "user@example.com",
+            "given_name": "Test",
+            "family_name": "User",
+            "sub": "987654321"  # This is the Google ID
+        }
     monkeypatch.setattr("app.google_oauth.get_user_info", mock_google_oauth)
     
-    response = client.get("/login/google/callback", follow_redirects=True)
+    with client.session_transaction() as session:
+        session['google_id'] = "987654321"
+        session['name'] = "Test User"
+        session['email'] = "user@example.com"
+    
+    response = client.get("/admin/login/callback", follow_redirects=True)
     assert response.status_code == 200
     assert b"Welcome" in response.data
 
 def test_google_register(client):
     """Test Google registration page."""
     with client.session_transaction() as session:
-        session['google_user'] = {"email": "newuser@example.com"}
+        session['google_id'] = "987654321"
+        session['name'] = "Test User"
+        session['email'] = "newuser@example.com"
+    
     response = client.get("/register/google", follow_redirects=True)
     assert response.status_code == 200
     assert b"Complete Registration" in response.data
@@ -165,7 +188,9 @@ def test_google_register(client):
 def test_google_register_submit(client):
     """Test Google registration submission."""
     with client.session_transaction() as session:
-        session['google_user'] = {"email": "newuser@example.com"}
+        session['google_id'] = "987654321"
+        session['name'] = "Test User"
+        session['email'] = "newuser@example.com"
     
     response = client.post("/register/google", data={
         "firstname": "New",
