@@ -58,7 +58,7 @@ def test_admin_view_users(admin_client, test_user):
     """Test admin viewing all users."""
     response = admin_client.get('/admin/users')
     assert response.status_code == 200
-    assert bytes(test_user['username'], 'utf-8') in response.data
+    assert test_user['username'].encode() in response.data
 
 def test_admin_view_user_images(admin_client, test_user):
     """Test admin viewing a specific user's images."""

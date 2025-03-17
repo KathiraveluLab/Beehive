@@ -1,6 +1,7 @@
 """
 Tests for the application routes.
 """
+from tests.test_upload import create_test_image
 
 def test_index_route(client):
     """Test the index route returns 200 and correct template."""
@@ -99,6 +100,4 @@ def test_edit_image(authenticated_client):
     # Verify image is updated in database
     updated_image = beehive_image_collection.find_one({'_id': image['_id']})
     assert updated_image['title'] == 'Updated Title'
-    assert updated_image['description'] == 'Updated description'
-
-from tests.test_upload import create_test_image 
+    assert updated_image['description'] == 'Updated description' 
