@@ -20,7 +20,7 @@ def test_register_success(client):
     # Check if user was added to the database
     user = get_user_by_username("testuser123")
     assert user is not None
-    assert user["mail_id"] == "test123@gmail.com"
+    assert user["email"] == "test123@gmail.com"
 
 def test_register_password_mismatch(client):
     """Test registration failure due to mismatched passwords."""

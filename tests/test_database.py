@@ -6,8 +6,8 @@ from Database.userdatahandler import (
     create_user,
     get_user_by_email,
     get_user_by_username,
-    is_username_available,
-    is_email_available,
+    check_username_availability,
+    check_email_availability,
     create_google_user
 )
 
@@ -16,19 +16,21 @@ def test_create_user(test_db):
     now = datetime.now()
     
     # First check username and email availability
-    assert is_username_available("testuser") == True
-    assert is_email_available("test@example.com") == True
+    assert check_username_availability("testuser") == True
+    assert check_email_availability("test@example.com") == True
     
-    create_user(
-        firstname="Test",
-        lastname="User",
-        email="test@example.com",
-        username="testuser",
-        password="testpass123",
-        security_question="What is your favorite color?",
-        security_answer="blue",
-        accountcreatedtime=now
-    )
+    user_data = {
+        "first_name": "Test",
+        "last_name": "User",
+        "email": "test@example.com",
+        "username": "testuser",
+        "password": "testpass123",
+        "security_question": "What is your favorite color?",
+        "security_answer": "blue",
+        "account_created_at": now
+    }
+    
+    create_user(user_data)
     
     # Verify user was created
     user = get_user_by_email("test@example.com")
@@ -36,24 +38,26 @@ def test_create_user(test_db):
     assert user["first_name"] == "Test"
     assert user["last_name"] == "User"
     assert user["username"] == "testuser"
-    assert user["mail_id"] == "test@example.com"
+    assert user["email"] == "test@example.com"
 
 def test_create_google_user(test_db):
     """Test Google user creation in database."""
     now = datetime.now().isoformat()
     
     # First check username and email availability
-    assert is_username_available("googleuser") == True
-    assert is_email_available("google@example.com") == True
+    assert check_username_availability("googleuser") == True
+    assert check_email_availability("google@example.com") == True
     
-    create_google_user(
-        firstname="Google",
-        lastname="User",
-        email="google@example.com",
-        username="googleuser",
-        google_id="123456789",
-        accountcreatedtime=now
-    )
+    user_data = {
+        "first_name": "Google",
+        "last_name": "User",
+        "email": "google@example.com",
+        "username": "googleuser",
+        "google_id": "123456789",
+        "account_created_at": now
+    }
+    
+    create_google_user(user_data)
     
     # Verify user was created
     user = get_user_by_email("google@example.com")
@@ -65,41 +69,45 @@ def test_create_google_user(test_db):
 def test_username_availability(test_db):
     """Test username availability check."""
     # Initially the username should be available
-    assert is_username_available("newuser") == True
+    assert check_username_availability("newuser") == True
     
     # Create a user
     now = datetime.now()
-    create_user(
-        firstname="Test",
-        lastname="User",
-        email="test@example.com",
-        username="newuser",
-        password="testpass123",
-        security_question="What is your favorite color?",
-        security_answer="blue",
-        accountcreatedtime=now
-    )
+    user_data = {
+        "first_name": "Test",
+        "last_name": "User",
+        "email": "test@example.com",
+        "username": "newuser",
+        "password": "testpass123",
+        "security_question": "What is your favorite color?",
+        "security_answer": "blue",
+        "account_created_at": now
+    }
+    
+    create_user(user_data)
     
     # Now the username should not be available
-    assert is_username_available("newuser") == False
+    assert check_username_availability("newuser") == False
 
 def test_email_availability(test_db):
     """Test email availability check."""
     # Initially the email should be available
-    assert is_email_available("test@example.com") == True
+    assert check_email_availability("test@example.com") == True
     
     # Create a user
     now = datetime.now()
-    create_user(
-        firstname="Test",
-        lastname="User",
-        email="test@example.com",
-        username="testuser",
-        password="testpass123",
-        security_question="What is your favorite color?",
-        security_answer="blue",
-        accountcreatedtime=now
-    )
+    user_data = {
+        "first_name": "Test",
+        "last_name": "User",
+        "email": "test@example.com",
+        "username": "testuser",
+        "password": "testpass123",
+        "security_question": "What is your favorite color?",
+        "security_answer": "blue",
+        "account_created_at": now
+    }
+    
+    create_user(user_data)
     
     # Now the email should not be available
-    assert is_email_available("test@example.com") == False 
+    assert check_email_availability("test@example.com") == False 

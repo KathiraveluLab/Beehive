@@ -16,16 +16,17 @@ from Database.userdatahandler import (
 def test_user(test_db):
     """Create a test user."""
     now = datetime.now()
-    create_user(
-        firstname="Test",
-        lastname="User",
-        email="test@example.com",
-        username="testuser",
-        password="testpass123",
-        security_question="What is your favorite color?",
-        security_answer="blue",
-        accountcreatedtime=now
-    )
+    user_data = {
+        "first_name": "Test",
+        "last_name": "User",
+        "email": "test@example.com",
+        "username": "testuser",
+        "password": "testpass123",
+        "security_question": "What is your favorite color?",
+        "security_answer": "blue",
+        "account_created_at": now
+    }
+    create_user(user_data)
     return "testuser"
 
 @pytest.fixture
@@ -36,7 +37,7 @@ def sample_image_data(test_user):
         'filename': 'test.jpg',
         'title': 'Test Image',
         'description': 'A test image description',
-        'time_created': datetime.now(),
+        'created_at': datetime.now(),
         'audio_filename': 'test_audio.mp3',
         'sentiment': 'positive'
     }
@@ -48,15 +49,7 @@ def test_save_and_get_image(test_db, test_user, sample_image_data):
     assert len(initial_images) == 0
     
     # Save the image
-    save_image(
-        username=sample_image_data['username'],
-        filename=sample_image_data['filename'],
-        title=sample_image_data['title'],
-        description=sample_image_data['description'],
-        time_created=sample_image_data['time_created'],
-        audio_filename=sample_image_data['audio_filename'],
-        sentiment=sample_image_data['sentiment']
-    )
+    save_image(sample_image_data)
     
     # Get images for the user
     images = get_images_by_user(sample_image_data['username'])
@@ -69,15 +62,7 @@ def test_save_and_get_image(test_db, test_user, sample_image_data):
 def test_update_image(test_db, test_user, sample_image_data):
     """Test updating an image."""
     # First save the image
-    save_image(
-        username=sample_image_data['username'],
-        filename=sample_image_data['filename'],
-        title=sample_image_data['title'],
-        description=sample_image_data['description'],
-        time_created=sample_image_data['time_created'],
-        audio_filename=sample_image_data['audio_filename'],
-        sentiment=sample_image_data['sentiment']
-    )
+    save_image(sample_image_data)
     
     # Get the image to get its ID
     images = get_images_by_user(sample_image_data['username'])
@@ -101,15 +86,7 @@ def test_delete_image(test_db, test_user, sample_image_data):
     assert len(initial_images) == 0
     
     # First save the image
-    save_image(
-        username=sample_image_data['username'],
-        filename=sample_image_data['filename'],
-        title=sample_image_data['title'],
-        description=sample_image_data['description'],
-        time_created=sample_image_data['time_created'],
-        audio_filename=sample_image_data['audio_filename'],
-        sentiment=sample_image_data['sentiment']
-    )
+    save_image(sample_image_data)
     
     # Get the image to get its ID
     images = get_images_by_user(sample_image_data['username'])
@@ -130,15 +107,7 @@ def test_image_counts(test_db, test_user, sample_image_data):
     assert todays_images() == 0
     
     # Add an image
-    save_image(
-        username=sample_image_data['username'],
-        filename=sample_image_data['filename'],
-        title=sample_image_data['title'],
-        description=sample_image_data['description'],
-        time_created=sample_image_data['time_created'],
-        audio_filename=sample_image_data['audio_filename'],
-        sentiment=sample_image_data['sentiment']
-    )
+    save_image(sample_image_data)
     
     # Check counts
     assert total_images() == 1
