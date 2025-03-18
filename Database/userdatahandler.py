@@ -11,41 +11,18 @@ def get_image_collection():
     return DatabaseConfig.get_beehive_image_collection()
 
 # Create user in MongoDB
-def create_user(firstname: str, lastname: str, email: str, username: str, password: str, security_question: str, security_answer: str, accountcreatedtime: datetime):
-    
-    # Hash the password before storing
-    salt = bcrypt.gensalt()
-    hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
-    hashed_answer = bcrypt.hashpw(security_answer.encode('utf-8'), salt)
-    user_data = {
-        "first_name" : firstname,
-        "last_name" : lastname,
-        "mail_id" : email,
-        "username" : username,
-        "password" : hashed_password,
-        "security_question": security_question,
-        "security_answer": hashed_answer,  
-        "account_created_at" : accountcreatedtime,
-        "role" : "user"
-    }
-    get_user_collection().insert_one(user_data)
+def create_user(user_data):
+    user_collection = DatabaseConfig.get_beehive_user_collection()
+    return user_collection.insert_one(user_data)
 
 # Check if username is available in MongoDB for registration purpose
-def is_username_available(username: str):
-    query = {
-        "username" : username
-    }
+def check_username_availability(username):
+    user_collection = DatabaseConfig.get_beehive_user_collection()
+    return user_collection.count_documents({"username": username}) == 0
 
-    count = get_user_collection().count_documents(query)
-    return count == 0
-
-def is_email_available(email: str):
-    query = {
-        "mail_id" : email
-    }
-
-    count = get_user_collection().count_documents(query)
-    return count == 0
+def check_email_availability(email):
+    user_collection = DatabaseConfig.get_beehive_user_collection()
+    return user_collection.count_documents({"email": email}) == 0
 
 def isValidEmail(email):
   regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
@@ -66,20 +43,13 @@ def get_password_by_username(username: str):
         return None
     
 # Get user by username from MongoDB
-def get_user_by_username(username: str):
-    query = {
-        "username" : username
-    }
-    user = get_user_collection().find_one(query)
-    return user
+def get_user_by_username(username):
+    user_collection = DatabaseConfig.get_beehive_user_collection()
+    return user_collection.find_one({"username": username})
 
-def get_user_by_email(email: str):
-    """Get user by email from MongoDB."""
-    query = {
-        "mail_id": email
-    }
-    user = get_user_collection().find_one(query)
-    return user
+def get_user_by_email(email):
+    user_collection = DatabaseConfig.get_beehive_user_collection()
+    return user_collection.find_one({"email": email})
 
 def create_google_user(firstname: str, lastname: str, email: str, username: str, google_id: str, accountcreatedtime: str):
     """Create a user that will authenticate via Google."""
@@ -94,11 +64,11 @@ def create_google_user(firstname: str, lastname: str, email: str, username: str,
     }
     get_user_collection().insert_one(user_data)
 
-def update_profile_photo(username, filename):
-    """Update the profile photo filename for a user."""
-    get_user_collection().update_one(
-        {"username": username},
-        {"$set": {"profile_photo": filename}}
+def update_user_profile_photo(user_id, profile_photo):
+    user_collection = DatabaseConfig.get_beehive_user_collection()
+    return user_collection.update_one(
+        {"_id": user_id},
+        {"$set": {"profile_photo": profile_photo}}
     )
 
 def update_username(user_id, new_username):    
@@ -181,3 +151,11 @@ def get_image_by_id(image_id):
     query = {'_id': image_id}
     image = get_image_collection().find_one(query)
     return image
+
+def get_user_by_google_id(google_id):
+    user_collection = DatabaseConfig.get_beehive_user_collection()
+    return user_collection.find_one({"google_id": google_id})
+
+def is_valid_username(username):
+    pattern = r'^[a-zA-Z0-9_]{3,20}$'
+    return bool(re.match(pattern, username))

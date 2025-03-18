@@ -6,15 +6,15 @@ load_dotenv(find_dotenv())
 
 class DatabaseConfig:
     _instance = None
-    _db = None
     _client = None
+    _db = None
     
     @classmethod
     def get_database(cls):
         if cls._db is None:
-            connection_string = os.environ.get("MONGODB_CONNECTION_STRING", "mongodb://localhost:27017/")
+            connection_string = os.environ.get("MONGODB_CONNECTION_STRING")
             cls._client = MongoClient(connection_string)
-            cls._db = cls._client.beehive
+            cls._db = cls._client["beehive"]
         return cls._db
     
     @classmethod
@@ -23,15 +23,15 @@ class DatabaseConfig:
     
     @classmethod
     def get_beehive_user_collection(cls):
-        return cls.get_database().users
+        return cls.get_database()["users"]
     
     @classmethod
     def get_beehive_image_collection(cls):
-        return cls.get_database().images
+        return cls.get_database()["images"]
     
     @classmethod
     def get_beehive_admin_collection(cls):
-        return cls.get_database().admins
+        return cls.get_database()["admins"]
     
     @classmethod
     def reset(cls):
