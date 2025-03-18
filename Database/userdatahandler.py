@@ -12,17 +12,17 @@ def get_image_collection():
 
 # Create user in MongoDB
 def create_user(user_data):
-    user_collection = DatabaseConfig.get_beehive_user_collection()
-    return user_collection.insert_one(user_data)
+    """Create a new user."""
+    return DatabaseConfig.get_beehive_user_collection().insert_one(user_data)
 
 # Check if username is available in MongoDB for registration purpose
 def check_username_availability(username):
-    user_collection = DatabaseConfig.get_beehive_user_collection()
-    return user_collection.count_documents({"username": username}) == 0
+    """Check if a username is available."""
+    return DatabaseConfig.get_beehive_user_collection().count_documents({"username": username}) == 0
 
 def check_email_availability(email):
-    user_collection = DatabaseConfig.get_beehive_user_collection()
-    return user_collection.count_documents({"email": email}) == 0
+    """Check if an email is available."""
+    return DatabaseConfig.get_beehive_user_collection().count_documents({"email": email}) == 0
 
 def is_valid_email(email):
     regex = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
@@ -36,21 +36,21 @@ def get_password_by_username(username):
     
 # Get user by username from MongoDB
 def get_user_by_username(username):
-    user_collection = DatabaseConfig.get_beehive_user_collection()
-    return user_collection.find_one({"username": username})
+    """Get user details by username."""
+    return DatabaseConfig.get_beehive_user_collection().find_one({"username": username})
 
 def get_user_by_email(email):
-    user_collection = DatabaseConfig.get_beehive_user_collection()
-    return user_collection.find_one({"email": email})
+    """Get user details by email."""
+    return DatabaseConfig.get_beehive_user_collection().find_one({"email": email})
 
 def create_google_user(user_data):
     user_collection = DatabaseConfig.get_beehive_user_collection()
     return user_collection.insert_one(user_data)
 
-def update_user_profile_photo(user_id, profile_photo):
-    user_collection = DatabaseConfig.get_beehive_user_collection()
-    return user_collection.update_one(
-        {"_id": user_id},
+def update_user_profile_photo(google_id, profile_photo):
+    """Update user's profile photo."""
+    return DatabaseConfig.get_beehive_user_collection().update_one(
+        {"google_id": google_id},
         {"$set": {"profile_photo": profile_photo}}
     )
 
@@ -139,9 +139,10 @@ def get_image_by_id(image_id):
     return image_collection.find_one({'_id': image_id})
 
 def get_user_by_google_id(google_id):
-    user_collection = DatabaseConfig.get_beehive_user_collection()
-    return user_collection.find_one({"google_id": google_id})
+    """Get user details by Google ID."""
+    return DatabaseConfig.get_beehive_user_collection().find_one({"google_id": google_id})
 
 def is_valid_username(username):
-    pattern = r'^[a-zA-Z0-9_]{3,20}$'
+    """Validate username format."""
+    pattern = r"^[a-zA-Z0-9_]{3,20}$"
     return bool(re.match(pattern, username))
