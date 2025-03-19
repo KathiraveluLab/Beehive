@@ -46,6 +46,22 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.style.opacity = '1';
     }
 
+    // Update file name display function
+    function updateFileNameDisplay() {
+        const selectedFiles = document.getElementById('selectedFiles');
+        if (selectedFiles) {
+            if (fileInput.files.length > 0) {
+                if (fileInput.files.length === 1) {
+                    selectedFiles.textContent = fileInput.files[0].name;
+                } else {
+                    selectedFiles.textContent = fileInput.files.length + ' files selected';
+                }
+            } else {
+                selectedFiles.textContent = 'No file chosen';
+            }
+        }
+    }
+
     document.addEventListener('drop', function(e) {
         const dt = e.dataTransfer;
         const files = dt.files;
@@ -55,6 +71,9 @@ document.addEventListener('DOMContentLoaded', function() {
             if (validateFile(file)) {
                 // Update the file input with the dropped file
                 fileInput.files = files;
+                
+                // Update the file name display
+                updateFileNameDisplay();
                 
                 // Show upload form if hidden
                 const uploadForm = document.getElementById('uploadForm');
