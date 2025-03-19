@@ -192,6 +192,21 @@ function handleUpload(event) {
     }, 2000); 
 }
 
+function updateFileLabel() {
+    const fileInput = document.getElementById('fileInput');
+    const fileLabel = document.getElementById('selectedFiles');
+    
+    if (fileInput.files.length > 0) {
+        if (fileInput.files.length === 1) {
+            fileLabel.textContent = fileInput.files[0].name;
+        } else {
+            fileLabel.textContent = fileInput.files.length + ' files selected';
+        }
+    } else {
+        fileLabel.textContent = 'No file chosen';
+    }
+}
+
 //function for fetching sentiments from sentiment.json
 fetch("{{ url_for('static', filename='sentiments.json') }}")
         .then(response => response.json())
@@ -235,6 +250,15 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
         });
     </script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.addEventListener('change', updateFileLabel);
+            }
+        });
+    </script>
+
 </head>
 <body>
  
@@ -273,20 +297,23 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
     <div class="toggle-container">
         <div id="uploadForm" style="display: none;">
             <form action="{{ url_for('upload_images') }}" method="post" enctype="multipart/form-data" id="upload-form">
-                <input class="file-button" type="file" name="files" id="fileInput" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.heif,.pdf" required onchange="validateFile(this)"><br>            
+                <div class="file-selection-area">
+                    <input class="file-button" type="file" name="files" id="fileInput" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.heif,.pdf" required onchange="validateFile(this)">
+                    <label for="fileInput" class="file-select-button">Select Files</label>
+                    <span class="selected-files" id="selectedFiles">No file chosen</span>
+                </div>
                 <input class="title-area" type="text" name="title" placeholder="Title" required><br>
                 <textarea class="description-area" name="description" placeholder="Description" required></textarea><br>
                 <label for="sentiment" class="dropdown-label">Select Sentiment with which you are uploading the image:</label>
                 <select name="sentiment" id="sentiment" required class="dropdown">
-                 <option value="" disabled selected>Choose a Sentiment</option>
+                    <option value="" disabled selected>Choose a Sentiment</option>
                 </select>
-               
                 
                 <button type="button" onclick="startRecording()" class="record-btn">Start Recording</button>
                 <button type="button" onclick="stopRecording()" class="stop-btn" disabled id="stopBtn">Stop Recording</button>
                 <button type="button" onclick="resetRecording()" id="resetBtn" class="reset-btn" style="display: none;"> Reset Recording</button>
                 <audio id="audioPlayback" controls style="display: none;"></audio>
-    
+        
                 <input type="hidden" name="audioData" id="audioData">
                 <button class="uploadButton" id="uploadButton" type="submit" onclick="handleUpload(event)">
                     <svg xmlns="http://www.w3.org/2000/svg">
