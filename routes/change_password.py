@@ -5,10 +5,10 @@ from Database.userdatahandler import (
 import bcrypt
 
 
-change_password_pb = Blueprint('change_password', __name__)
+change_password_pb = Blueprint('password', __name__)
 
-@change_password_pb.route('/change-password', methods=['POST'])
-def change_password():
+@change_password_pb.route('/change', methods=['POST'])
+def change():
 
     username = session['username']
     users_collection = get_user_by_username(username)
