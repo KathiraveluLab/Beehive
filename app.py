@@ -16,8 +16,16 @@ from Database import userdatahandler
 from werkzeug.utils import secure_filename
 import fitz  
 from PIL import Image
-import bcrypt
-from routes import home_bp, register_bp, login_pb, logout_pb, google_login, profile_pb
+from routes import (
+    home_bp, 
+    register_bp, 
+    login_pb, logout_pb, 
+    google_login, 
+    profile_pb, 
+    change_password_pb,
+    change_email_pb,
+    change_username_pb,
+)
 from auth.auth import login_is_required, role_required
 
 from Database.admindatahandler import check_admin_available, create_admin
@@ -55,6 +63,9 @@ app.register_blueprint(login_pb, url_prefix='/')
 app.register_blueprint(logout_pb)
 app.register_blueprint(google_login)
 app.register_blueprint(profile_pb)
+app.register_blueprint(change_password_pb)
+app.register_blueprint(change_email_pb)
+app.register_blueprint(change_username_pb)
 
 flow = Flow.from_client_secrets_file(
     client_secrets_file=client_secrets_file,
@@ -311,67 +322,6 @@ def delete_image_route(image_id):
         flash('Please log in to delete images.', 'danger')
         return redirect(url_for('login'))
 
-@app.route('/change-username', methods=['GET', 'POST'])
-def change_username():
-    username = session['username']
-    users_collection = get_user_by_username(username)
-    user_id = users_collection.get('_id')
-    if request.method == 'POST':
-        new_username = request.form.get('new_username')
-
-        # Check if username already exists
-        from Database.userdatahandler import is_username_available
-        if not is_username_available(new_username):
-            flash("Username already taken!", "danger")
-            return redirect(url_for('change_username'))
-
-        from Database.userdatahandler import update_username
-        update_username(user_id, new_username)
-        session['username'] = new_username
-        flash("Username updated successfully!", "success")
-        
-
-    return render_template('profile.html')
-
-    
-@app.route('/change-email', methods=['GET', 'POST'])
-def change_email():
-
-    username = session['username']
-    users_collection = get_user_by_username(username)
-    user_id = users_collection.get('_id')
-
-    if request.method == 'POST':
-        new_email = request.form.get('new_email')
-
-        from Database.userdatahandler import update_email
-        update_email(user_id, new_email)
-        flash("Email updated successfully!", "success")
-        return redirect(url_for('profile'))
-
-    return render_template('profile.html')
-
-@app.route('/change-password', methods=['POST'])
-def change_password():
-
-    username = session['username']
-    users_collection = get_user_by_username(username)
-    user_id = users_collection.get('_id')
-
-    current_password = request.form.get("current_password")
-    new_password = request.form.get("new_password")
-    stored_password = users_collection["password"]
-    
-    # Verify the current password
-    if not bcrypt.checkpw(current_password.encode('utf-8'), stored_password):
-        flash("Current password is incorrect!", "danger")
-        return redirect(url_for('profile'))
-
-    from Database.userdatahandler import update_password
-    update_password(user_id, new_password)
-
-    flash("Password updated successfully!", "success")
-    return redirect(url_for('profile'))   
 
 # Admin routes
 

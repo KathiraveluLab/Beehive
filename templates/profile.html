@@ -389,19 +389,19 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
                 <button type="submit" class="update-photo-btn">Update Photo</button>
             </form>
             <div class="container">
-                <!-- <form action="{{ url_for('change_username') }}" method="POST">
+                <!-- <form action="{{ url_for('username.change') }}" method="POST">
                     <label>New Username:</label>
                     <input type="text" name="new_username" required>
                     <button type="submit" class="formbutton">Update Username</button>
                 </form> -->
             
-                <form action="{{ url_for('change_email') }}" method="POST">
+                <form action="{{ url_for('email.change') }}" method="POST">
                     <label>New Email:</label>
                     <input type="email" name="new_email" required>
                     <button type="submit" class="formbutton">Update Email</button>
                 </form>
             
-                <form action="{{ url_for('change_password') }}" method="POST">
+                <form action="{{ url_for('password.change') }}" method="POST">
                     <label>Current Password:</label>
                     <input type="password" name="current_password" required>
             
