@@ -395,7 +395,7 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
                     <button type="submit" class="formbutton">Update Username</button>
                 </form> -->
             
-                <form action="{{ url_for('change_email.change_email') }}" method="POST">
+                <form action="{{ url_for('email.change') }}" method="POST">
                     <label>New Email:</label>
                     <input type="email" name="new_email" required>
                     <button type="submit" class="formbutton">Update Email</button>

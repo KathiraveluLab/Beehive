@@ -1,10 +1,10 @@
 from flask import Blueprint, session, request, url_for, flash, redirect, render_template
 from Database.userdatahandler import get_user_by_username
 
-change_email_pb = Blueprint('change_email', __name__)
+change_email_pb = Blueprint('email', __name__)
 
-@change_email_pb.route('/change-email', methods=['GET', 'POST'])
-def change_email():
+@change_email_pb.route('/change', methods=['GET', 'POST'])
+def change():
 
     username = session['username']
     users_collection = get_user_by_username(username)
