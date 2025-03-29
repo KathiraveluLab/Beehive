@@ -182,12 +182,6 @@ function handleUpload(event) {
     
     const customSentiment = document.getElementById('custom-sentiment').value.trim();
 
-    // Check if at least one sentiment is selected or custom sentiment is provided
-    if (selectedSentiments.length === 0 && !customSentiment) {
-        alert("Please select at least one sentiment or provide a custom sentiment");
-        return;
-    }
-
     // Update the hidden input to ensure custom sentiment is included
     updateHiddenInput();
 
@@ -237,8 +231,6 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
 let selectedSentiments = [];
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Fetch sentiments for the dropdown (you already have this)
-    
     // Add event listener for the Add button
     document.getElementById('add-sentiment').addEventListener('click', function() {
         const dropdown = document.getElementById('sentiment-dropdown');
@@ -250,7 +242,7 @@ document.addEventListener('DOMContentLoaded', function() {
             updateHiddenInput();
         }
     });
-    // Initialize the hidden input
+    // Initialise the hidden input
     updateHiddenInput();
     // Add event listener for custom sentiment changes
     document.getElementById('custom-sentiment').addEventListener('input', function() {
