@@ -168,8 +168,20 @@ def get_images_by_user(username):
     return [{'id': str(image['_id']), 'filename': image['filename'], 'title': image['title'], 'description': image['description'], 'audio_filename': image.get('audio_filename', ""), 'sentiment':image.get('sentiment', "")} for image in images]
 
 # Update image in MongoDB
-def update_image(image_id, title, description):
-    beehive_image_collection.update_one({'_id': image_id}, {'$set': {'title': title, 'description': description}})
+def update_image(image_id, title, description, sentiment=None):
+    update_data = {
+        'title': title, 
+        'description': description
+    }
+    
+    # Only include sentiment in the update if it is provided by the user
+    if sentiment is not None:
+        update_data['sentiment'] = sentiment
+        
+    beehive_image_collection.update_one(
+        {'_id': image_id}, 
+        {'$set': update_data}
+    )
 
 # Delete image from MongoDB
 def delete_image(image_id):
