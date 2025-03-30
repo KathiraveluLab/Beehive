@@ -519,6 +519,7 @@ def edit_image(image_id):
     if 'username' in session or 'google_id' in session:
         title = request.form['title']
         description = request.form['description']
+        sentiment = request.form.get('sentiment', '')
 
         try:
             image_id = ObjectId(image_id)
@@ -526,7 +527,7 @@ def edit_image(image_id):
             flash(f'Invalid image ID format: {str(e)}', 'danger')
             return redirect(url_for('profile'))
 
-        update_image(image_id, title, description)
+        update_image(image_id, title, description, sentiment)
         flash('Image updated successfully!', 'success')
         if 'username' in session:
             return redirect(url_for('profile'))

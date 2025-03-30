@@ -472,8 +472,15 @@ function updateHiddenInput() {
                 <button class="edit-button" onclick="toggleEditForm('{{ image.id }}')">Edit</button>
                 <div id="editForm_{{ image.id }}" class="edit-form" style="display: none;"><br><br>
                     <form action="{{ url_for('edit_image', image_id=image.id) }}" class="edit-form" method="post">
-                        <input type="text" name="title" value="{{ image.title }}" class="text-input" required>
-                        <textarea name="description" class="text-input" required>{{ image.description }}</textarea>
+                        <label for="title_{{ image.id }}">Title:</label>
+                        <input type="text" id="title_{{ image.id }}" name="title" value="{{ image.title }}" class="text-input" required>
+                        
+                        <label for="description_{{ image.id }}">Description:</label>
+                        <textarea id="description_{{ image.id }}" name="description" class="text-input" required>{{ image.description }}</textarea>
+                        
+                        <label for="sentiment_{{ image.id }}">Sentiment:</label>
+                        <textarea id="sentiment_{{ image.id }}" name="sentiment" class="text-input">{{ image.sentiment }}</textarea>
+                        
                         <button type="submit" class="update-button">Update</button>
                     </form>
                 </div><br><br>
