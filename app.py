@@ -519,20 +519,22 @@ def edit_image(image_id):
     if 'username' in session or 'google_id' in session:
         title = request.form['title']
         description = request.form['description']
+        sentiment = request.form.get('sentiment', '')
+        
+        # Get the referrer URL to return to the same page
+        referrer = request.referrer or url_for('profile')
 
         try:
             image_id = ObjectId(image_id)
         except Exception as e:
             flash(f'Invalid image ID format: {str(e)}', 'danger')
-            return redirect(url_for('profile'))
+            return redirect(referrer)
 
-        update_image(image_id, title, description)
+        update_image(image_id, title, description, sentiment)
         flash('Image updated successfully!', 'success')
-        if 'username' in session:
-            return redirect(url_for('profile'))
-        elif 'google_id' in session:
-            return redirect(url_for('getallusers'))
-        return redirect(url_for('login'))
+        
+        # Redirect back to the page that submitted the form
+        return redirect(referrer)
     else:
         flash('Please log in to edit images.', 'danger')
         return redirect(url_for('login'))
