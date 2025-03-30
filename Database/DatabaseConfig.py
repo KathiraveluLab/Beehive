@@ -4,7 +4,7 @@ from pymongo import MongoClient
 
 load_dotenv(find_dotenv())
 
-connectionString = os.environ.get("MONGODB_CONNECTION_STRING")
+connectionString = os.environ.get("mongodb://localhost:27017/")
 
 dbclient = MongoClient(connectionString)
 

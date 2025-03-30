@@ -122,7 +122,7 @@ def update_password(user_id, new_password):
     )
     
 # Save image to MongoDB  
-def save_image(username, filename, title, description, time_created,audio_filename=None,sentiment=None):
+def save_image(username, filename, title, description, time_created,audio_filename=None,sentiment=None, tags=None):
     image = {
         'username': username,
         'filename': filename,
@@ -130,7 +130,8 @@ def save_image(username, filename, title, description, time_created,audio_filena
         'description': description,
         'created_at': time_created,
         'audio_filename': audio_filename,
-        'sentiment': sentiment
+        'sentiment': sentiment,
+        'tags': tags
     }
     beehive_image_collection.insert_one(image)
 
@@ -165,8 +166,15 @@ def get_currentuser_from_session():
 # Get all images from MongoDB
 def get_images_by_user(username):
     images = beehive_image_collection.find({'username': username})
-    return [{'id': str(image['_id']), 'filename': image['filename'], 'title': image['title'], 'description': image['description'], 'audio_filename': image.get('audio_filename', ""), 'sentiment':image.get('sentiment', "")} for image in images]
-
+def get_images_by_user(username):
+    images = beehive_image_collection.find({'username': username})
+    return [{'id': str(image['_id']), 
+             'filename': image['filename'], 
+             'title': image['title'], 
+             'description': image['description'], 
+             'audio_filename': image.get('audio_filename', ""), 
+             'sentiment': image.get('sentiment', ""), 
+             'tags': image.get('tags', "")} for image in images]
 # Update image in MongoDB
 def update_image(image_id, title, description):
     beehive_image_collection.update_one({'_id': image_id}, {'$set': {'title': title, 'description': description}})

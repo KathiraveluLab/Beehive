@@ -304,9 +304,12 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
                 </div>
                 <input class="title-area" type="text" name="title" placeholder="Title" required><br>
                 <textarea class="description-area" name="description" placeholder="Description" required></textarea><br>
+                <!-- new input field for tags -->
+                <br><input class="tags-area" type="text" name="tags" placeholder="Enter tags (comma-separated)" required><br>
                 <label for="sentiment" class="dropdown-label">Select Sentiment with which you are uploading the image:</label>
                 <select name="sentiment" id="sentiment" required class="dropdown">
-                    <option value="" disabled selected>Choose a Sentiment</option>
+                  <option value="" disabled selected>Choose a Sentiment</option>
+                  <option value="Neutral">Neutral</option> <!-- Default option -->
                 </select>
                 
                 <button type="button" onclick="startRecording()" class="record-btn">Start Recording</button>
@@ -354,6 +357,15 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
             <h3>{{ image.title }}</h3>
             <p>{{ image.description }}</p>
             <div class="sentiment">sentiment : {{ image.sentiment }}</div>
+
+            <h4 class="tags">
+              Tags:
+              {% if image.tags %}
+                {{', '.join(image.tags[:4])}}
+              {% else %}
+                No tags available
+              {% endif %}
+            </h4>
             <button class="more-info-button" onclick="toggleMoreInfo('{{ image.id }}')">More Info</button>
             <div id="moreInfo_{{ image.id }}" class="more-info" style="display: none;">
                 <button class="edit-button" onclick="toggleEditForm('{{ image.id }}')">Edit</button>

@@ -408,6 +408,7 @@ def upload_images():
     sentiment = request.form.get('sentiment')
     description = request.form.get('description', '')
     audio_data = request.form.get('audioData')
+    tags = request.form.get('tags', '').split(',')
 
     for file in files:
         if file and allowed_file(file.filename):
@@ -427,7 +428,7 @@ def upload_images():
                     f.write(audio_binary)
 
         time_created = datetime.datetime.now()
-        save_image(user['username'], filename, title, description, time_created, audio_filename, sentiment)
+        save_image(user['username'], filename, title, description, time_created, audio_filename, sentiment, tags)
         flash('Image uploaded successfully!', 'success')
 
             # Generate PDF thumbnail if applicable
