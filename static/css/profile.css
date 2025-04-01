@@ -1064,64 +1064,6 @@ input {
     padding: 5px 10px;
     margin-top: 5px;
     color: #666;
-    font-style: italic;
-}
-
-/* Filter Container Styles */
-.filter-container {
-    text-align: center;
-    margin: 20px 0;
-    padding: 10px;
-    background-color: #333;
-    border-radius: 8px;
-}
-
-.filter-form {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-}
-
-.filter-input {
-    width: 60%;
-    max-width: 400px;
-    padding: 10px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
-.filter-button {
-    padding: 10px 20px;
-    font-size: 16px;
-    color: #fff;
-    background-color: #007bff;
-    border: none;
-    border-radius: 5px;
-}
-
-.filter-button:hover {
-    background-color: #0056b3;
-}
-
-.filter-button:active {
-    background-color: #004085;
-}
-
-label {
-    font-size: 14px;
-    color: white;
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
-
-input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    cursor: pointer;
     font-style: Arial;
 }
 
@@ -1179,4 +1121,61 @@ input[type="checkbox"] {
 .custom-sentiment-container {
     margin-top: 10px;
     width: 100%;
+}
+
+/* Filter Container Styles */
+.filter-container {
+    text-align: center;
+    margin: 20px 0;
+    padding: 10px;
+    background-color: #333;
+    border-radius: 8px;
+}
+
+.filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-input {
+    width: 60%;
+    max-width: 400px;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.filter-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+}
+
+.filter-button:hover {
+    background-color: #0056b3;
+}
+
+.filter-button:active {
+    background-color: #004085;
+}
+
+label {
+    font-size: 14px;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
 }
