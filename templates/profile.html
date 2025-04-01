@@ -179,11 +179,17 @@ function handleUpload(event) {
 
     let button = document.getElementById("uploadButton");
     let form = document.getElementById("upload-form");
+    
+    const customSentiment = document.getElementById('custom-sentiment').value.trim();
+
+    // Update the hidden input to ensure custom sentiment is included
+    updateHiddenInput();
 
     if (!form.checkValidity()) {
         form.reportValidity(); 
         return; 
     }
+    
     button.classList.add("active");
 
     setTimeout(() => {
@@ -209,17 +215,113 @@ function updateFileLabel() {
 
 //function for fetching sentiments from sentiment.json
 fetch("{{ url_for('static', filename='sentiments.json') }}")
-        .then(response => response.json())
-        .then(data => {
-            const sentimentDropdown = document.getElementById("sentiment");
-            data.sentiments.forEach(sentiment => {
-                let option = document.createElement("option");
-                option.value = sentiment;
-                option.textContent = sentiment;
-                sentimentDropdown.appendChild(option);
-            });
-        })
-        .catch(error => console.error("Error loading sentiments:", error));
+    .then(response => response.json())
+    .then(data => {
+        const sentimentDropdown = document.getElementById("sentiment-dropdown");
+        data.sentiments.forEach(sentiment => {
+            let option = document.createElement("option");
+            option.value = sentiment;
+            option.textContent = sentiment;
+            sentimentDropdown.appendChild(option);
+        });
+    })
+    .catch(error => console.error("Error loading sentiments:", error));
+
+// Initialize the selected sentiments array
+let selectedSentiments = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener for the Add button
+    document.getElementById('add-sentiment').addEventListener('click', function() {
+        const dropdown = document.getElementById('sentiment-dropdown');
+        const selectedValue = dropdown.value;
+        
+        if (selectedValue && !selectedSentiments.includes(selectedValue)) {
+            selectedSentiments.push(selectedValue);
+            updateSelectedSentimentsUI();
+            updateHiddenInput();
+        }
+    });
+    // Initialise the hidden input
+    updateHiddenInput();
+    // Add event listener for custom sentiment changes
+    document.getElementById('custom-sentiment').addEventListener('input', function() {
+        updateHiddenInput();
+    });
+});
+
+function updateSelectedSentimentsUI() {
+    const container = document.getElementById('selected-sentiments');
+    container.innerHTML = '';
+    
+    selectedSentiments.forEach((sentiment, index) => {
+        const tag = document.createElement('div');
+        tag.className = 'sentiment-tag';
+        
+        // Add move left button (except for first item)
+        if (index > 0) {
+            const moveLeft = document.createElement('span');
+            moveLeft.className = 'move-btn';
+            moveLeft.innerHTML = '&larr;';
+            moveLeft.onclick = function() {
+                moveSentiment(index, index - 1);
+            };
+            tag.appendChild(moveLeft);
+        }
+        
+        // Add sentiment text
+        const text = document.createElement('span');
+        text.textContent = sentiment;
+        tag.appendChild(text);
+        
+        // Add move right button (except for last item)
+        if (index < selectedSentiments.length - 1) {
+            const moveRight = document.createElement('span');
+            moveRight.className = 'move-btn';
+            moveRight.innerHTML = '&rarr;';
+            moveRight.onclick = function() {
+                moveSentiment(index, index + 1);
+            };
+            tag.appendChild(moveRight);
+        }
+        
+        // Add delete button
+        const deleteBtn = document.createElement('span');
+        deleteBtn.className = 'delete-sentiment';
+        deleteBtn.innerHTML = '&times;';
+        deleteBtn.onclick = function() {
+            selectedSentiments.splice(index, 1);
+            updateSelectedSentimentsUI();
+            updateHiddenInput();
+        };
+        tag.appendChild(deleteBtn);
+        
+        container.appendChild(tag);
+    });
+}
+
+function moveSentiment(fromIndex, toIndex) {
+    const item = selectedSentiments[fromIndex];
+    selectedSentiments.splice(fromIndex, 1);
+    selectedSentiments.splice(toIndex, 0, item);
+    updateSelectedSentimentsUI();
+    updateHiddenInput();
+}
+
+function updateHiddenInput() {
+    let selectedSentimentsStr = selectedSentiments.join(', ');
+    
+    // Gets custom sentiment if entered
+    const customSentiment = document.getElementById('custom-sentiment').value.trim();
+    
+    // Adds custom sentiment to the value if user inputs
+    if (customSentiment) {
+        document.getElementById('sentiment-input').value = selectedSentimentsStr + 
+            (selectedSentimentsStr ? '; Custom: ' : 'Custom: ') + customSentiment;
+    } else {
+        document.getElementById('sentiment-input').value = selectedSentimentsStr;
+    }
+}
     </script>
     <script src="{{ url_for('static', filename='js/dragdrop.js') }}"></script>
 
@@ -276,7 +378,6 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
             </div>
         {% endif %}
     </div>
-    
 </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -305,13 +406,21 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
                 </div>
                 <input class="title-area" type="text" name="title" placeholder="Title" required><br>
                 <textarea class="description-area" name="description" placeholder="Description" required></textarea><br>
-                <!-- new input field for tags -->
-                <br><input class="tags-area" type="text" name="tags" placeholder="Enter tags (comma-separated)" required><br>
-                <label for="sentiment" class="dropdown-label">Select Sentiment with which you are uploading the image:</label>
-                <select name="sentiment" id="sentiment" required class="dropdown">
-                  <option value="" disabled selected>Choose a Sentiment</option>
-                  <option value="Neutral">Neutral</option> <!-- Default option -->
-                </select>
+                <label class="dropdown-label">Select Sentiments for your image:</label>
+                <div class="sentiment-selector">
+                    <select id="sentiment-dropdown" class="dropdown">
+                        <option value="" disabled selected>Choose a Sentiment</option>
+                    </select>
+                    <button type="button" id="add-sentiment" class="add-sentiment-btn">Add</button>
+                </div>
+                <div id="selected-sentiments" class="selected-sentiments-container">
+                    <!-- Selected sentiments will appear here -->
+                </div>
+                <div class="custom-sentiment-container">
+                    <label for="custom-sentiment" class="dropdown-label">Custom Sentiment:</label>
+                    <textarea id="custom-sentiment" name="custom_sentiment" class="description-area custom-sentiment-area" placeholder="Describe your own feelings or emotions about this image..."></textarea>
+                </div>
+                <input type="hidden" name="sentiment" id="sentiment-input" required>
                 
                 <button type="button" onclick="startRecording()" class="record-btn">Start Recording</button>
                 <button type="button" onclick="stopRecording()" class="stop-btn" disabled id="stopBtn">Stop Recording</button>
@@ -332,7 +441,6 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
     </div>
 
     <h2 style="text-align: center;">Uploaded Images</h2>
-
     <div class="filter-container">
       <form action="{{ url_for('profile') }}" method="get" class="filter-form">
         <input type="text" name="tags" placeholder="Enter tags (comma-separated)" value="{{ request.args.get('tags', '') }}" class="filter-input">
@@ -343,7 +451,6 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
         <button type="submit" class="filter-button">Filter</button>
     </form>
   </div>
-    
     <div class="image-container">
         {% for image in images %}
         <div class="image-card">
@@ -370,22 +477,20 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
             <h3>{{ image.title }}</h3>
             <p>{{ image.description }}</p>
             <div class="sentiment">sentiment : {{ image.sentiment }}</div>
-
-            <h4 class="tags">
-              Tags:
-              {% if image.tags %}
-                {{', '.join(image.tags[:4])}}
-              {% else %}
-                No tags available
-              {% endif %}
-            </h4>
             <button class="more-info-button" onclick="toggleMoreInfo('{{ image.id }}')">More Info</button>
             <div id="moreInfo_{{ image.id }}" class="more-info" style="display: none;">
                 <button class="edit-button" onclick="toggleEditForm('{{ image.id }}')">Edit</button>
                 <div id="editForm_{{ image.id }}" class="edit-form" style="display: none;"><br><br>
                     <form action="{{ url_for('edit_image', image_id=image.id) }}" class="edit-form" method="post">
-                        <input type="text" name="title" value="{{ image.title }}" class="text-input" required>
-                        <textarea name="description" class="text-input" required>{{ image.description }}</textarea>
+                        <label for="title_{{ image.id }}">Title:</label>
+                        <input type="text" id="title_{{ image.id }}" name="title" value="{{ image.title }}" class="text-input" required>
+                        
+                        <label for="description_{{ image.id }}">Description:</label>
+                        <textarea id="description_{{ image.id }}" name="description" class="text-input" required>{{ image.description }}</textarea>
+                        
+                        <label for="sentiment_{{ image.id }}">Sentiment:</label>
+                        <textarea id="sentiment_{{ image.id }}" name="sentiment" class="text-input">{{ image.sentiment }}</textarea>
+                        
                         <button type="submit" class="update-button">Update</button>
                     </form>
                 </div><br><br>
