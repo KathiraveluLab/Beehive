@@ -1122,4 +1122,61 @@ input[type="checkbox"] {
     width: 16px;
     height: 16px;
     cursor: pointer;
+    font-style: Arial;
+}
+
+.sentiment-selector {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.add-sentiment-btn {
+    margin-left: 10px;
+    padding: 0px 10px;
+    height: 40px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.selected-sentiments-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.sentiment-tag {
+    display: flex;
+    align-items: center;
+    background: #e1e1e1;
+    padding: 5px 10px;
+    border-radius: 20px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.sentiment-tag .move-btn {
+    cursor: pointer;
+    margin: 0 5px;
+    font-size: 14px;
+}
+
+.sentiment-tag .delete-sentiment {
+    cursor: pointer;
+    color: #ff4d4d;
+    margin-left: 8px;
+}
+
+.custom-sentiment-area {
+    height: 60px;
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.custom-sentiment-container {
+    margin-top: 10px;
+    width: 100%;
 }
