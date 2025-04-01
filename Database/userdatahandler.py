@@ -188,3 +188,27 @@ def get_image_by_id(image_id):
     query = {'_id': image_id}
     image = beehive_image_collection.find_one(query)
     return image
+
+def get_images_by_tags(username, tags, match_all):
+
+    if match_all:
+        # Match all tags (AND logic)
+        query = {
+            "username": username,
+            "tags": {"$all": tags}
+        }
+    else:
+        # Match any tag (OR logic)
+        query = {
+            "username": username,
+            "tags": {"$in": tags}  
+        }
+
+    images = beehive_image_collection.find(query)
+    return [{'id': str(image['_id']), 
+             'filename': image['filename'], 
+             'title': image['title'], 
+             'description': image['description'], 
+             'audio_filename': image.get('audio_filename', ""), 
+             'sentiment': image.get('sentiment', ""), 
+             'tags': image.get('tags', "")} for image in images]

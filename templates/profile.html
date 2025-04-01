@@ -276,6 +276,7 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
             </div>
         {% endif %}
     </div>
+    
 </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -331,6 +332,18 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
     </div>
 
     <h2 style="text-align: center;">Uploaded Images</h2>
+
+    <div class="filter-container">
+      <form action="{{ url_for('profile') }}" method="get" class="filter-form">
+        <input type="text" name="tags" placeholder="Enter tags (comma-separated)" value="{{ request.args.get('tags', '') }}" class="filter-input">
+        <label>
+            <input type="checkbox" name="match_all" value="1" {% if request.args.get('match_all') %}checked{% endif %}>
+            Match all tags
+        </label>
+        <button type="submit" class="filter-button">Filter</button>
+    </form>
+  </div>
+    
     <div class="image-container">
         {% for image in images %}
         <div class="image-card">

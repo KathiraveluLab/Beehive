@@ -27,7 +27,8 @@ from Database.userdatahandler import (
     create_google_user,  
     delete_image,
     get_currentuser_from_session, 
-    get_image_by_id, 
+    get_image_by_id,
+    get_images_by_tags, 
     get_images_by_user, 
     get_password_by_username, 
     get_user_by_username,
@@ -382,14 +383,24 @@ def profile():
         flash('User not found.', 'danger')
         return redirect(url_for('login'))
 
-    images = get_images_by_user(username)  # Fetch images uploaded by the user
+    # Get filter parameters from the request
+    tags = request.args.get('tags', '').strip()
+    match_all = request.args.get('match_all') == '1'
+
+    if tags:
+        # Split tags into a list and filter images
+        tag_list = [tag.strip().lower() for tag in tags.split(',') if tag.strip()]
+        images = get_images_by_tags(username, tag_list, match_all)
+    else:
+        # Fetch all images if no tags are provided
+        images = get_images_by_user(username)
 
     return render_template(
         "profile.html", 
         username=user['username'], 
         full_name=f"{user['first_name']} {user['last_name']}", 
         images=images,
-        user_dp=user.get('profile_photo')  # Pass profile photo to template
+        user_dp=user.get('profile_photo') 
     )
 
 @app.route('/upload', methods=['POST'])
