@@ -15,7 +15,6 @@ from pip._vendor import cachecontrol
 from Database import userdatahandler
 from werkzeug.utils import secure_filename
 import fitz  
-from PIL import Image
 from routes import (
     home_bp, 
     register_bp, 
@@ -41,6 +40,7 @@ from Database.userdatahandler import (
     todays_images,
 )
 from usersutils.allowd_files import allowed_file
+from usersutils.generate_thumbnail import generate_pdf_thumbnail
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from auth.OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
@@ -172,7 +172,7 @@ def upload_images():
 
             # Generate PDF thumbnail if applicable
         if filename.lower().endswith('.pdf'):
-                generate_pdf_thumbnail(filepath, filename)
+                generate_pdf_thumbnail(filepath, filename, app.config['UPLOAD_FOLDER'])
 
         else:
             flash('Invalid file type or no file selected.', 'danger')
@@ -227,30 +227,6 @@ def upload_profile_photo():
         flash('Invalid file type. Only jpg, jpeg, png, and gif files are allowed.', 'danger')
     
     return redirect(url_for('profile'))
-
-# generate thumbnail for the pdf
-def generate_pdf_thumbnail(pdf_path, filename):
-    """Generate an image from the first page of a PDF using PyMuPDF."""
-    # Ensure the thumbnails directory exists
-    thumbnails_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'thumbnails')
-    os.makedirs(thumbnails_dir, exist_ok=True) 
-
-    pdf_document = fitz.open(pdf_path)
-    
-    #select only the first page for the thumbnail
-    first_page = pdf_document.load_page(0)
-    
-    zoom = 2  # Increase for higher resolution
-    mat = fitz.Matrix(zoom, zoom)
-    pix = first_page.get_pixmap(matrix=mat)
-    
-    image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-    
-    thumbnail_filename = filename.replace('.pdf', '.jpg')
-    thumbnail_path = os.path.join(thumbnails_dir, thumbnail_filename)
-    image.save(thumbnail_path, 'JPEG')
-    
-    return thumbnail_path
 
 # Edit images uploaded by the user
 @app.route('/edit/<image_id>', methods=['POST'])
