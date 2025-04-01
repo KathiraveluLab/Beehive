@@ -40,15 +40,10 @@ from Database.userdatahandler import (
     total_images,
     todays_images,
 )
-
+from usersutils.allowd_files import allowed_file
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from auth.OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
-
-ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heif', 'pdf'}
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 app = Flask(__name__)
 app.secret_key = 'beehive'
