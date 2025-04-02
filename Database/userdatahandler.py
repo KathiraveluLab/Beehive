@@ -167,6 +167,29 @@ def get_images_by_user(username):
     images = beehive_image_collection.find({'username': username})
     return [{'id': str(image['_id']), 'filename': image['filename'], 'title': image['title'], 'description': image['description'], 'audio_filename': image.get('audio_filename', ""), 'sentiment':image.get('sentiment', "")} for image in images]
 
+# Get images by sentiments list from MongoDB
+def get_images_by_sentiments(username, sentiment_list, match_all):
+    if match_all:
+        # Match all tags (AND logic)
+        query = {
+            "username": username,
+            "$and": [{"sentiment": {"$regex": tag, "$options": "i"}} for tag in sentiment_list]
+        }
+    else:
+        # Match any tag (OR logic)
+        query = {
+            "username": username,
+            "$or": [{"sentiment": {"$regex": tag, "$options": "i"}} for tag in sentiment_list]
+        }
+
+    images = beehive_image_collection.find(query)
+    return [{'id': str(image['_id']), 
+             'filename': image['filename'], 
+             'title': image['title'], 
+             'description': image['description'], 
+             'audio_filename': image.get('audio_filename', ""), 
+             'sentiment': image.get('sentiment', "")} for image in images]
+
 # Update image in MongoDB
 def update_image(image_id, title, description, sentiment=None):
     update_data = {
