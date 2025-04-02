@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     if: |
       github.event.issue.pull_request &&
-      contains(github.event.comment.body, '/review')
+      contains(github.event.comment.body, '/gemini-review')
     steps:
       - name: PR Info
         run: |
