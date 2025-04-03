@@ -24,7 +24,8 @@ from routes import (
     change_password_pb,
     change_email_pb,
     change_username_pb,
-    upload_pb
+    upload_pb,
+    edit_image_pb
 )
 from auth.auth import login_is_required, role_required
 
@@ -62,6 +63,8 @@ app.register_blueprint(profile_pb)
 app.register_blueprint(change_password_pb)
 app.register_blueprint(change_email_pb)
 app.register_blueprint(change_username_pb)
+app.register_blueprint(upload_pb)
+app.register_blueprint(edit_image_pb)
 
 flow = Flow.from_client_secrets_file(
     client_secrets_file=client_secrets_file,
@@ -229,30 +232,6 @@ def upload_profile_photo():
     
     return redirect(url_for('profile'))
 
-# Edit images uploaded by the user
-@app.route('/edit/<image_id>', methods=['POST'])
-def edit_image(image_id):
-    
-    if 'username' in session or 'google_id' in session:
-        title = request.form['title']
-        description = request.form['description']
-
-        try:
-            image_id = ObjectId(image_id)
-        except Exception as e:
-            flash(f'Invalid image ID format: {str(e)}', 'danger')
-            return redirect(url_for('profile'))
-
-        update_image(image_id, title, description)
-        flash('Image updated successfully!', 'success')
-        if 'username' in session:
-            return redirect(url_for('profile'))
-        elif 'google_id' in session:
-            return redirect(url_for('getallusers'))
-        return redirect(url_for('login'))
-    else:
-        flash('Please log in to edit images.', 'danger')
-        return redirect(url_for('login'))
  
 @app.route('/audio/<filename>')
 def serve_audio(filename):

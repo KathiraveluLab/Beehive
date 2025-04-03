@@ -332,7 +332,7 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
             <div id="moreInfo_{{ image.id }}" class="more-info" style="display: none;">
                 <button class="edit-button" onclick="toggleEditForm('{{ image.id }}')">Edit</button>
                 <div id="editForm_{{ image.id }}" class="edit-form" style="display: none;"><br><br>
-                    <form action="{{ url_for('edit_image', image_id=image.id) }}" class="edit-form" method="post">
+                    <form action="{{ url_for('image.edit', image_id=image.id) }}" class="edit-form" method="post">
                         <input type="text" name="title" value="{{ image.title }}" class="text-input" required>
                         <textarea name="description" class="text-input" required>{{ image.description }}</textarea>
                         <button type="submit" class="update-button">Update</button>
