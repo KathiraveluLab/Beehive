@@ -368,16 +368,7 @@ function updateHiddenInput() {
 <div class="nav">
     <img src = "{{url_for('static', filename='Logo.svg')}}" alt="Beehive Logo" class="logo">
     <div class="heading">Beehive</div>
-    <div class="filter-container">
-      <form action="{{ url_for('profile') }}" method="get" class="filter-form">
-        <input type="text" name="sentiments" placeholder="Enter tags (comma-separated)" value="{{ request.args.get('sentiments', '') }}" class="filter-input">
-        <button type="submit" class="filter-button">Filter</button>
-        <label>
-            <input type="checkbox" name="match_all" value="1" {% if request.args.get('match_all') %}checked{% endif %}>
-            <span>Match All</span>
-        </label>
-    </form>
-  </div>
+    
 
     <!-- <h1>{{ username }}</h1> -->
     <div class="profile-photo-container" id="profile-photo-container">
@@ -454,6 +445,17 @@ function updateHiddenInput() {
 
     <h2 style="text-align: center;">Uploaded Images</h2>
     
+    <div class="filter-container">
+      <h2>Filter images by sentiments</h2>
+      <form action="{{ url_for('profile') }}" method="get" class="filter-form">
+        <input type="text" name="sentiments" placeholder="Enter tags (comma-separated)" value="{{ request.args.get('sentiments', '') }}" class="filter-input">
+        <button type="submit" class="filter-button">Filter</button>
+        <label>
+            <input type="checkbox" name="match_all" value="1" {% if request.args.get('match_all') %}checked{% endif %}>
+            <span>Match All</span>
+        </label>
+    </form>
+  </div>
     <div class="image-container">
         {% for image in images %}
         <div class="image-card">

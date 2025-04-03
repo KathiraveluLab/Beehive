@@ -1123,8 +1123,12 @@ input {
     width: 100%;
 }
 .filter-container {
-    margin-left: auto;
+    text-align: center;
+    margin: 20px 0;
+    padding: 10px;
     background-color: #333;
+    border-radius: 8px;
+    color: white;
 }
 
 .filter-form {
