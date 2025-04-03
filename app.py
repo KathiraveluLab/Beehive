@@ -24,6 +24,7 @@ from routes import (
     change_password_pb,
     change_email_pb,
     change_username_pb,
+    upload_pb
 )
 from auth.auth import login_is_required, role_required
 
