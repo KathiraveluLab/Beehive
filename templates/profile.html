@@ -452,7 +452,7 @@ function updateHiddenInput() {
         <button type="submit" class="filter-button">Filter</button>
         <label>
             <input type="checkbox" name="match_all" value="1" {% if request.args.get('match_all') %}checked{% endif %}>
-            <span>Match All</span>
+            <span class="match-label">Match All</span>
         </label>
     </form>
   </div>

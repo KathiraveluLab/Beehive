@@ -1165,6 +1165,13 @@ input {
 label {
     font-size: 14px;
     color: #333;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+.match-label{
+  margin-top: -5px;
 }
 
 input[type="checkbox"] {
