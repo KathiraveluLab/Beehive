@@ -40,7 +40,7 @@ def is_admin():
     if 'email' in session:
         email = session['email']
         # Import the ALLOWED_EMAILS list if not available in this scope
-        from OAuth.config import ALLOWED_EMAILS
+        from oauth.config import ALLOWED_EMAILS
         if email in ALLOWED_EMAILS:
             return True
         
