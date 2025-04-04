@@ -446,7 +446,7 @@ function updateHiddenInput() {
     <h2 style="text-align: center;">Uploaded Images</h2>
     
     <div class="filter-container">
-      <h2>Filter images by sentiments</h2>
+      <h2>Filter Images by Sentiments</h2>
       <form action="{{ url_for('profile') }}" method="get" class="filter-form">
         <input type="text" name="sentiments" placeholder="Enter tags (comma-separated)" value="{{ request.args.get('sentiments', '') }}" class="filter-input">
         <button type="submit" class="filter-button">Filter</button>

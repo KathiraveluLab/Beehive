@@ -1126,11 +1126,7 @@ input {
     text-align: center;
     margin: 20px 0;
     padding: 10px;
-    background-color: #333;
-    border-radius: 8px;
-    color: white;
 }
-
 .filter-form {
     display: flex;
     flex-wrap: wrap;
@@ -1155,7 +1151,7 @@ input {
     background-color: #007bff;
     border: none;
     border-radius: 5px;
-    margin-top: -7px;
+    margin-top: -10px;
 }
 
 .filter-button:hover {
@@ -1167,9 +1163,8 @@ input {
 }
 
 label {
-    margin-top: -8px;
     font-size: 14px;
-    color: white;
+    color: #333;
 }
 
 input[type="checkbox"] {
