@@ -29,8 +29,6 @@ def delete_image(image_id):
                 flash(f'Image file deleted: {image["filename"]}', 'success')
             except OSError as e:
                 flash(f'Error deleting image file: {str(e)}', 'danger')
-                os.remove(filepath)
-                flash(f'Image file deleted: {image["filename"]}', 'success')
         else:
             flash('Image file not found in upload directory.', 'danger')
 
