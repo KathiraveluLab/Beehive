@@ -3,9 +3,9 @@ import re
 
 from flask import session
 
-from Database import DatabaseConfig
+from database import databaseConfig
 
-beehive_admin_collection = DatabaseConfig.get_beehive_admin_collection()
+beehive_admin_collection = databaseConfig.get_beehive_admin_collection()
 
 def create_admin(name: str, email: str, google_id: str, accountcreatedtime: datetime):
     
@@ -48,7 +48,7 @@ def is_admin():
 
 def update_admin_profile_photo(google_id, filename):
     """Update the profile photo filename for an admin."""
-    beehive_admin_collection = DatabaseConfig.get_beehive_admin_collection()
+    beehive_admin_collection = databaseConfig.get_beehive_admin_collection()
     beehive_admin_collection.update_one(
         {"google_id": google_id},
         {"$set": {"profile_photo": filename}}
@@ -56,7 +56,7 @@ def update_admin_profile_photo(google_id, filename):
 
 def get_admin_by_google_id(google_id):
     """Get admin details by Google ID."""
-    beehive_admin_collection = DatabaseConfig.get_beehive_admin_collection()
+    beehive_admin_collection = databaseConfig.get_beehive_admin_collection()
     query = {
         "google_id": google_id
     }

@@ -2,11 +2,11 @@ from datetime import datetime, timedelta
 import re
 import bcrypt
 from flask import session
-from Database import DatabaseConfig
+from database import databaseConfig
 
 
-beehive_user_collection = DatabaseConfig.get_beehive_user_collection()
-beehive_image_collection = DatabaseConfig.get_beehive_image_collection()
+beehive_user_collection = databaseConfig.get_beehive_user_collection()
+beehive_image_collection = databaseConfig.get_beehive_image_collection()
 
 # Create user in MongoDB
 def create_user(firstname: str, lastname: str, email: str, username: str, password: str, security_question: str, security_answer: str, accountcreatedtime: datetime):
