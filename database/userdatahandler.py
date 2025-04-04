@@ -2,11 +2,11 @@ from datetime import datetime, timedelta
 import re
 import bcrypt
 from flask import session
-from Database import DatabaseConfig
+from database import databaseConfig
 
 
-beehive_user_collection = DatabaseConfig.get_beehive_user_collection()
-beehive_image_collection = DatabaseConfig.get_beehive_image_collection()
+beehive_user_collection = databaseConfig.get_beehive_user_collection()
+beehive_image_collection = databaseConfig.get_beehive_image_collection()
 
 # Create user in MongoDB
 def create_user(firstname: str, lastname: str, email: str, username: str, password: str, security_question: str, security_answer: str, accountcreatedtime: datetime):
@@ -166,6 +166,29 @@ def get_currentuser_from_session():
 def get_images_by_user(username):
     images = beehive_image_collection.find({'username': username})
     return [{'id': str(image['_id']), 'filename': image['filename'], 'title': image['title'], 'description': image['description'], 'audio_filename': image.get('audio_filename', ""), 'sentiment':image.get('sentiment', "")} for image in images]
+
+# Get images by sentiments list from MongoDB
+def get_images_by_sentiments(username, sentiment_list, match_all):
+    if match_all:
+        # Match all tags (AND logic)
+        query = {
+            "username": username,
+            "$and": [{"sentiment": {"$regex": tag, "$options": "i"}} for tag in sentiment_list]
+        }
+    else:
+        # Match any tag (OR logic)
+        query = {
+            "username": username,
+            "$or": [{"sentiment": {"$regex": tag, "$options": "i"}} for tag in sentiment_list]
+        }
+
+    images = beehive_image_collection.find(query)
+    return [{'id': str(image['_id']), 
+             'filename': image['filename'], 
+             'title': image['title'], 
+             'description': image['description'], 
+             'audio_filename': image.get('audio_filename', ""), 
+             'sentiment': image.get('sentiment', "")} for image in images]
 
 # Update image in MongoDB
 def update_image(image_id, title, description, sentiment=None):

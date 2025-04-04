@@ -85,6 +85,16 @@ Added logic to check the session after a password reset and synchronize it with 
 - **Follow the coding standards**: Make sure your code adheres to the project’s coding conventions. This includes naming conventions, code formatting, and structure.
 - **Be respectful and kind**: Our community values respectful collaboration. When reviewing others' code or responding to feedback, maintain a positive, constructive attitude.
 
+## 7. Naming Conventions  
+
+To maintain consistency across the project, please follow these naming conventions when adding new files or folders:  
+
+- **Folders should use lowercase names** (e.g., `docs`, `database`, `oauth`).  
+- **Files should also use lowercase names**, unless they are standard files like `README.md`, `LICENSE`, etc.  
+- **For headings and labels in the application UI**, we prefer **Title Case** where applicable.  
+
+> NOTE: Some folder and file names are referenced throughout the codebase. If renaming an existing file/folder, please ensure all references are updated accordingly to avoid breaking functionality.  
+
 ## 5. Code of Conduct
 
 Please ensure that you read and follow our [Code of Conduct](/CODE_OF_CONDUCT.md), which outlines the expectations for respectful and inclusive behavior within the community.

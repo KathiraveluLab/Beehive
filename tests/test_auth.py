@@ -1,4 +1,4 @@
-from Database.userdatahandler import get_user_by_username 
+from database.userdatahandler import get_user_by_username 
 
 
 def test_register_success(client):

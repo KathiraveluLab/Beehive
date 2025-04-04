@@ -13,7 +13,7 @@ import requests
 from google.oauth2 import id_token
 import google.auth.transport.requests
 from pip._vendor import cachecontrol
-from Database import userdatahandler
+from database import userdatahandler
 from werkzeug.utils import secure_filename
 import fitz  
 from PIL import Image
@@ -21,13 +21,14 @@ import bcrypt
 from datetime import timedelta
 
 
-from Database.admindatahandler import check_admin_available, create_admin, is_admin
-from Database.userdatahandler import (
+from database.admindatahandler import check_admin_available, create_admin, is_admin
+from database.userdatahandler import (
     create_user,
     create_google_user,  
     delete_image,
     get_currentuser_from_session, 
-    get_image_by_id, 
+    get_image_by_id,
+    get_images_by_sentiments, 
     get_images_by_user, 
     get_password_by_username, 
     get_user_by_username,
@@ -44,7 +45,7 @@ from usersutils import valid_username
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
+from oauth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heif', 'pdf'}
 
@@ -349,7 +350,7 @@ def forgot_password():
             return redirect(url_for('forgot_password'))
 
         # Hash the new password
-        from Database.userdatahandler import update_password
+        from database.userdatahandler import update_password
         update_password(user['_id'], new_password)
 
         flash("Password reset successful!", "success")
@@ -381,8 +382,14 @@ def profile():
     if not user:
         flash('User not found.', 'danger')
         return redirect(url_for('login'))
+    tags = request.args.get('sentiments', '').strip()
+    match_all = request.args.get('match_all') == '1'
 
-    images = get_images_by_user(username)  # Fetch images uploaded by the user
+    if tags:
+      tag_list = [tag.strip().lower() for tag in tags.split(',') if tag.strip()]
+      images = get_images_by_sentiments(username, tag_list, match_all)
+    else:
+      images = get_images_by_user(username)  # Fetch images uploaded by the user
 
     return render_template(
         "profile.html", 
@@ -588,12 +595,12 @@ def change_username():
         new_username = request.form.get('new_username')
 
         # Check if username already exists
-        from Database.userdatahandler import is_username_available
+        from database.userdatahandler import is_username_available
         if not is_username_available(new_username):
             flash("Username already taken!", "danger")
             return redirect(url_for('change_username'))
 
-        from Database.userdatahandler import update_username
+        from database.userdatahandler import update_username
         update_username(user_id, new_username)
         session['username'] = new_username
         flash("Username updated successfully!", "success")
@@ -612,7 +619,7 @@ def change_email():
     if request.method == 'POST':
         new_email = request.form.get('new_email')
 
-        from Database.userdatahandler import update_email
+        from database.userdatahandler import update_email
         update_email(user_id, new_email)
         flash("Email updated successfully!", "success")
         return redirect(url_for('profile'))
@@ -635,7 +642,7 @@ def change_password():
         flash("Current password is incorrect!", "danger")
         return redirect(url_for('profile'))
 
-    from Database.userdatahandler import update_password
+    from database.userdatahandler import update_password
     update_password(user_id, new_password)
 
     flash("Password updated successfully!", "success")
@@ -706,7 +713,7 @@ def protected_area():
     todays_image = todays_images()
     
     # Get admin profile photo
-    from Database.admindatahandler import get_admin_by_google_id
+    from database.admindatahandler import get_admin_by_google_id
     admin = get_admin_by_google_id(google_id)
     admin_photo = admin.get('profile_photo') if admin else None
     
@@ -758,7 +765,7 @@ def admin_reset_password():
         flash("User not found!", "danger")
         return jsonify({"success": False, "message": "User not found!"})
 
-    from Database.userdatahandler import update_password
+    from database.userdatahandler import update_password
     update_password(user['_id'], new_password)
 
     flash( f"Password for {username} reset successfully!", "success")
@@ -772,7 +779,7 @@ def upload_admin_profile_photo():
         return redirect(url_for('admin_login'))
     
     # Manually check for admin role
-    from Database.admindatahandler import is_admin
+    from database.admindatahandler import is_admin
     if not is_admin():
         return render_template('403.html')
     
@@ -798,7 +805,7 @@ def upload_admin_profile_photo():
         filepath = os.path.join(profile_dir, filename)
         
         # Get admin data to check if old profile photo exists
-        from Database.admindatahandler import get_admin_by_google_id
+        from database.admindatahandler import get_admin_by_google_id
         admin = get_admin_by_google_id(google_id)
         
         # Remove old profile photo if it exists
@@ -811,7 +818,7 @@ def upload_admin_profile_photo():
         file.save(filepath)
         
         # Update admin record in database
-        from Database.admindatahandler import update_admin_profile_photo
+        from database.admindatahandler import update_admin_profile_photo
         update_admin_profile_photo(google_id, filename)
         
         flash('Profile photo updated successfully!', 'success')
