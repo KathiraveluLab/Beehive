@@ -378,7 +378,7 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
                 <h3>{{ username }}</h3>
                 <p>{{ full_name }}</p>
             </div>
-            <form action="{{ url_for('upload_profile_photo') }}" method="post" enctype="multipart/form-data" id="dp-form">
+            <form action="{{ url_for('upload_profile_photo.upload_profile_photo') }}" method="post" enctype="multipart/form-data" id="dp-form">
                 <div class="file-input-container">
                     <label for="profile-photo-input" class="file-input-label">Choose Photo</label>
                     <input type="file" id="profile-photo-input" name="profile_photo" accept=".jpg,.jpeg,.png,.gif" onchange="previewProfilePhoto(this)">

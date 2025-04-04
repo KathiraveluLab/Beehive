@@ -9,3 +9,4 @@ from .change_email import change_email_pb
 from .change_username import change_username_pb
 from .upload import upload_pb
 from .edit_image import edit_image_pb
+from .upload_profile_photo import upload_profile_photo_pb
