@@ -27,7 +27,7 @@ graph TD;
 
 ## Setup Instructions  
 
-If you want to run this project locally, see the [setup.md](DOCS/setup.md).  
+If you want to run this project locally, see the [setup.md](docs/setup.md).  
 
 ## Contributing  
 
