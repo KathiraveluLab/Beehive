@@ -27,7 +27,8 @@ from Database.userdatahandler import (
     create_google_user,  
     delete_image,
     get_currentuser_from_session, 
-    get_image_by_id, 
+    get_image_by_id,
+    get_images_by_sentiments, 
     get_images_by_user, 
     get_password_by_username, 
     get_user_by_username,
@@ -381,8 +382,14 @@ def profile():
     if not user:
         flash('User not found.', 'danger')
         return redirect(url_for('login'))
+    tags = request.args.get('sentiments', '').strip()
+    match_all = request.args.get('match_all') == '1'
 
-    images = get_images_by_user(username)  # Fetch images uploaded by the user
+    if tags:
+      tag_list = [tag.strip().lower() for tag in tags.split(',') if tag.strip()]
+      images = get_images_by_sentiments(username, tag_list, match_all)
+    else:
+      images = get_images_by_user(username)  # Fetch images uploaded by the user
 
     return render_template(
         "profile.html", 
