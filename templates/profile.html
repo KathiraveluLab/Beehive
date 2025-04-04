@@ -273,7 +273,7 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
 
     <div class="toggle-container">
         <div id="uploadForm" style="display: none;">
-            <form action="{{ url_for('upload_images') }}" method="post" enctype="multipart/form-data" id="upload-form">
+            <form action="{{ url_for('upload_images.upload_images') }}" method="post" enctype="multipart/form-data" id="upload-form">
                 <input class="file-button" type="file" name="files" id="fileInput" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.heif,.pdf" required onchange="validateFile(this)"><br>            
                 <input class="title-area" type="text" name="title" placeholder="Title" required><br>
                 <textarea class="description-area" name="description" placeholder="Description" required></textarea><br>
@@ -338,7 +338,7 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
                         <button type="submit" class="update-button">Update</button>
                     </form>
                 </div><br><br>
-                <a href="{{ url_for('delete_image_route', image_id=image.id) }}" class="delete-button">Delete</a>
+                <a href="{{ url_for('delete_image.delete_image', image_id=image.id) }}" class="delete-button">Delete</a>
                 <br><br>    
                 <a href="{{ url_for('static', filename='uploads/' ~ image.filename) }}" 
                 download="{{ image.filename }}" 
@@ -378,7 +378,7 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
                 <h3>{{ username }}</h3>
                 <p>{{ full_name }}</p>
             </div>
-            <form action="{{ url_for('upload_profile_photo') }}" method="post" enctype="multipart/form-data" id="dp-form">
+            <form action="{{ url_for('upload_profile_photo.upload_profile_photo') }}" method="post" enctype="multipart/form-data" id="dp-form">
                 <div class="file-input-container">
                     <label for="profile-photo-input" class="file-input-label">Choose Photo</label>
                     <input type="file" id="profile-photo-input" name="profile_photo" accept=".jpg,.jpeg,.png,.gif" onchange="previewProfilePhoto(this)">
