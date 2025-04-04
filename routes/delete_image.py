@@ -24,8 +24,13 @@ def delete_image(image_id):
         # Delete image file from upload directory
         filepath = os.path.join(current_app.config['UPLOAD_FOLDER'], image['filename'])
         if os.path.exists(filepath):
-            os.remove(filepath)
-            flash(f'Image file deleted: {image["filename"]}', 'success')
+            try:
+                os.remove(filepath)
+                flash(f'Image file deleted: {image["filename"]}', 'success')
+            except OSError as e:
+                flash(f'Error deleting image file: {str(e)}', 'danger')
+                os.remove(filepath)
+                flash(f'Image file deleted: {image["filename"]}', 'success')
         else:
             flash('Image file not found in upload directory.', 'danger')
 
