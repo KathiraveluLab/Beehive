@@ -10,8 +10,9 @@ import base64
 import os
 import datetime
 
-upload_pb = Blueprint('upload', __name__)
+upload_pb = Blueprint('upload_images', __name__)
 
+@upload_pb.route('/upload', methods=['POST'])
 def upload_images():
     if 'username' not in session:
         flash('Please log in to upload images.', 'danger')

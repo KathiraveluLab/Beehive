@@ -26,7 +26,8 @@ from routes import (
     change_username_pb,
     upload_pb,
     edit_image_pb,
-    upload_profile_photo_pb
+    upload_profile_photo_pb,
+    delete_image_pb
 )
 from auth.auth import login_is_required, role_required
 
@@ -67,6 +68,7 @@ app.register_blueprint(change_username_pb)
 app.register_blueprint(upload_pb)
 app.register_blueprint(edit_image_pb)
 app.register_blueprint(upload_profile_photo_pb)
+app.register_blueprint(delete_image_pb)
 
 flow = Flow.from_client_secrets_file(
     client_secrets_file=client_secrets_file,
@@ -140,43 +142,6 @@ def user_authorize():
 @app.route('/audio/<filename>')
 def serve_audio(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
-   
-# Delete images uploaded by the user
-@app.route('/delete/<image_id>')
-def delete_image_route(image_id):
-
-    if 'username' in session or 'google_id' in session:
-        
-        try:
-            image_id = ObjectId(image_id)
-        except Exception as e:
-            flash(f'Invalid image ID format: {str(e)}', 'danger')
-            return redirect(url_for('profile'))
-
-        image = get_image_by_id(image_id)
-        if not image:
-            flash('Image not found.', 'danger')
-            return redirect(url_for('profile'))
-        # Delete image file from upload directory
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], image['filename'])
-        if os.path.exists(filepath):
-            os.remove(filepath)
-            flash(f'Image file deleted: {image["filename"]}', 'success')
-        else:
-            flash('Image file not found in upload directory.', 'danger')
-
-        # Delete image record from database
-        delete_image(image_id)
-        flash('Image record deleted from database.', 'success')
-        if 'username' in session:
-            return redirect(url_for('profile'))
-        elif 'google_id' in session:
-            return redirect(url_for('getallusers'))
-        return redirect(url_for('login'))
-    else:
-        flash('Please log in to delete images.', 'danger')
-        return redirect(url_for('login'))
-
 
 # Admin routes
 
