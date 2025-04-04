@@ -24,7 +24,7 @@ from routes import (
     change_password_pb,
     change_email_pb,
     change_username_pb,
-    upload_pb,
+    upload_images_pb,
     edit_image_pb,
     upload_profile_photo_pb,
     delete_image_pb
@@ -65,7 +65,7 @@ app.register_blueprint(profile_pb)
 app.register_blueprint(change_password_pb)
 app.register_blueprint(change_email_pb)
 app.register_blueprint(change_username_pb)
-app.register_blueprint(upload_pb)
+app.register_blueprint(upload_images_pb)
 app.register_blueprint(edit_image_pb)
 app.register_blueprint(upload_profile_photo_pb)
 app.register_blueprint(delete_image_pb)
