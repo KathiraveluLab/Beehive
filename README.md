@@ -27,11 +27,11 @@ graph TD;
 
 ## Setup Instructions  
 
-If you want to run this project locally, see the [setup.md](DOCS/setup.md).  
+If you want to run this project locally, see the [setup.md](docs/setup.md).  
 
 ## Contributing  
 
-**Note**: `dev` branch is our primary development branch. The `main` branch is our stable branch. Please create pull requests against the dev branch if you are contributing to ongoing development. For specific contribution guidelines, see the [contributing.md](DOCS/contributing.md).  
+**Note**: `dev` branch is our primary development branch. The `main` branch is our stable branch. Please create pull requests against the dev branch if you are contributing to ongoing development. For specific contribution guidelines, see the [contributing.md](docs/contributing.md).  
 > **NOTE:**  
 > We currently have **two active branches** for development:  
 >  
