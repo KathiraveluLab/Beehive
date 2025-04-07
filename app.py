@@ -15,6 +15,7 @@ import google.auth.transport.requests
 from pip._vendor import cachecontrol
 from database import userdatahandler
 from werkzeug.utils import secure_filename
+from flask_login import login_required, logout_user
 import fitz  
 from PIL import Image
 import bcrypt
@@ -650,9 +651,9 @@ def change_password():
 
 
 @app.route('/logout')
+@login_required()
 def logout():
-    # Clear all user session data
-    session.clear()  # This will remove all session data including remember_me
+    logout_user()
     flash('You have been logged out.', 'success')
     return redirect(url_for('login'))
 
