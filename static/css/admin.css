@@ -356,3 +356,19 @@ html, body {
 footer {
     margin-top: auto;
 }
+.view-users {
+    display: inline-block;
+    padding: 10px 20px;
+    background-color: #007bff;
+    color: white;
+    text-decoration: none;
+    border: none;
+    border-radius: 5px;
+    text-align: center;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.view-users:hover {
+    background-color: #0056b3;
+}
