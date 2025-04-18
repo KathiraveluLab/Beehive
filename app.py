@@ -19,7 +19,8 @@ import fitz
 from PIL import Image
 import bcrypt
 from datetime import timedelta
-
+from flask_mail import Mail, Message
+import logging
 
 from database.admindatahandler import check_admin_available, create_admin, is_admin
 from database.userdatahandler import (
@@ -59,6 +60,15 @@ app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['PDF_THUMBNAIL_FOLDER'] = 'static/uploads/thumbnails/'
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
+
+# Configure Flask-Mail
+app.config['MAIL_SERVER'] = 'smtp.gmail.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_USE_TLS'] = True
+
+mail = Mail(app)
 
 flow = Flow.from_client_secrets_file(
     client_secrets_file=client_secrets_file,
@@ -109,6 +119,22 @@ def role_required(required_role):
 
         return wrapper
     return decorator
+
+# Send email function
+def send_email(to, subject, body):
+    try:
+        message = Message(
+            subject,
+            recipients=[to],
+            sender=app.config['MAIL_USERNAME'],
+            body = body
+            )
+        mail.send(message)
+        logging.info(f"Email sent to {to} with subject: {subject} successfully.")
+    except Exception as e:
+        logging.error(f"Failed to send email: {e}")
+    return "message sent successfully."
+
 
 # Home page
 @app.route('/')
