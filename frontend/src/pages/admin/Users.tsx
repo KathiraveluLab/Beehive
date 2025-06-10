@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useClerk } from '@clerk/clerk-react';
 import {
   UserIcon,
   EnvelopeIcon,
@@ -17,6 +19,7 @@ const mockUsers = [
     totalUploads: 25,
     lastActive: '2024-02-01T12:00:00Z',
     status: 'active',
+    clerkId: 'user_2NZKXPgX5IHkLX1OG6AJG8vK9J1', // Add Clerk User ID
   },
   {
     id: 2,
@@ -26,6 +29,7 @@ const mockUsers = [
     totalUploads: 45,
     lastActive: '2024-02-01T11:30:00Z',
     status: 'active',
+    clerkId: 'user_2NZKXPgX5IHkLX1OG6AJG8vK9J2', // Add Clerk User ID
   },
   // Add more mock users as needed
 ];
@@ -33,6 +37,8 @@ const mockUsers = [
 const Users = () => {
   const [users] = useState(mockUsers);
   const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate();
+  const clerk = useClerk();
 
   const filteredUsers = users.filter(
     (user) =>
@@ -40,14 +46,29 @@ const Users = () => {
       user.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleResetPassword = (userId: number) => {
-    // TODO: Implement actual password reset logic when backend is ready
-    toast.success('Password reset email sent successfully!');
+  const handleResetPassword = async (userId: number) => {
+    try {
+      const user = users.find(u => u.id === userId);
+      if (!user?.clerkId) {
+        throw new Error('User not found');
+      }
+
+      // Send password reset email using Clerk
+      await clerk.signOut();
+      await clerk.client.signIn.create({
+        strategy: "reset_password_email_code",
+        identifier: user.email,
+      });
+
+      toast.success('Password reset email sent successfully!');
+    } catch (error) {
+      console.error('Error resetting password:', error);
+      toast.error('Failed to send password reset email');
+    }
   };
 
   const handleViewUploads = (userId: number) => {
-    // TODO: Implement view uploads functionality when backend is ready
-    toast.success('Redirecting to user uploads...');
+    navigate(`/admin/users/${userId}/uploads`);
   };
 
   const handleToggleStatus = (userId: number) => {

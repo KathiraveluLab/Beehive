@@ -3,16 +3,19 @@ import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/clerk-react';
 import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../context/ThemeContext';
 
-const MainLayout = () => {
+const AdminLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const { user } = useUser();
+
   const navigate = useNavigate();
 
-  const navigation = [
-    { name: 'Home', href: '/dashboard' },
-    { name: 'Gallery', href: '/gallery' },
-    { name: 'Upload', href: '/upload' },
+  const isAdmin = user?.unsafeMetadata?.role === 'admin';
+
+  const adminNavigation = [
+    { name: 'Dashboard', href: '/admin' },
+    { name: 'Users', href: '/admin/users' },
+    { name: 'Analytics', href: '/admin/analytics' },
   ];
 
   return (
@@ -23,24 +26,28 @@ const MainLayout = () => {
             <div className="flex">
               <div className="flex-shrink-0 flex items-center">
                 <Link to="/" className="text-2xl font-bold text-black">
-                  <img src="/favicon.png" alt="Beehive Logo" className="h-8 w-8 inline-block mr-2" />
-                  Beehive
+                <img src="/favicon.png" alt="Beehive Logo" className="h-8 w-8 inline-block mr-2" />
+                  Beehive <span className="text-yellow-500 align-super text-sm">Admin</span>
                 </Link>
               </div>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                {navigation.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={`${
-                      location.pathname === item.href
-                        ? 'border-yellow-400'
-                        : 'border-transparent hover:border-gray-300'
-                    } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200`}
-                  >
-                    {item.name}
-                  </Link>
-                ))}
+                {isAdmin && (
+                  <>
+                    {adminNavigation.map((item) => (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        className={`${
+                          location.pathname === item.href
+                            ? 'border-yellow-400 text-black'
+                            : 'border-transparent hover:border-gray-300 text-black'
+                        } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200`}
+                      >
+                        {item.name}
+                      </Link>
+                    ))}
+                  </>
+                )}
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -91,4 +98,4 @@ const MainLayout = () => {
   );
 };
 
-export default MainLayout; 
+export default AdminLayout; 
