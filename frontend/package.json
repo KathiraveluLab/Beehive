@@ -12,6 +12,8 @@
   "dependencies": {
     "@clerk/clerk-react": "^5.31.8",
     "@heroicons/react": "^2.2.0",
+    "framer-motion": "^12.16.0",
+    "gsap": "^3.13.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-hot-toast": "^2.5.2",
