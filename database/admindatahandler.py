@@ -3,7 +3,7 @@ import re
 
 from flask import session
 
-from database import databaseConfig
+from Database import databaseConfig
 
 beehive_admin_collection = databaseConfig.get_beehive_admin_collection()
 

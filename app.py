@@ -7,22 +7,22 @@ import pathlib
 import re
 import sys
 from flask import Flask, abort, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
+from flask_cors import CORS
 from bson import ObjectId
 from google_auth_oauthlib.flow import Flow
 import requests
 from google.oauth2 import id_token
 import google.auth.transport.requests
 from pip._vendor import cachecontrol
-from database import userdatahandler
+from Database import userdatahandler
 from werkzeug.utils import secure_filename
 import fitz  
 from PIL import Image
 import bcrypt
 from datetime import timedelta
 
-
-from database.admindatahandler import check_admin_available, create_admin, is_admin
-from database.userdatahandler import (
+from Database.admindatahandler import check_admin_available, create_admin, is_admin
+from Database.userdatahandler import (
     create_user,
     create_google_user,  
     delete_image,
@@ -45,14 +45,19 @@ from usersutils import valid_username
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from oauth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
+from OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heif', 'pdf'}
 
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 app = Flask(__name__)
+CORS(app, resources={
+    r"/*": {
+        "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "allow_headers": ["Content-Type"],
+        "supports_credentials": True
+    }
+})  # Enable CORS for all routes with specific configuration
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
 app.secret_key = 'beehive'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
@@ -826,6 +831,56 @@ def upload_admin_profile_photo():
         flash('Invalid file type. Only jpg, jpeg, png, and gif files are allowed.', 'danger')
     
     return redirect("/admin")
+
+@app.route('/api/users', methods=['GET'])
+def get_users():
+    try:
+        # Get query parameters
+        query = request.args.get('query', '')
+        limit = int(request.args.get('limit', 10))
+        offset = int(request.args.get('offset', 0))
+        
+        # Get users from Clerk using REST API
+        clerk_api_key = os.getenv('CLERK_SECRET_KEY')
+        headers = {'Authorization': f'Bearer {clerk_api_key}'}
+        params = {
+            'limit': limit,
+            'offset': offset,
+            'query': query if query else None
+        }
+        response = requests.get('https://api.clerk.com/v1/users', headers=headers, params=params)
+        
+        if not response.ok:
+            raise Exception(f"Clerk API error: {response.text}")
+            
+        users_data = response.json()
+        # print(users_data)
+        
+        # Transform user data
+        transformed_users = []
+        users_list = users_data  # users_data is already a list
+        for user in users_list:
+            email = user['email_addresses'][0]['email_address'] if user['email_addresses'] else None
+            transformed_users.append({
+                'id': user['id'],
+                'name': f"{user['first_name']} {user['last_name']}".strip(),
+                'email': email,
+                'role': user['unsafe_metadata'].get('role', 'user'),
+                'lastActive': user['last_active_at'],
+                'image': user['image_url'],
+                # 'status': 'active' if not user['banned_at'] else 'banned',
+                'clerkId': user['id']
+            })
+            print(transformed_users)
+        
+        return jsonify({
+            'users': transformed_users,
+            'totalCount': len(users_list)  # Since we don't have a total_count in the response
+        })
+        
+    except Exception as e:
+        print(f"Error fetching users: {str(e)}")
+        return jsonify({'error': 'Failed to fetch users'}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)

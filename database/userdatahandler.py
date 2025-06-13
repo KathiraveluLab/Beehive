@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 import re
 import bcrypt
 from flask import session
-from database import databaseConfig
+from Database import databaseConfig
 
 
 beehive_user_collection = databaseConfig.get_beehive_user_collection()
