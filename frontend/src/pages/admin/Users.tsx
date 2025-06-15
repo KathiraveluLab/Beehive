@@ -14,6 +14,7 @@ import toast from 'react-hot-toast';
 
 interface User {
   id: string;
+  user_id: string;
   name: string;
   email: string;
   role: string;
@@ -29,6 +30,7 @@ const Users = () => {
   const [loading, setLoading] = useState(true);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  // const [userId, setUserId] = useState('');
   const [limit] = useState(10);
   const navigate = useNavigate();
   const clerk = useClerk();
@@ -52,7 +54,7 @@ const Users = () => {
       
       const data = await response.json();
       setUsers(data.users);
-      console.log(data.users);
+      // console.log(data.users);
       setTotalCount(data.totalCount);
     } catch (error) {
       console.error('Error fetching users:', error);
@@ -88,6 +90,7 @@ const Users = () => {
   };
 
   const handleViewUploads = (userId: string) => {
+    console.log(userId);
     navigate(`/admin/users/${userId}/uploads`);
   };
 

@@ -49,7 +49,7 @@ from OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heif', 'pdf'}
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 CORS(app, resources={
     r"/*": {
         "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
@@ -742,21 +742,20 @@ def getallusers():
 
 
 
-@app.route('/admin/users/<username>')
-@role_required("admin")
-def user_images_show(username):
-    user = get_user_by_username(username)
-    if not user:
-        flash("User not found.", "danger")
-        return redirect(url_for('getallusers'))
-    
-    images = get_images_by_user(username)
-    return render_template(
-        'user_images.html',
-        username=username,
-        images=images,
-        full_name=f"{user['first_name']} {user['last_name']}"
-    )
+@app.route('/api/admin/user_uploads/<user_id>')
+def user_images_show(user_id):
+    try:
+        images = get_images_by_user(user_id)
+        response = jsonify({
+            'images': images
+        })
+        response.headers.add('Access-Control-Allow-Origin', 'http://localhost:5173')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+    except Exception as e:
+        return jsonify({
+            'error': str(e)
+        }), 500
 
 @app.route('/admin/reset_password', methods=['POST'])
 def admin_reset_password():

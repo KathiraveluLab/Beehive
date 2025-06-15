@@ -163,9 +163,17 @@ def get_currentuser_from_session():
     return user
 
 # Get all images from MongoDB
-def get_images_by_user(username):
-    images = beehive_image_collection.find({'username': username})
-    return [{'id': str(image['_id']), 'filename': image['filename'], 'title': image['title'], 'description': image['description'], 'audio_filename': image.get('audio_filename', ""), 'sentiment':image.get('sentiment', "")} for image in images]
+def get_images_by_user(user_id):
+    images = beehive_image_collection.find({'user_id': user_id})
+    return [{
+        'id': str(image['_id']), 
+        'filename': image['filename'], 
+        'title': image['title'], 
+        'description': image['description'], 
+        'audio_filename': image.get('audio_filename', ""), 
+        'sentiment': image.get('sentiment', ""),
+        'created_at': image['created_at']['$date'] if isinstance(image.get('created_at'), dict) else image.get('created_at')
+    } for image in images]
 
 # Get images by sentiments list from MongoDB
 def get_images_by_sentiments(username, sentiment_list, match_all):
