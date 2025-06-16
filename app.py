@@ -591,157 +591,11 @@ def delete_image_route(image_id):
         flash('Please log in to delete images.', 'danger')
         return redirect(url_for('login'))
 
-@app.route('/change-username', methods=['GET', 'POST'])
-def change_username():
-    username = session['username']
-    users_collection = get_user_by_username(username)
-    user_id = users_collection.get('_id')
-    if request.method == 'POST':
-        new_username = request.form.get('new_username')
 
-        # Check if username already exists
-        from database.userdatahandler import is_username_available
-        if not is_username_available(new_username):
-            flash("Username already taken!", "danger")
-            return redirect(url_for('change_username'))
-
-        from database.userdatahandler import update_username
-        update_username(user_id, new_username)
-        session['username'] = new_username
-        flash("Username updated successfully!", "success")
-        
-
-    return render_template('profile.html')
-
-    
-@app.route('/change-email', methods=['GET', 'POST'])
-def change_email():
-
-    username = session['username']
-    users_collection = get_user_by_username(username)
-    user_id = users_collection.get('_id')
-
-    if request.method == 'POST':
-        new_email = request.form.get('new_email')
-
-        from database.userdatahandler import update_email
-        update_email(user_id, new_email)
-        flash("Email updated successfully!", "success")
-        return redirect(url_for('profile'))
-
-    return render_template('profile.html')
-
-@app.route('/change-password', methods=['POST'])
-def change_password():
-
-    username = session['username']
-    users_collection = get_user_by_username(username)
-    user_id = users_collection.get('_id')
-
-    current_password = request.form.get("current_password")
-    new_password = request.form.get("new_password")
-    stored_password = users_collection["password"]
-    
-    # Verify the current password
-    if not bcrypt.checkpw(current_password.encode('utf-8'), stored_password):
-        flash("Current password is incorrect!", "danger")
-        return redirect(url_for('profile'))
-
-    from database.userdatahandler import update_password
-    update_password(user_id, new_password)
-
-    flash("Password updated successfully!", "success")
-    return redirect(url_for('profile'))   
-
-
-@app.route('/logout')
-def logout():
-    # Clear all user session data
-    session.clear()  # This will remove all session data including remember_me
-    flash('You have been logged out.', 'success')
-    return redirect(url_for('login'))
 
 # Admin routes
 
-@app.route("/signingoogle")
-def signingoogle():
-    return render_template("signingoogle.html")
-
-@app.route('/admin/login')
-def admin_login():
-    authorization_url, state = flow.authorization_url()
-    session["state"] = state
-    return redirect(authorization_url)
-
-@app.route('/admin/login/callback')
-def authorize():
-    flow.fetch_token(authorization_response=request.url)
-
-    if not session["state"] == request.args["state"]:
-        abort(500)  # State does not match!
-
-    credentials = flow.credentials
-    request_session = requests.session()
-    cached_session = cachecontrol.CacheControl(request_session)
-    token_request = google.auth.transport.requests.Request(session=cached_session)
-
-    id_info = id_token.verify_oauth2_token(
-        id_token=credentials._id_token,
-        request=token_request,
-        audience=GOOGLE_CLIENT_ID
-    )
-
-    session["google_id"] = id_info.get("sub")
-    session["name"] = id_info.get("name")
-    session["email"] = id_info.get("email")
-    session["remember_me"] = True
-    session.permanent = True
-    
-    if session["email"] in ALLOWED_EMAILS:
-        if check_admin_available(session["google_id"]):
-            create_admin(session["name"], session["email"], session["google_id"], datetime.datetime.now())
-        with open('user_info.json', 'w') as json_file:
-            json.dump(session, json_file, indent=4)
-        return redirect("/admin")
-    else:
-        return render_template("403.html")
-
-
-
-@app.route("/admin")
-@role_required("admin")
-@login_is_required
-def protected_area():
-    admin_name = session.get("name")
-    google_id = session.get("google_id")
-    total_img = total_images()
-    todays_image = todays_images()
-    
-    # Get admin profile photo
-    from database.admindatahandler import get_admin_by_google_id
-    admin = get_admin_by_google_id(google_id)
-    admin_photo = admin.get('profile_photo') if admin else None
-    
-    return render_template("admin.html", admin_name=admin_name, total_img=total_img, 
-                          todays_image=todays_image, admin_photo=admin_photo)
-
-@app.route("/admin/logout")
-@login_is_required
-@role_required("admin")
-def adminlogout():
-    session.clear()
-    return redirect("/")
-
-
-
-@app.route('/admin/users')
-@role_required("admin")
-def getallusers():
-    users = userdatahandler.getallusers()
-    return render_template('users.html', users=users)
-
-
-
+# Get all images uploaded by a user
 @app.route('/api/admin/user_uploads/<user_id>')
 def user_images_show(user_id):
     try:
@@ -757,80 +611,7 @@ def user_images_show(user_id):
             'error': str(e)
         }), 500
 
-@app.route('/admin/reset_password', methods=['POST'])
-def admin_reset_password():
-
-    username = request.form.get('username')
-    new_password = request.form.get('new_password')
-
-    # Check if user exists
-    user = get_user_by_username(username)
-    if not user:
-        flash("User not found!", "danger")
-        return jsonify({"success": False, "message": "User not found!"})
-
-    from database.userdatahandler import update_password
-    update_password(user['_id'], new_password)
-
-    flash( f"Password for {username} reset successfully!", "success")
-    return jsonify({"success": True, "redirect_url": url_for('getallusers')})
-
-    
-@app.route('/upload_admin_profile_photo', methods=['POST'])
-def upload_admin_profile_photo():
-    if 'google_id' not in session:
-        flash('Please log in to update your profile photo.', 'danger')
-        return redirect(url_for('admin_login'))
-    
-    # Manually check for admin role
-    from database.admindatahandler import is_admin
-    if not is_admin():
-        return render_template('403.html')
-    
-    google_id = session["google_id"]
-    
-    if 'profile_photo' not in request.files:
-        flash('No file selected.', 'danger')
-        return redirect("/admin")
-    
-    file = request.files['profile_photo']
-    
-    if file.filename == '':
-        flash('No file selected.', 'danger')
-        return redirect("/admin")
-    
-    if file and allowed_file(file.filename):
-        filename = f"admin_{google_id}_profile.{file.filename.rsplit('.', 1)[1].lower()}"
-        profile_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'profile')
-        
-        # Create directory if it doesn't exist
-        os.makedirs(profile_dir, exist_ok=True)
-        
-        filepath = os.path.join(profile_dir, filename)
-        
-        # Get admin data to check if old profile photo exists
-        from database.admindatahandler import get_admin_by_google_id
-        admin = get_admin_by_google_id(google_id)
-        
-        # Remove old profile photo if it exists
-        if admin and admin.get('profile_photo'):
-            old_filepath = os.path.join(profile_dir, admin['profile_photo'])
-            if os.path.exists(old_filepath):
-                os.remove(old_filepath)
-        
-        # Save the new file
-        file.save(filepath)
-        
-        # Update admin record in database
-        from database.admindatahandler import update_admin_profile_photo
-        update_admin_profile_photo(google_id, filename)
-        
-        flash('Profile photo updated successfully!', 'success')
-    else:
-        flash('Invalid file type. Only jpg, jpeg, png, and gif files are allowed.', 'danger')
-    
-    return redirect("/admin")
-
+# Get all users
 @app.route('/api/users', methods=['GET'])
 def get_users():
     try:
@@ -857,7 +638,7 @@ def get_users():
         
         # Transform user data
         transformed_users = []
-        users_list = users_data  # users_data is already a list
+        users_list = users_data  
         for user in users_list:
             email = user['email_addresses'][0]['email_address'] if user['email_addresses'] else None
             transformed_users.append({
@@ -874,7 +655,7 @@ def get_users():
         
         return jsonify({
             'users': transformed_users,
-            'totalCount': len(users_list)  # Since we don't have a total_count in the response
+            'totalCount': len(users_list)  
         })
         
     except Exception as e:
