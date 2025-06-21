@@ -39,7 +39,7 @@ const Users = () => {
     try {
       setLoading(true);
       const offset = (currentPage - 1) * limit;
-      const response = await fetch(`http://127.0.0.1:5000/api/users?limit=${limit}&offset=${offset}&query=${searchTerm}`, {
+      const response = await fetch(`http://127.0.0.1:5000/api/admin/users?limit=${limit}&offset=${offset}&query=${searchTerm}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
