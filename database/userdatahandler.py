@@ -122,9 +122,9 @@ def update_password(user_id, new_password):
     )
     
 # Save image to MongoDB  
-def save_image(username, filename, title, description, time_created,audio_filename=None,sentiment=None):
+def save_image(id, filename, title, description, time_created,audio_filename=None,sentiment=None):
     image = {
-        'username': username,
+        'user_id': id,
         'filename': filename,
         'title': title,
         'description': description,
@@ -218,8 +218,70 @@ def update_image(image_id, title, description, sentiment=None):
 def delete_image(image_id):
     beehive_image_collection.delete_one({'_id': image_id})
 
-# Get image by id from MongoDB
+# Get image by ID from MongoDB
 def get_image_by_id(image_id):
-    query = {'_id': image_id}
-    image = beehive_image_collection.find_one(query)
+    image = beehive_image_collection.find_one({'_id': image_id})
     return image
+
+# Get upload statistics for admin dashboard
+def get_upload_stats():
+    """Get statistics for admin dashboard including total users, images, and voice notes."""
+    try:
+        # Count total users
+        total_users = beehive_user_collection.count_documents({})
+        
+        # Count total images
+        total_images = beehive_image_collection.count_documents({})
+        
+        # Count voice notes (images with audio_filename)
+        total_voice_notes = beehive_image_collection.count_documents({
+            "audio_filename": {"$exists": True, "$ne": None}
+        })
+        
+        return {
+            'totalUsers': total_users,
+            'totalImages': total_images,
+            'totalVoiceNotes': total_voice_notes,
+            'totalMedia': total_images + total_voice_notes
+        }
+    except Exception as e:
+        print(f"Error getting upload stats: {str(e)}")
+        return {
+            'totalUsers': 0,
+            'totalImages': 0,
+            'totalVoiceNotes': 0,
+            'totalMedia': 0
+        }
+
+# Get recent uploads for admin dashboard
+def get_recent_uploads(limit=10):
+    """Get recent uploads with user information for admin dashboard."""
+    try:
+        # Get recent uploads sorted by creation date
+        recent_uploads = beehive_image_collection.find().sort('created_at', -1).limit(limit)
+        
+        uploads_list = []
+        for upload in recent_uploads:
+            # Get user information
+            user = beehive_user_collection.find_one({'_id': upload['user_id']})
+            user_name = f"{user.get('first_name', '')} {user.get('last_name', '')}".strip() if user else 'Unknown User'
+            
+            # Determine upload type
+            upload_type = 'voice' if upload.get('audio_filename') else 'image'
+            
+            uploads_list.append({
+                'id': str(upload['_id']),
+                'title': upload['title'],
+                'user': user_name,
+                'timestamp': upload['created_at']['$date'] if isinstance(upload.get('created_at'), dict) else upload.get('created_at'),
+                'type': upload_type,
+                'description': upload.get('description', ''),
+                'filename': upload.get('filename', ''),
+                'audio_filename': upload.get('audio_filename', ''),
+                'sentiment': upload.get('sentiment', '')
+            })
+        
+        return uploads_list
+    except Exception as e:
+        print(f"Error getting recent uploads: {str(e)}")
+        return []
