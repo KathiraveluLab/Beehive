@@ -122,6 +122,7 @@ const Upload = () => {
 
       // Create FormData
       const formData = new FormData();
+      formData.append('username', user.firstName + " " + user.lastName);
       formData.append('files', selectedImage);
       formData.append('title', title);
       formData.append('description', description);
