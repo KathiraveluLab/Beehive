@@ -29,7 +29,9 @@ from Database.userdatahandler import (
     get_user_by_username, 
     save_image, 
     update_image,
+    save_notification
 )
+from Database.databaseConfig import get_beehive_notification_collection
 
 # Import blueprints
 from Routes.adminRoutes import admin_bp
@@ -109,6 +111,7 @@ def role_required(required_role):
 @app.route('/api/user/upload/<user_id>', methods=['POST'])
 def upload_images(user_id):
     try:
+        username = request.form.get('username', '')
         files = request.files.getlist('files')  # Supports multiple file uploads
         title = request.form.get('title', '')
         sentiment = request.form.get('sentiment')
@@ -120,6 +123,8 @@ def upload_images(user_id):
 
         if not title or not description:
             return jsonify({'error': 'Title and description are required'}), 400
+
+        # notification_collection = get_beehive_notification_collection()
 
         for file in files:
             if file:
@@ -144,7 +149,8 @@ def upload_images(user_id):
                         f.write(audio_binary)
 
                 time_created = datetime.datetime.now()
-                save_image(user_id, filename, title, description, time_created, audio_filename, sentiment)
+                save_image(user_id, filename, title, description, time_created, audio_filename, sentiment, username)
+                save_notification(user_id, username, filename, title, time_created, sentiment)
 
                 # Generate PDF thumbnail if applicable
                 if filename.lower().endswith('.pdf'):
@@ -265,6 +271,26 @@ def user_images_show(user_id):
         return jsonify({
             'error': str(e)
         }), 500
+
+@app.route('/api/admin/notifications', methods=['GET'])
+def get_admin_notifications():
+    try:
+        notification_collection = get_beehive_notification_collection()
+        mark_seen = request.args.get('mark_seen', 'false').lower() == 'true'
+        # Get all unseen notifications
+        notifications = list(notification_collection.find({"seen": False}).sort("timestamp", -1))
+        # Mark them as seen if requested
+        if mark_seen and notifications:
+            notification_ids = [n['_id'] for n in notifications]
+            notification_collection.update_many({"_id": {"$in": notification_ids}}, {"$set": {"seen": True}})
+        # Convert ObjectId and datetime to string for JSON
+        for n in notifications:
+            n['_id'] = str(n['_id'])
+            if 'timestamp' in n:
+                n['timestamp'] = n['timestamp'].isoformat()
+        return jsonify({"notifications": notifications}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
