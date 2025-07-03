@@ -195,3 +195,7 @@ def save_notification(user_id, username, filename, title, time_created,sentiment
                     "seen": False
                 }
                 beehive_notification_collection.insert_one(notification)    
+
+def get_all_users():
+    users = beehive_user_collection.find({}, {'_id': 1, 'username': 1})
+    return list(users)    
