@@ -22,3 +22,6 @@ def get_beehive_admin_collection():
 
 def get_beehive_notification_collection():
     return beehive.notifications
+
+def get_beehive_message_collection():
+    return beehive.messages

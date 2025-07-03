@@ -1,8 +1,9 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/clerk-react';
-import { SunIcon, MoonIcon, BellIcon } from '@heroicons/react/24/outline';
+import { SunIcon, MoonIcon, BellIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../context/ThemeContext';
 import { useState, useEffect, useRef } from 'react';
+import ChatDrawer from '../components/ChatDrawer';
 
 const AdminLayout = () => {
   const { theme, toggleTheme } = useTheme();
@@ -24,6 +25,8 @@ const AdminLayout = () => {
   const [unseenCount, setUnseenCount] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const [chatOpen, setChatOpen] = useState(false);
+  const adminId = user?.id || 'admin';
 
   // Poll for unseen notifications
   useEffect(() => {
@@ -175,6 +178,24 @@ const AdminLayout = () => {
                     </div>
                   )}
                 </div>
+              )}
+              {isAdmin && (
+                <>
+                  <button
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                    onClick={() => setChatOpen(true)}
+                    aria-label="Open Chat"
+                  >
+                    <ChatBubbleLeftRightIcon className="h-6 w-6 text-gray-700 dark:text-gray-200" />
+                  </button>
+                  {chatOpen && (
+                    <ChatDrawer
+                      userId={adminId}
+                      userRole="admin"
+                      onClose={() => setChatOpen(false)}
+                    />
+                  )}
+                </>
               )}
               <SignedIn>
                 <UserButton afterSignOutUrl="/sign-in" />

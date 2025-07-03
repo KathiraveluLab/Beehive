@@ -1,13 +1,17 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/clerk-react';
-import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
+import { SunIcon, MoonIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../context/ThemeContext';
+import { useState } from 'react';
+import ChatDrawer from '../components/ChatDrawer';
 
 const MainLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const { user } = useUser();
   const navigate = useNavigate();
+  const [chatOpen, setChatOpen] = useState(false);
+  const userId = user?.id || '';
 
   const navigation = [
     { name: 'Home', href: '/dashboard' },
@@ -54,6 +58,24 @@ const MainLayout = () => {
                   <MoonIcon className="h-5 w-5" />
                 )}
               </button>
+              {user && (
+                <>
+                  <button
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                    onClick={() => setChatOpen(true)}
+                    aria-label="Open Chat"
+                  >
+                    <ChatBubbleLeftRightIcon className="h-6 w-6 text-gray-700 dark:text-gray-200" />
+                  </button>
+                  {chatOpen && (
+                    <ChatDrawer
+                      userId={userId}
+                      userRole="user"
+                      onClose={() => setChatOpen(false)}
+                    />
+                  )}
+                </>
+              )}
               <SignedIn>
                 <UserButton afterSignOutUrl="/sign-in" />
               </SignedIn>

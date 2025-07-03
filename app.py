@@ -29,9 +29,10 @@ from Database.userdatahandler import (
     get_user_by_username, 
     save_image, 
     update_image,
-    save_notification
+    save_notification,
+    get_all_users
 )
-from Database.databaseConfig import get_beehive_notification_collection
+from Database.databaseConfig import get_beehive_notification_collection, get_beehive_message_collection
 
 # Import blueprints
 from Routes.adminRoutes import admin_bp
@@ -291,6 +292,72 @@ def get_admin_notifications():
         return jsonify({"notifications": notifications}), 200
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
+@app.route('/api/chat/send', methods=['POST'])
+def send_chat_message():
+    try:
+        data = request.json
+        from_id = data.get('from_id')
+        from_role = data.get('from_role')
+        to_id = data.get('to_id')
+        to_role = data.get('to_role')
+        content = data.get('content')
+        timestamp = datetime.datetime.now()
+        if not (from_id and from_role and to_id and to_role and content):
+            return jsonify({'error': 'Missing required fields'}), 400
+        message = {
+            'from_id': from_id,
+            'from_role': from_role,
+            'to_id': to_id,
+            'to_role': to_role,
+            'content': content,
+            'timestamp': timestamp
+        }
+        messages_col = get_beehive_message_collection()
+        messages_col.insert_one(message)
+        return jsonify({'message': 'Message sent'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/chat/messages', methods=['GET'])
+def get_chat_messages():
+    try:
+        user_id = request.args.get('user_id')
+        with_admin = request.args.get('with_admin', 'false').lower() == 'true'
+        if not user_id:
+            return jsonify({'error': 'user_id is required'}), 400
+        messages_col = get_beehive_message_collection()
+        # Get messages between this user and admin
+        query = {
+            '$or': [
+                {'from_id': user_id, 'to_role': 'admin'},
+                {'to_id': user_id, 'from_role': 'admin'}
+            ]
+        }
+        messages = list(messages_col.find(query).sort('timestamp', 1))
+        for m in messages:
+            m['_id'] = str(m['_id'])
+            if 'timestamp' in m:
+                m['timestamp'] = m['timestamp'].isoformat()
+        return jsonify({'messages': messages}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/chat/users', methods=['GET'])
+def get_chat_users():
+    try:
+        # Get all users (id and username)
+        users = []
+        if hasattr(get_all_users, '__call__'):
+            all_users = get_all_users()
+            for user in all_users:
+                users.append({
+                    'id': str(user.get('_id', '')),
+                    'username': user.get('username', '')
+                })
+        return jsonify({'users': users}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
