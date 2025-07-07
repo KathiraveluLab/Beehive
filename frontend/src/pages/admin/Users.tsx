@@ -132,17 +132,17 @@ const Users = () => {
   return (
     <div className="py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">User Management</h1>
-          <div className="flex items-center space-x-4">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-8 gap-2 sm:gap-0">
+          <h1 className="text-lg sm:text-3xl font-bold mb-2 sm:mb-0">User Management</h1>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:space-x-4 w-full sm:w-auto">
             <button
               onClick={handleDownloadCSV}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500"
+              className="inline-flex items-center justify-center px-1 py-1 sm:px-4 sm:py-2 border border-transparent rounded-md shadow-sm text-xs sm:text-sm font-medium text-white bg-yellow-500 hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 w-full sm:w-auto"
             >
               <ArrowDownTrayIcon className="h-5 w-5 mr-2" />
               Export as CSV
             </button>
-            <div className="relative">
+            <div className="relative w-full sm:w-64">
               <input
                 type="text"
                 placeholder="Search users..."
