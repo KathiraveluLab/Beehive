@@ -8,7 +8,6 @@ import {
 
 // Types for the dashboard data
 interface DashboardStats {
-  totalUsers: number;
   totalImages: number;
   totalVoiceNotes: number;
   totalMedia: number;
@@ -19,7 +18,6 @@ interface RecentUpload {
   title: string;
   user: string;
   timestamp: string;
-  type: 'image' | 'voice';
   description: string;
   filename: string;
   audio_filename?: string;
@@ -158,12 +156,6 @@ const Dashboard = () => {
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <StatCard
-            title="Total Users"
-            value={stats.totalUsers}
-            icon={UsersIcon}
-            color="text-blue-500"
-          />
-          <StatCard
             title="Total Images"
             value={stats.totalImages}
             icon={PhotoIcon}
@@ -196,7 +188,7 @@ const Dashboard = () => {
                     <tr className="border-b border-gray-200 dark:border-gray-700">
                       <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-400">Title</th>
                       <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-400">User</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-400">Type</th>
+                      {/* <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-400">Type</th> */}
                       <th className="text-left py-3 px-4 font-medium text-gray-600 dark:text-gray-400">Timestamp</th>
                     </tr>
                   </thead>
@@ -208,17 +200,6 @@ const Dashboard = () => {
                       >
                         <td className="py-3 px-4">{upload.title}</td>
                         <td className="py-3 px-4">{upload.user}</td>
-                        <td className="py-3 px-4">
-                          <span
-                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                              upload.type === 'image'
-                                ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                                : 'bg-purple-100 text-purple-800 dark:bg-purple-800 dark:text-purple-100'
-                            }`}
-                          >
-                            {upload.type}
-                          </span>
-                        </td>
                         <td className="py-3 px-4">
                           {new Date(upload.timestamp).toLocaleString()}
                         </td>
