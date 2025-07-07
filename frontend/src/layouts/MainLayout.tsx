@@ -1,6 +1,6 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/clerk-react';
-import { SunIcon, MoonIcon, ChatBubbleLeftRightIcon } from '@heroicons/react/24/outline';
+import { SunIcon, MoonIcon, ChatBubbleLeftRightIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../context/ThemeContext';
 import { useState } from 'react';
 import ChatDrawer from '../components/ChatDrawer';
@@ -11,6 +11,7 @@ const MainLayout = () => {
   const { user } = useUser();
   const navigate = useNavigate();
   const [chatOpen, setChatOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const userId = user?.id || '';
 
   const navigation = [
@@ -23,14 +24,25 @@ const MainLayout = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <nav className="bg-white dark:bg-gray-800 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
+          <div className="flex justify-between h-16 ">
             <div className="flex">
+              {/* Hamburger for mobile */}
+              {user && (
+                <button
+                  className="sm:hidden p-2 mr-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                  onClick={() => setSidebarOpen(true)}
+                  aria-label="Open sidebar menu"
+                >
+                  <Bars3Icon className="h-7 w-7 text-gray-700 dark:text-gray-200" />
+                </button>
+              )}
               <div className="flex-shrink-0 flex items-center">
                 <Link to="/" className="text-2xl font-bold text-black">
                   <img src="/favicon.png" alt="Beehive Logo" className="h-8 w-8 inline-block mr-2" />
                   Beehive
                 </Link>
               </div>
+              {/* Top nav links hidden on mobile */}
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
                 {navigation.map((item) => (
                   <Link
@@ -47,7 +59,7 @@ const MainLayout = () => {
                 ))}
               </div>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-1 sm:space-x-4">
               <button
                 onClick={toggleTheme}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
@@ -92,7 +104,7 @@ const MainLayout = () => {
         </div>
       </nav>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         <SignedIn>
           <Outlet />
         </SignedIn>
@@ -109,6 +121,45 @@ const MainLayout = () => {
           </div>
         </SignedOut>
       </main>
+
+      {/* Sidebar Drawer for mobile */}
+      {user && sidebarOpen && (
+        <>
+          {/* Overlay */}
+          <div
+            className="fixed inset-0 z-40 bg-black bg-opacity-40 transition-opacity"
+            onClick={() => setSidebarOpen(false)}
+          ></div>
+          {/* Sidebar */}
+          <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-2xl flex flex-col transition-transform duration-300 transform translate-x-0">
+            <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+              <span className="text-xl font-bold text-black dark:text-white">Menu</span>
+              <button
+                className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
+                onClick={() => setSidebarOpen(false)}
+                aria-label="Close sidebar menu"
+              >
+                <XMarkIcon className="h-7 w-7 text-gray-700 dark:text-gray-200" />
+              </button>
+            </div>
+            <nav className="flex-1 px-4 py-4 space-y-2">
+              {navigation.map((item) => (
+                <Link
+                  key={item.name}
+                  to={item.href}
+                  onClick={() => setSidebarOpen(false)}
+                  className={`block px-4 py-2 rounded-lg text-base font-medium transition-colors duration-200
+                    ${location.pathname === item.href
+                      ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
+                      : 'text-gray-800 dark:text-gray-100 hover:bg-yellow-50 dark:hover:bg-gray-700'}`}
+                >
+                  {item.name}
+                </Link>
+              ))}
+            </nav>
+          </div>
+        </>
+      )}
     </div>
   );
 };

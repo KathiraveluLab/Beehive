@@ -108,20 +108,20 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ userId, userRole, targetUserId,
       {/* Overlay */}
       <div className="fixed inset-0 bg-black bg-opacity-40" onClick={onClose}></div>
       {/* Drawer */}
-      <div className="relative w-full max-w-2xl bg-white h-full shadow-2xl flex rounded-l-2xl border-l-4 border-yellow-500">
-        {/* User List for Admin */}
+      <div className="relative w-full sm:max-w-2xl bg-white h-full shadow-2xl flex flex-col sm:flex-row rounded-none sm:rounded-l-2xl border-l-0 sm:border-l-4 border-yellow-500">
+        {/* Responsive: User List for Admin (stacked on top for mobile, left for desktop) */}
         {userRole === 'admin' && (
-          <div className="w-64 border-r border-yellow-500 bg-white p-0 flex flex-col rounded-l-2xl">
-            <div className="p-4 font-bold border-b border-yellow-500 text-gray-700 bg-white rounded-tl-2xl">Users</div>
-            <div className="flex-1 overflow-y-auto custom-scrollbar">
+          <div className="w-full sm:w-64 border-b sm:border-b-0 sm:border-r border-yellow-500 bg-white flex flex-col rounded-none sm:rounded-l-2xl">
+            <div className="p-3 sm:p-4 font-bold border-b border-yellow-500 text-gray-700 bg-white rounded-none sm:rounded-tl-2xl text-base sm:text-lg">Users</div>
+            <div className="flex-1 overflow-y-auto custom-scrollbar max-h-32 sm:max-h-none">
               {userList.length === 0 ? (
-                <div className="text-yellow-700 text-center mt-8">Loading...</div>
+                <div className="text-yellow-700 text-center mt-4 sm:mt-8 text-sm sm:text-base">Loading...</div>
               ) : (
-                <ul>
+                <ul className="flex flex-row sm:flex-col overflow-x-auto sm:overflow-x-visible">
                   {userList.map((user) => (
                     <li
                       key={user.id}
-                      className={`cursor-pointer px-4 py-3 border-b border-gray-100 hover:bg-yellow-50 transition-colors duration-150 ${selectedUser?.id === user.id ? 'bg-yellow-100 font-bold text-yellow-700' : 'text-gray-800'}`}
+                      className={`cursor-pointer px-3 py-2 sm:px-4 sm:py-3 border-b-0 sm:border-b border-r sm:border-r-0 border-gray-100 hover:bg-yellow-50 transition-colors duration-150 ${selectedUser?.id === user.id ? 'bg-yellow-100 font-bold text-yellow-700' : 'text-gray-800'} text-xs sm:text-base whitespace-nowrap`}
                       onClick={() => handleUserSelect(user)}
                     >
                       <div className="truncate">{user.name || user.id}</div>
@@ -133,21 +133,21 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ userId, userRole, targetUserId,
           </div>
         )}
         {/* Chat Panel */}
-        <div className="flex-1 flex flex-col bg-white rounded-r-2xl">
-          <div className="flex items-center justify-between p-4 border-b border-yellow-500 bg-white rounded-tr-2xl">
-            <h2 className="text-lg font-bold text-gray-700">
+        <div className="flex-1 flex flex-col bg-white rounded-none sm:rounded-r-2xl">
+          <div className="flex items-center justify-between p-3 sm:p-4 border-b border-yellow-500 bg-white rounded-none sm:rounded-tr-2xl">
+            <h2 className="text-base sm:text-lg font-bold text-gray-700">
               Chat {userRole === 'admin' ? `with ${selectedUser?.name || ''}` : 'with Admin'}
             </h2>
-            <button onClick={onClose} className="text-yellow-500 hover:text-yellow-700 text-2xl font-bold">&times;</button>
+            <button onClick={onClose} className="text-yellow-500 hover:text-yellow-700 text-2xl sm:text-2xl font-bold px-2 py-1 sm:px-0 sm:py-0">&times;</button>
           </div>
-          <div className="flex-1 overflow-y-auto p-6 space-y-3 custom-scrollbar bg-white">
+          <div className="flex-1 overflow-y-auto p-3 sm:p-6 space-y-2 sm:space-y-3 custom-scrollbar bg-white">
             {messages.length === 0 ? (
-              <div className="text-gray-400 text-center">No messages yet.</div>
+              <div className="text-gray-400 text-center text-sm sm:text-base">No messages yet.</div>
             ) : (
               messages.map((msg, idx) => (
                 <div
                   key={msg._id || idx}
-                  className={`max-w-[70%] px-4 py-2 rounded-2xl text-base shadow mb-2
+                  className={`max-w-[90%] sm:max-w-[70%] px-3 sm:px-4 py-2 rounded-2xl text-sm sm:text-base shadow mb-1 sm:mb-2
                     ${msg.from_id === userId
                       ? 'bg-yellow-100 text-gray-900 ml-auto rounded-br-none border border-yellow-200'
                       : 'bg-gray-100 text-gray-900 mr-auto rounded-bl-none border border-gray-200'}`}
@@ -161,10 +161,10 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ userId, userRole, targetUserId,
             )}
             <div ref={messagesEndRef} />
           </div>
-          <div className="p-4 border-t border-yellow-500 bg-white flex gap-2 rounded-b-2xl">
+          <div className="p-3 sm:p-4 border-t border-yellow-500 bg-white flex gap-1 sm:gap-2 rounded-none sm:rounded-b-2xl">
             <input
               type="text"
-              className="flex-1 px-4 py-2 rounded-full border border-yellow-500 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400 placeholder-gray-400"
+              className="flex-1 px-3 sm:px-4 py-2 rounded-full border border-yellow-500 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-yellow-400 placeholder-gray-400 text-sm sm:text-base"
               placeholder="Type a message..."
               value={input}
               onChange={e => setInput(e.target.value)}
@@ -173,7 +173,7 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ userId, userRole, targetUserId,
             />
             <button
               onClick={sendMessage}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black px-6 py-2 rounded-full font-bold shadow-md transition disabled:opacity-50"
+              className="bg-yellow-400 hover:bg-yellow-500 text-black px-4 sm:px-6 py-2 rounded-full font-bold shadow-md transition disabled:opacity-50 text-sm sm:text-base"
               disabled={loading || !input.trim() || (userRole === 'admin' && !adminTargetId)}
             >
               Send
