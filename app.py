@@ -150,7 +150,7 @@ def upload_images(user_id):
                         f.write(audio_binary)
 
                 time_created = datetime.datetime.now()
-                save_image(user_id, filename, title, description, time_created, audio_filename, sentiment, username)
+                save_image(user_id, filename, title, description, time_created, audio_filename, sentiment)
                 save_notification(user_id, username, filename, title, time_created, sentiment)
 
                 # Generate PDF thumbnail if applicable
@@ -343,21 +343,7 @@ def get_chat_messages():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-@app.route('/api/chat/users', methods=['GET'])
-def get_chat_users():
-    try:
-        # Get all users (id and username)
-        users = []
-        if hasattr(get_all_users, '__call__'):
-            all_users = get_all_users()
-            for user in all_users:
-                users.append({
-                    'id': str(user.get('_id', '')),
-                    'username': user.get('username', '')
-                })
-        return jsonify({'users': users}), 200
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
