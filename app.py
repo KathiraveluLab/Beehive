@@ -160,7 +160,7 @@ def upload_images(user_id):
         return jsonify({'message': 'Upload successful'}), 200
 
     except Exception as e:
-        print(f"Upload error: {str(e)}")  # Add logging
+        logging.error(f"Upload error: {str(e)}")  # Add logging
         return jsonify({'error': f'Error uploading file: {str(e)}'}), 500
 
 
