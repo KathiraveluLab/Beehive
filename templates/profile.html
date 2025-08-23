@@ -179,11 +179,17 @@ function handleUpload(event) {
 
     let button = document.getElementById("uploadButton");
     let form = document.getElementById("upload-form");
+    
+    const customSentiment = document.getElementById('custom-sentiment').value.trim();
+
+    // Update the hidden input to ensure custom sentiment is included
+    updateHiddenInput();
 
     if (!form.checkValidity()) {
         form.reportValidity(); 
         return; 
     }
+    
     button.classList.add("active");
 
     setTimeout(() => {
@@ -192,19 +198,130 @@ function handleUpload(event) {
     }, 2000); 
 }
 
+function updateFileLabel() {
+    const fileInput = document.getElementById('fileInput');
+    const fileLabel = document.getElementById('selectedFiles');
+    
+    if (fileInput.files.length > 0) {
+        if (fileInput.files.length === 1) {
+            fileLabel.textContent = fileInput.files[0].name;
+        } else {
+            fileLabel.textContent = fileInput.files.length + ' files selected';
+        }
+    } else {
+        fileLabel.textContent = 'No file chosen';
+    }
+}
+
 //function for fetching sentiments from sentiment.json
 fetch("{{ url_for('static', filename='sentiments.json') }}")
-        .then(response => response.json())
-        .then(data => {
-            const sentimentDropdown = document.getElementById("sentiment");
-            data.sentiments.forEach(sentiment => {
-                let option = document.createElement("option");
-                option.value = sentiment;
-                option.textContent = sentiment;
-                sentimentDropdown.appendChild(option);
-            });
-        })
-        .catch(error => console.error("Error loading sentiments:", error));
+    .then(response => response.json())
+    .then(data => {
+        const sentimentDropdown = document.getElementById("sentiment-dropdown");
+        data.sentiments.forEach(sentiment => {
+            let option = document.createElement("option");
+            option.value = sentiment;
+            option.textContent = sentiment;
+            sentimentDropdown.appendChild(option);
+        });
+    })
+    .catch(error => console.error("Error loading sentiments:", error));
+
+// Initialize the selected sentiments array
+let selectedSentiments = [];
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener for the Add button
+    document.getElementById('add-sentiment').addEventListener('click', function() {
+        const dropdown = document.getElementById('sentiment-dropdown');
+        const selectedValue = dropdown.value;
+        
+        if (selectedValue && !selectedSentiments.includes(selectedValue)) {
+            selectedSentiments.push(selectedValue);
+            updateSelectedSentimentsUI();
+            updateHiddenInput();
+        }
+    });
+    // Initialise the hidden input
+    updateHiddenInput();
+    // Add event listener for custom sentiment changes
+    document.getElementById('custom-sentiment').addEventListener('input', function() {
+        updateHiddenInput();
+    });
+});
+
+function updateSelectedSentimentsUI() {
+    const container = document.getElementById('selected-sentiments');
+    container.innerHTML = '';
+    
+    selectedSentiments.forEach((sentiment, index) => {
+        const tag = document.createElement('div');
+        tag.className = 'sentiment-tag';
+        
+        // Add move left button (except for first item)
+        if (index > 0) {
+            const moveLeft = document.createElement('span');
+            moveLeft.className = 'move-btn';
+            moveLeft.innerHTML = '&larr;';
+            moveLeft.onclick = function() {
+                moveSentiment(index, index - 1);
+            };
+            tag.appendChild(moveLeft);
+        }
+        
+        // Add sentiment text
+        const text = document.createElement('span');
+        text.textContent = sentiment;
+        tag.appendChild(text);
+        
+        // Add move right button (except for last item)
+        if (index < selectedSentiments.length - 1) {
+            const moveRight = document.createElement('span');
+            moveRight.className = 'move-btn';
+            moveRight.innerHTML = '&rarr;';
+            moveRight.onclick = function() {
+                moveSentiment(index, index + 1);
+            };
+            tag.appendChild(moveRight);
+        }
+        
+        // Add delete button
+        const deleteBtn = document.createElement('span');
+        deleteBtn.className = 'delete-sentiment';
+        deleteBtn.innerHTML = '&times;';
+        deleteBtn.onclick = function() {
+            selectedSentiments.splice(index, 1);
+            updateSelectedSentimentsUI();
+            updateHiddenInput();
+        };
+        tag.appendChild(deleteBtn);
+        
+        container.appendChild(tag);
+    });
+}
+
+function moveSentiment(fromIndex, toIndex) {
+    const item = selectedSentiments[fromIndex];
+    selectedSentiments.splice(fromIndex, 1);
+    selectedSentiments.splice(toIndex, 0, item);
+    updateSelectedSentimentsUI();
+    updateHiddenInput();
+}
+
+function updateHiddenInput() {
+    let selectedSentimentsStr = selectedSentiments.join(', ');
+    
+    // Gets custom sentiment if entered
+    const customSentiment = document.getElementById('custom-sentiment').value.trim();
+    
+    // Adds custom sentiment to the value if user inputs
+    if (customSentiment) {
+        document.getElementById('sentiment-input').value = selectedSentimentsStr + 
+            (selectedSentimentsStr ? '; Custom: ' : 'Custom: ') + customSentiment;
+    } else {
+        document.getElementById('sentiment-input').value = selectedSentimentsStr;
+    }
+}
     </script>
     <script src="{{ url_for('static', filename='js/dragdrop.js') }}"></script>
 
@@ -235,13 +352,24 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
         });
     </script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            if (fileInput) {
+                fileInput.addEventListener('change', updateFileLabel);
+            }
+        });
+    </script>
+
 </head>
 <body>
  
 
 <div class="nav">
-    <img src = "{{url_for('static', filename='Logo.svg')}}" alt="Beehive Logo" class="logo">
+    <img src = "{{url_for('static', filename='logo.svg')}}" alt="Beehive Logo" class="logo">
     <div class="heading">Beehive</div>
+    
+
     <!-- <h1>{{ username }}</h1> -->
     <div class="profile-photo-container" id="profile-photo-container">
         {% if user_dp %}
@@ -252,6 +380,7 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
             </div>
         {% endif %}
     </div>
+    
 </div>
 
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -273,20 +402,34 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
     <div class="toggle-container">
         <div id="uploadForm" style="display: none;">
             <form action="{{ url_for('upload_images') }}" method="post" enctype="multipart/form-data" id="upload-form">
-                <input class="file-button" type="file" name="files" id="fileInput" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.heif,.pdf" required onchange="validateFile(this)"><br>            
+                <div class="file-selection-area">
+                    <input class="file-button" type="file" name="files" id="fileInput" multiple accept=".jpg,.jpeg,.png,.gif,.webp,.heif,.pdf" required onchange="validateFile(this)">
+                    <label for="fileInput" class="file-select-button">Select Files</label>
+                    <span class="selected-files" id="selectedFiles">No file chosen</span>
+                </div>
                 <input class="title-area" type="text" name="title" placeholder="Title" required><br>
                 <textarea class="description-area" name="description" placeholder="Description" required></textarea><br>
-                <label for="sentiment" class="dropdown-label">Select Sentiment with which you are uploading the image:</label>
-                <select name="sentiment" id="sentiment" required class="dropdown">
-                 <option value="" disabled selected>Choose a Sentiment</option>
-                </select>
-               
+                <label class="dropdown-label">Select Sentiments for your image:</label>
+                <div class="sentiment-selector">
+                    <select id="sentiment-dropdown" class="dropdown">
+                        <option value="" disabled selected>Choose a Sentiment</option>
+                    </select>
+                    <button type="button" id="add-sentiment" class="add-sentiment-btn">Add</button>
+                </div>
+                <div id="selected-sentiments" class="selected-sentiments-container">
+                    <!-- Selected sentiments will appear here -->
+                </div>
+                <div class="custom-sentiment-container">
+                    <label for="custom-sentiment" class="dropdown-label">Custom Sentiment:</label>
+                    <textarea id="custom-sentiment" name="custom_sentiment" class="description-area custom-sentiment-area" placeholder="Describe your own feelings or emotions about this image..."></textarea>
+                </div>
+                <input type="hidden" name="sentiment" id="sentiment-input" required>
                 
                 <button type="button" onclick="startRecording()" class="record-btn">Start Recording</button>
                 <button type="button" onclick="stopRecording()" class="stop-btn" disabled id="stopBtn">Stop Recording</button>
                 <button type="button" onclick="resetRecording()" id="resetBtn" class="reset-btn" style="display: none;"> Reset Recording</button>
                 <audio id="audioPlayback" controls style="display: none;"></audio>
-    
+        
                 <input type="hidden" name="audioData" id="audioData">
                 <button class="uploadButton" id="uploadButton" type="submit" onclick="handleUpload(event)">
                     <svg xmlns="http://www.w3.org/2000/svg">
@@ -301,6 +444,18 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
     </div>
 
     <h2 style="text-align: center;">Uploaded Images</h2>
+    
+    <div class="filter-container">
+      <h2>Filter Images by Sentiments</h2>
+      <form action="{{ url_for('profile') }}" method="get" class="filter-form">
+        <input type="text" name="sentiments" placeholder="Enter tags (comma-separated)" value="{{ request.args.get('sentiments', '') }}" class="filter-input">
+        <button type="submit" class="filter-button">Filter</button>
+        <label>
+            <input type="checkbox" name="match_all" value="1" {% if request.args.get('match_all') %}checked{% endif %}>
+            <span class="match-label">Match All</span>
+        </label>
+    </form>
+  </div>
     <div class="image-container">
         {% for image in images %}
         <div class="image-card">
@@ -332,8 +487,15 @@ fetch("{{ url_for('static', filename='sentiments.json') }}")
                 <button class="edit-button" onclick="toggleEditForm('{{ image.id }}')">Edit</button>
                 <div id="editForm_{{ image.id }}" class="edit-form" style="display: none;"><br><br>
                     <form action="{{ url_for('edit_image', image_id=image.id) }}" class="edit-form" method="post">
-                        <input type="text" name="title" value="{{ image.title }}" class="text-input" required>
-                        <textarea name="description" class="text-input" required>{{ image.description }}</textarea>
+                        <label for="title_{{ image.id }}">Title:</label>
+                        <input type="text" id="title_{{ image.id }}" name="title" value="{{ image.title }}" class="text-input" required>
+                        
+                        <label for="description_{{ image.id }}">Description:</label>
+                        <textarea id="description_{{ image.id }}" name="description" class="text-input" required>{{ image.description }}</textarea>
+                        
+                        <label for="sentiment_{{ image.id }}">Sentiment:</label>
+                        <textarea id="sentiment_{{ image.id }}" name="sentiment" class="text-input">{{ image.sentiment }}</textarea>
+                        
                         <button type="submit" class="update-button">Update</button>
                     </form>
                 </div><br><br>

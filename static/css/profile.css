@@ -11,18 +11,43 @@ body {
 .logo {
     width: 60px;
     height: 60px;
-}
-.heading{
-    margin-right:1575px ;
-    font-size: 20px;
+    margin-right: 15px;
 }
 
-.nav{
-    background-color: #333;
-    color: #fff;
-    text-align: center;
-    padding: 10px;
+.heading {
+    font-size: 20px;
+    margin: 0;
+    display: flex;
+    align-items: center;
 }
+
+.nav {
+    background-color: #333;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Update the nav items layout */
+.nav > * {
+    display: flex;
+    align-items: center;
+}
+
+/* Ensure proper spacing between logo and heading */
+.nav > :first-child {
+    margin-right: 15px;
+}
+
+/* Profile container positioning */
+.profile-photo-container {
+    margin-left: auto;
+}
+
 .button-container {
     display: flex;
     justify-content: center; /* Changed from flex-end to center */
@@ -724,17 +749,6 @@ h2{
 }
 
 /* nav styling (from profile.html) */
-.nav {
-    background-color: #333;
-    color: white;
-    padding: 15px 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    position: relative;
-}
-
-
 .nav h1 {
     flex-grow: 1;  
     text-align: center; 
@@ -749,16 +763,16 @@ h2{
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
     cursor: pointer;
     transition: transform 0.3s ease;
-}
-
-.profile-photo-container:hover {
-    transform: scale(1.05);
+    position: relative;
+    margin-left: auto;
+    z-index: 100;
 }
 
 .profile-photo {
     width: 100%;
     height: 100%;
     object-fit: cover;
+    display: block;
 }
 
 .default-avatar {
@@ -1013,3 +1027,155 @@ input {
     font-weight: bold; 
     font-family: Arial, sans-serif; 
   }
+
+.file-selection-area {
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.file-button {
+    width: 0.1px;
+    height: 0.1px;
+    opacity: 0;
+    overflow: hidden;
+    position: absolute;
+    z-index: -1;
+}
+
+.file-select-button {
+    background-color: #4caf50;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: inline-block;
+    margin-right: 10px;
+    transition: background-color 0.3s;
+}
+
+.file-select-button:hover {
+    background-color: #45a049;
+}
+
+.selected-files {
+    flex: 1;
+    padding: 5px 10px;
+    margin-top: 5px;
+    color: #666;
+    font-style: Arial;
+}
+
+.sentiment-selector {
+    display: flex;
+    margin-bottom: 10px;
+}
+
+.add-sentiment-btn {
+    margin-left: 10px;
+    padding: 0px 10px;
+    height: 40px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.selected-sentiments-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.sentiment-tag {
+    display: flex;
+    align-items: center;
+    background: #e1e1e1;
+    padding: 5px 10px;
+    border-radius: 20px;
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.sentiment-tag .move-btn {
+    cursor: pointer;
+    margin: 0 5px;
+    font-size: 14px;
+}
+
+.sentiment-tag .delete-sentiment {
+    cursor: pointer;
+    color: #ff4d4d;
+    margin-left: 8px;
+}
+
+.custom-sentiment-area {
+    height: 60px;
+    margin-bottom: 15px;
+    width: 100%;
+}
+
+.custom-sentiment-container {
+    margin-top: 10px;
+    width: 100%;
+}
+.filter-container {
+    text-align: center;
+    margin: 20px 0;
+    padding: 10px;
+}
+.filter-form {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.filter-input {
+    width: 60%;
+    max-width: 400px;
+    padding: 10px;
+    font-size: 16px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.filter-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    color: #fff;
+    background-color: #007bff;
+    border: none;
+    border-radius: 5px;
+    margin-top: -10px;
+}
+
+.filter-button:hover {
+    background-color: #0056b3;
+}
+
+.filter-button:active {
+    background-color: #004085;
+}
+
+label {
+    font-size: 14px;
+    color: #333;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+}
+.match-label{
+  margin-top: -5px;
+}
+
+input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}

@@ -27,19 +27,19 @@ graph TD;
 
 ## Setup Instructions  
 
-If you want to run this project locally, see the [setup.md](DOCS/setup.md).  
+If you want to run this project locally, see the [setup.md](docs/setup.md).  
 
 ## Contributing  
 
-**Note**: This is the `dev` branch, which is our main development branch. Please make sure to create pull requests against this branch if you are contributing to ongoing development. For specific contribution guidelines, see the [contributing.md](DOCS/contributing.md).  
+**Note**: `dev` branch is our primary development branch. The `main` branch is our stable branch. Please create pull requests against the dev branch if you are contributing to ongoing development. For specific contribution guidelines, see the [contributing.md](docs/contributing.md).  
 > **NOTE:**  
 > We currently have **two active branches** for development:  
 >  
-> - **`modular` Branch** – Focused on modularizing the codebase.  
 > - **`dev` Branch** – General development and feature updates.  
+> - **`modular` Branch** – Focused on modularizing the codebase.  
 >  
 > You are welcome to contribute to **either of these branches** based on your interest.  
-> However, please note that the **`main` branch is frozen for now** and not open for direct contributions.  
+> The **`main` branch is frozen** for direct commits and only pull requests from a stable development branch (dev, modular, ...) are merged into the main branch.  
 
 
 ## License  
