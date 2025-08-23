@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { SignedIn, SignedOut, UserButton, useUser } from '@clerk/clerk-react';
+import { SignedIn, SignedOut, UserButton, useUser, useClerk } from '@clerk/clerk-react';
 import { SunIcon, MoonIcon, BellIcon, ChatBubbleLeftRightIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useTheme } from '../context/ThemeContext';
 import { useState, useEffect, useRef } from 'react';
@@ -9,6 +9,7 @@ const AdminLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
   const { user } = useUser();
+  const clerk = useClerk();
 
   const navigate = useNavigate();
 
@@ -42,8 +43,12 @@ const AdminLayout = () => {
   // Fetch unseen notifications (for polling and badge)
   const fetchUnseenNotifications = async () => {
     try {
+      const token = await clerk.session?.getToken();
       const response = await fetch('http://127.0.0.1:5000/api/admin/notifications', {
         method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         credentials: 'include',
       });
       if (!response.ok) return;
@@ -61,8 +66,12 @@ const AdminLayout = () => {
   // Fetch and mark notifications as seen when dropdown opens
   const fetchAndMarkNotifications = async () => {
     try {
+      const token = await clerk.session?.getToken();
       const response = await fetch('http://127.0.0.1:5000/api/admin/notifications?mark_seen=true', {
         method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         credentials: 'include',
       });
       if (!response.ok) return;

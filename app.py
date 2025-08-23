@@ -33,6 +33,7 @@ from Database.userdatahandler import (
     get_all_users
 )
 from Database.databaseConfig import get_beehive_notification_collection, get_beehive_message_collection
+from utils.clerk_auth import require_auth
 
 # Import blueprints
 from Routes.adminRoutes import admin_bp
@@ -63,7 +64,6 @@ client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret
 
 # Register blueprints
 app.register_blueprint(admin_bp)
-
 flow = Flow.from_client_secrets_file(
     client_secrets_file=client_secrets_file,
     scopes=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email", "openid"],
@@ -191,6 +191,7 @@ def generate_pdf_thumbnail(pdf_path, filename):
 
 # Edit images uploaded by the user
 @app.route('/edit/<image_id>', methods=['POST'])
+@require_auth
 def edit_image(image_id):
     try:
         # Get form data
@@ -224,6 +225,7 @@ def serve_audio(filename):
    
 # Delete images uploaded by the user
 @app.route('/delete/<image_id>')
+@require_auth
 def delete_image_route(image_id):
     try:
         try:
@@ -262,18 +264,24 @@ def delete_image_route(image_id):
 
 # Get all images uploaded by a user
 @app.route('/api/user/user_uploads/<user_id>')
+@require_auth
 def user_images_show(user_id):
     try:
         images = get_images_by_user(user_id)
-        return jsonify({
-            'images': images
-        })
+        images_list = list(images) if images else []        
+        response_data = {
+            'images': images_list,
+            'user_id': user_id,
+            'message': 'Success'
+        }
+        return jsonify(response_data)
     except Exception as e:
         return jsonify({
             'error': str(e)
         }), 500
 
 @app.route('/api/admin/notifications', methods=['GET'])
+@require_auth
 def get_admin_notifications():
     try:
         notification_collection = get_beehive_notification_collection()
@@ -294,6 +302,7 @@ def get_admin_notifications():
         return jsonify({"error": str(e)}), 500
 
 @app.route('/api/chat/send', methods=['POST'])
+@require_auth
 def send_chat_message():
     try:
         data = request.json
@@ -320,6 +329,7 @@ def send_chat_message():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/chat/messages', methods=['GET'])
+@require_auth
 def get_chat_messages():
     try:
         user_id = request.args.get('user_id')
