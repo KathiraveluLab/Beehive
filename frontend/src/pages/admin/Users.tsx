@@ -39,10 +39,15 @@ const Users = () => {
     try {
       setLoading(true);
       const offset = (currentPage - 1) * limit;
+      
+      // Get the authentication token from Clerk
+      const token = await clerk.session?.getToken();
+      
       const response = await fetch(`http://127.0.0.1:5000/api/admin/users?limit=${limit}&offset=${offset}&query=${searchTerm}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         credentials: 'include',
         mode: 'cors'
@@ -68,26 +73,7 @@ const Users = () => {
     fetchUsers();
   }, [currentPage, searchTerm]);
 
-  const handleResetPassword = async (userId: string) => {
-    try {
-      const user = users.find(u => u.id === userId);
-      if (!user?.clerkId) {
-        throw new Error('User not found');
-      }
-
-      // Send password reset email using Clerk
-      await clerk.signOut();
-      await clerk.client.signIn.create({
-        strategy: "reset_password_email_code",
-        identifier: user.email,
-      });
-
-      toast.success('Password reset email sent successfully!');
-    } catch (error) {
-      console.error('Error resetting password:', error);
-      toast.error('Failed to send password reset email');
-    }
-  };
+  
 
   const handleViewUploads = (userId: string) => {
     console.log(userId);
@@ -235,13 +221,6 @@ const Users = () => {
                         </td> */}
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <div className="flex justify-end space-x-3">
-                            <button
-                              onClick={() => handleResetPassword(user.id)}
-                              className="text-gray-600 hover:text-yellow-400 dark:text-gray-400 transition-colors duration-200"
-                              title="Reset Password"
-                            >
-                              <KeyIcon className="h-5 w-5" />
-                            </button>
                             <button
                               onClick={() => handleViewUploads(user.id)}
                               className="text-gray-600 hover:text-yellow-400 dark:text-gray-400 transition-colors duration-200"

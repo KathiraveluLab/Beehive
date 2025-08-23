@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useClerk } from '@clerk/clerk-react';
 
 interface ChatDrawerProps {
   userId: string;
@@ -14,6 +15,7 @@ interface ChatUser {
 }
 
 const ChatDrawer: React.FC<ChatDrawerProps> = ({ userId, userRole, targetUserId, onClose }) => {
+  const clerk = useClerk();
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -32,7 +34,12 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ userId, userRole, targetUserId,
 
   const fetchUserList = async () => {
     try {
-      const res = await fetch('http://127.0.0.1:5000/api/admin/users/only-users');
+      const token = await clerk.session?.getToken();
+      const res = await fetch('http://127.0.0.1:5000/api/admin/users/only-users', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       if (!res.ok) return;
       const data = await res.json();
       setUserList(data.users || []);
@@ -65,7 +72,12 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ userId, userRole, targetUserId,
     try {
       const id = userRole === 'admin' ? adminTargetId : userId;
       if (!id) return;
-      const res = await fetch(`http://127.0.0.1:5000/api/chat/messages?user_id=${id}`);
+      const token = await clerk.session?.getToken();
+      const res = await fetch(`http://127.0.0.1:5000/api/chat/messages?user_id=${id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       if (!res.ok) return;
       const data = await res.json();
       setMessages(data.messages || []);
@@ -83,9 +95,13 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ userId, userRole, targetUserId,
         to_role: userRole === 'admin' ? 'user' : 'admin',
         content: input.trim(),
       };
+      const token = await clerk.session?.getToken();
       const res = await fetch('http://127.0.0.1:5000/api/chat/send', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify(payload),
       });
       if (res.ok) {

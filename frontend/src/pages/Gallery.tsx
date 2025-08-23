@@ -126,10 +126,15 @@ const Gallery = () => {
       
       try {
         setLoading(true);
+        
+        // Get the authentication token from Clerk
+        const token = await window.Clerk.session?.getToken();
+        
         const response = await fetch(`http://127.0.0.1:5000/api/user/user_uploads/${user.id}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
           },
           credentials: 'include',
           mode: 'cors'
@@ -168,8 +173,14 @@ const Gallery = () => {
       formData.append('description', description);
       formData.append('sentiment', sentiment);
 
+      // Get the authentication token from Clerk
+      const token = await window.Clerk.session?.getToken();
+
       const response = await fetch(`http://127.0.0.1:5000/edit/${id}`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         body: formData,
         credentials: 'include',
       });
@@ -196,8 +207,14 @@ const Gallery = () => {
     }
 
     try {
+      // Get the authentication token from Clerk
+      const token = await window.Clerk.session?.getToken();
+
       const response = await fetch(`http://127.0.0.1:5000/delete/${id}`, {
         method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         credentials: 'include',
       });
 

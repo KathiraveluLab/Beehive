@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useClerk } from '@clerk/clerk-react';
 import { motion } from 'framer-motion';
 import { ArrowLeftIcon, XMarkIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
@@ -17,6 +18,7 @@ interface Upload {
 const UserUploads = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const clerk = useClerk();
   const [uploads, setUploads] = useState<Upload[]>([]);
   const [userName, setUserName] = useState('User');
   const [loading, setLoading] = useState(true);
@@ -29,10 +31,15 @@ const UserUploads = () => {
     const fetchUploads = async () => {
       try {
         setLoading(true);
+        
+        // Get the authentication token from Clerk
+        const token = await clerk.session?.getToken();
+        
         const response = await fetch(`http://127.0.0.1:5000/api/admin/user_uploads/${userId}`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`,
           },
           credentials: 'include',
           mode: 'cors'

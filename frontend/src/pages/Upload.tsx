@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { useUser } from '@clerk/clerk-react';
+import { useUser, useClerk } from '@clerk/clerk-react';
 import { CloudArrowUpIcon, MicrophoneIcon, PlayIcon, StopIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -8,6 +8,7 @@ type SentimentType = 'positive' | 'neutral' | 'negative' | 'custom';
 
 const Upload = () => {
   const { user } = useUser();
+  const clerk = useClerk();
   const navigate = useNavigate();
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -147,8 +148,12 @@ const Upload = () => {
       }
 
       // Make the upload request
+      const token = await clerk.session?.getToken();
       const response = await fetch(`http://127.0.0.1:5000/api/user/upload/${user.id}`, {
         method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
         body: formData,
         credentials: 'include',
       });

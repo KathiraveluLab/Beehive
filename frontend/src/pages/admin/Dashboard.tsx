@@ -71,10 +71,14 @@ const Dashboard = () => {
       setLoading(true);
       setError(null);
       
+      // Get the authentication token from Clerk
+      const token = await window.Clerk.session?.getToken();
+      
       const response = await fetch('http://127.0.0.1:5000/api/admin/dashboard?limit=10', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         credentials: 'include',
       });
