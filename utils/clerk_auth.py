@@ -9,10 +9,8 @@ def require_auth(f):
     """Simple decorator to check if user is authenticated"""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        print("entering this route")
-        print("All headers:", dict(request.headers))
         auth_header = request.headers.get('Authorization')
-        print("Authorization header:", auth_header)
+
         
         if not auth_header:
             return jsonify({'error': 'Authorization header required'}), 401
