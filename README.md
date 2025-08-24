@@ -8,9 +8,11 @@ A Data Federation Approach to Analyze Behavioral Health and Complement Healthcar
 This project aims to analyze behavioral health and complement healthcare practice with community health metrics in Alaska using a data federation approach. By leveraging data from various sources, we can gain insights into behavioral health patterns and improve healthcare practices in the community.  
 
 ## Tech Stacks Used  
-- **Language/Framework**: Flask (Python)  
-- **Authentication**: Google OAuth2  
+- **Backend**: Flask (Python)
+- **Frontend**: React (TypeScript) in `frontend/`
 - **Database**: MongoDB
+- **Auth**: Clerk REST API
+- **Storage**: Local filesystem for media uploads in `static/uploads/` with PDF thumbnails in `static/uploads/thumbnails/`
   
 ## Workflow
 ```mermaid
