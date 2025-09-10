@@ -52,6 +52,7 @@ const Upload = () => {
         toast.error('Invalid file type. Please upload an image or PDF.');
         return;
       }
+
       setSelectedImage(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -119,6 +120,7 @@ const Upload = () => {
       }
     }
   };
+  
   const handleRerecord = () => {
     setSelectedVoiceNote(null);
     if (audioRef.current) {
