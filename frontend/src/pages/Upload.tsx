@@ -120,7 +120,7 @@ const Upload = () => {
       }
     }
   };
-  
+
   const handleRerecord = () => {
     setSelectedVoiceNote(null);
     if (audioRef.current) {
@@ -129,8 +129,10 @@ const Upload = () => {
     }
     setIsPlaying(false);
   };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!selectedImage) {
       toast.error('Please select a file');
       return;
@@ -143,6 +145,7 @@ const Upload = () => {
 
     try {
       setIsUploading(true);
+
       // Create FormData
       const formData = new FormData();
       formData.append('username', user.firstName + " " + user.lastName);
@@ -150,6 +153,7 @@ const Upload = () => {
       formData.append('title', title);
       formData.append('description', description);
       formData.append('sentiment', sentiment === 'custom' ? customSentiment : sentiment);
+      
       // Add audio data if available
       if (selectedVoiceNote) {
         const audioReader = new FileReader();
@@ -178,6 +182,7 @@ const Upload = () => {
       });
 
       const data = await response.json();
+
       if (!response.ok) {
         throw new Error(data.error || 'Upload failed');
       }
