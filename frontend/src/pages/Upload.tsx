@@ -39,6 +39,7 @@ const Upload = () => {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // check file type
       const allowedTypes = [
         'image/jpeg',
         'image/png',
@@ -51,7 +52,6 @@ const Upload = () => {
         toast.error('Invalid file type. Please upload an image or PDF.');
         return;
       }
-
       setSelectedImage(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -103,8 +103,11 @@ const Upload = () => {
   };
 
   const handlePlayback = () => {
+    // console.log("playing audio")
     if (audioRef.current) {
+      // console.log("playing audio")
       if (isPlaying) {
+        // console.log("pausing audio")
         audioRef.current.pause();
         setIsPlaying(false);
       } else {
@@ -116,7 +119,6 @@ const Upload = () => {
       }
     }
   };
-
   const handleRerecord = () => {
     setSelectedVoiceNote(null);
     if (audioRef.current) {
@@ -125,10 +127,8 @@ const Upload = () => {
     }
     setIsPlaying(false);
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!selectedImage) {
       toast.error('Please select a file');
       return;
@@ -141,13 +141,14 @@ const Upload = () => {
 
     try {
       setIsUploading(true);
+      // Create FormData
       const formData = new FormData();
-      formData.append('username', user.firstName + ' ' + user.lastName);
+      formData.append('username', user.firstName + " " + user.lastName);
       formData.append('files', selectedImage);
       formData.append('title', title);
       formData.append('description', description);
       formData.append('sentiment', sentiment === 'custom' ? customSentiment : sentiment);
-
+      // Add audio data if available
       if (selectedVoiceNote) {
         const audioReader = new FileReader();
         audioReader.readAsDataURL(selectedVoiceNote);
@@ -163,7 +164,7 @@ const Upload = () => {
           audioReader.onerror = reject;
         });
       }
-
+      // Make the upload request
       const token = await clerk.session?.getToken();
       const response = await fetch(`http://127.0.0.1:5000/api/user/upload/${user.id}`, {
         method: 'POST',
@@ -260,6 +261,7 @@ const Upload = () => {
                 required
               />
             </div>
+
             <div>
               <label className="block mb-2 font-medium">Description</label>
               <textarea
@@ -269,6 +271,7 @@ const Upload = () => {
                 required
               />
             </div>
+
             <div>
               <label className="block mb-2 font-medium">Sentiment</label>
               <div className="space-y-2">
@@ -282,6 +285,7 @@ const Upload = () => {
                   <option value="negative">Negative</option>
                   <option value="custom">Custom</option>
                 </select>
+
                 {sentiment === 'custom' && (
                   <input
                     type="text"
@@ -324,6 +328,7 @@ const Upload = () => {
                     </>
                   )}
                 </button>
+
                 {selectedVoiceNote && (
                   <div className="flex items-center gap-2">
                     <button
@@ -356,6 +361,7 @@ const Upload = () => {
                   </div>
                 )}
               </div>
+              
               {selectedVoiceNote && (
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   Voice note recorded. Click play to preview or the refresh icon to record again.
