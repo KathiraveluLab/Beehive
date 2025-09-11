@@ -342,7 +342,7 @@ const Upload = () => {
                       type="button"
                       onClick={handlePlayback}
                       className="p-2 rounded-full bg-yellow-400 hover:bg-yellow-500 text-black transition-colors duration-200"
-                      title={isPlaying ? 'Pause' : 'Play'}
+                      title={isPlaying ? "Pause" : "Play"}
                     >
                       {isPlaying ? <StopIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
                     </button>
