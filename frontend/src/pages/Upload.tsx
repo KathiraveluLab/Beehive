@@ -134,7 +134,7 @@ const Upload = () => {
     e.preventDefault();
 
     if (!selectedImage) {
-      toast.error('Please select a file');
+      toast.error('Please select an image');
       return;
     }
 
@@ -202,10 +202,10 @@ const Upload = () => {
       <h1 className="text-3xl font-bold mb-8">Upload Media</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Image or PDF Upload */}
+        {/* Image Upload */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors duration-200">
           <div className="p-6">
-            <label className="block mb-2 font-medium">Image or PDF</label>
+            <label className="block mb-2 font-medium">Image</label>
             <div className="flex items-center justify-center w-full">
               {selectedImage ? (
                 <div className="flex items-center justify-between w-full p-4 border-2 border-gray-300 dark:border-gray-600 rounded-lg">
