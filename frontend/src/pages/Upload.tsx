@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef,useEffect } from 'react';
 import { useUser, useClerk } from '@clerk/clerk-react';
 import {
   CloudArrowUpIcon,
@@ -35,6 +35,22 @@ const Upload = () => {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+  const handleKeyDown = (event: KeyboardEvent) => {
+    if (event.key === 'Escape') {
+      setIsPreviewing(false);
+    }
+  };
+
+  if (isPreviewing) {
+    window.addEventListener('keydown', handleKeyDown);
+  }
+
+  return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isPreviewing]);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
