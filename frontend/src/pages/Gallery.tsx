@@ -149,8 +149,12 @@ const Gallery = () => {
           throw new Error(data.error);
         }
         
-        setImages(data.images);
-        console.log(data.images);
+        const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+
+        setImages(sortedImages);
+        console.log(sortedImages);
       } catch (error) {
         console.error('Error fetching uploads:', error);
           toast.error('Failed to fetch uploads');
