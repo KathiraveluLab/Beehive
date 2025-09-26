@@ -1,4 +1,4 @@
-import { useState, useRef,useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useUser, useClerk } from '@clerk/clerk-react';
 import {
   CloudArrowUpIcon,
@@ -10,6 +10,7 @@ import {
   TrashIcon,
   XMarkIcon,
   DocumentIcon,
+  SparklesIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
@@ -31,23 +32,71 @@ const Upload = () => {
   const [isUploading, setIsUploading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
+  const [isAnalyzing, setIsAnalyzing] = useState(false); 
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  useEffect(() => {
-  const handleKeyDown = (event: KeyboardEvent) => {
-    if (event.key === 'Escape') {
-      setIsPreviewing(false);
+  // AI Analysis Function
+  const handleAnalyzeMedia = useCallback(async (imageFile: File | null, audioFile: File | null) => {
+    if (!imageFile && !audioFile) return;
+
+    setIsAnalyzing(true);
+    const analysisToast = toast.loading('AI is analyzing your media...');
+
+    try {
+      const formData = new FormData();
+      if (imageFile) {
+        formData.append('image', imageFile);
+      }
+      if (audioFile) {
+        formData.append('audio', audioFile);
+      }
+
+      const response = await fetch(`http://127.0.0.1:5000/api/analyze-media`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'AI analysis failed');
+      }
+
+      setTitle(data.title || '');
+      setDescription(data.description || '');
+
+      const suggestedSentiment = data.sentiment as SentimentType;
+      if (['positive', 'neutral', 'negative'].includes(suggestedSentiment)) {
+        setSentiment(suggestedSentiment);
+      } else if (data.sentiment) {
+        setSentiment('custom');
+        setCustomSentiment(data.sentiment);
+      }
+
+      toast.success('Fields autofilled by AI ✨', { id: analysisToast });
+    } catch (error) {
+      console.error('Analysis error:', error);
+      toast.error(error instanceof Error ? error.message : 'Analysis failed.', { id: analysisToast });
+    } finally {
+      setIsAnalyzing(false);
     }
-  };
+  }, []);
 
-  if (isPreviewing) {
-    window.addEventListener('keydown', handleKeyDown);
-  }
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsPreviewing(false);
+      }
+    };
 
-  return () => {
+    if (isPreviewing) {
+      window.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isPreviewing]);
@@ -55,7 +104,6 @@ const Upload = () => {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // check file type
       const allowedTypes = [
         'image/jpeg',
         'image/png',
@@ -75,6 +123,9 @@ const Upload = () => {
         setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
+
+      // Trigger AI analysis
+      handleAnalyzeMedia(file, selectedVoiceNote);
     }
   };
 
@@ -101,6 +152,10 @@ const Upload = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         const audioFile = new File([audioBlob], 'voice-note.wav', { type: 'audio/wav' });
         setSelectedVoiceNote(audioFile);
+
+        // Trigger AI analysis when recording stops
+        handleAnalyzeMedia(selectedImage, audioFile);
+
         stream.getTracks().forEach((track) => track.stop());
       };
 
@@ -118,13 +173,10 @@ const Upload = () => {
       setIsRecording(false);
     }
   };
-
+  
   const handlePlayback = () => {
-    // console.log("playing audio")
     if (audioRef.current) {
-      // console.log("playing audio")
       if (isPlaying) {
-        // console.log("pausing audio")
         audioRef.current.pause();
         setIsPlaying(false);
       } else {
@@ -148,12 +200,10 @@ const Upload = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!selectedImage) {
       toast.error('Please select an image');
       return;
     }
-
     if (!user?.id) {
       toast.error('User not authenticated');
       return;
@@ -161,32 +211,17 @@ const Upload = () => {
 
     try {
       setIsUploading(true);
-
-      // Create FormData
       const formData = new FormData();
-      formData.append('username', user.firstName + " " + user.lastName);
+      formData.append('username', user.firstName + ' ' + user.lastName);
       formData.append('files', selectedImage);
       formData.append('title', title);
       formData.append('description', description);
       formData.append('sentiment', sentiment === 'custom' ? customSentiment : sentiment);
-      
-      // Add audio data if available
+
       if (selectedVoiceNote) {
-        const audioReader = new FileReader();
-        audioReader.readAsDataURL(selectedVoiceNote);
-        await new Promise((resolve, reject) => {
-          audioReader.onloadend = async () => {
-            try {
-              formData.append('audioData', audioReader.result as string);
-              resolve(null);
-            } catch (error) {
-              reject(error);
-            }
-          };
-          audioReader.onerror = reject;
-        });
+        formData.append('audioData', selectedVoiceNote);
       }
-      // Make the upload request
+
       const token = await clerk.session?.getToken();
       const response = await fetch(`http://127.0.0.1:5000/api/user/upload/${user.id}`, {
         method: 'POST',
@@ -194,11 +229,9 @@ const Upload = () => {
           Authorization: `Bearer ${token}`,
         },
         body: formData,
-        credentials: 'include',
       });
 
       const data = await response.json();
-
       if (!response.ok) {
         throw new Error(data.error || 'Upload failed');
       }
@@ -274,14 +307,21 @@ const Upload = () => {
         {/* Title and Description */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors duration-200">
           <div className="p-6 space-y-4">
+            {isAnalyzing && (
+              <div className="flex items-center gap-2 text-sm text-yellow-600 dark:text-yellow-400 p-3 bg-yellow-50 dark:bg-gray-700 rounded-lg">
+                <SparklesIcon className="h-5 w-5 animate-pulse" />
+                <span>AI is generating suggestions...</span>
+              </div>
+            )}
             <div>
               <label className="block mb-2 font-medium">Title</label>
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200 disabled:opacity-50"
                 required
+                disabled={isAnalyzing}
               />
             </div>
 
@@ -290,8 +330,9 @@ const Upload = () => {
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200 min-h-[100px]"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200 min-h-[100px] disabled:opacity-50"
                 required
+                disabled={isAnalyzing}
               />
             </div>
 
@@ -301,7 +342,8 @@ const Upload = () => {
                 <select
                   value={sentiment}
                   onChange={(e) => setSentiment(e.target.value as SentimentType)}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200"
+                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200 disabled:opacity-50"
+                  disabled={isAnalyzing}
                 >
                   <option value="positive">Positive</option>
                   <option value="neutral">Neutral</option>
@@ -315,8 +357,9 @@ const Upload = () => {
                     value={customSentiment}
                     onChange={(e) => setCustomSentiment(e.target.value)}
                     placeholder="Enter custom sentiment"
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200"
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200 disabled:opacity-50"
                     required
+                    disabled={isAnalyzing}
                   />
                 )}
               </div>
@@ -358,9 +401,13 @@ const Upload = () => {
                       type="button"
                       onClick={handlePlayback}
                       className="p-2 rounded-full bg-yellow-400 hover:bg-yellow-500 text-black transition-colors duration-200"
-                      title={isPlaying ? "Pause" : "Play"}
+                      title={isPlaying ? 'Pause' : 'Play'}
                     >
-                      {isPlaying ? <StopIcon className="h-5 w-5" /> : <PlayIcon className="h-5 w-5" />}
+                      {isPlaying ? (
+                        <StopIcon className="h-5 w-5" />
+                      ) : (
+                        <PlayIcon className="h-5 w-5" />
+                      )}
                     </button>
                     <button
                       type="button"
@@ -384,7 +431,7 @@ const Upload = () => {
                   </div>
                 )}
               </div>
-              
+
               {selectedVoiceNote && (
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   Voice note recorded. Click play to preview or the refresh icon to record again.
@@ -396,9 +443,9 @@ const Upload = () => {
 
         <button
           type="submit"
-          disabled={isUploading}
+          disabled={isUploading || isAnalyzing}
           className={`w-full bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-4 rounded-lg transition-colors duration-200 ${
-            isUploading ? 'opacity-50 cursor-not-allowed' : ''
+            isUploading || isAnalyzing ? 'opacity-50 cursor-not-allowed' : ''
           }`}
         >
           {isUploading ? 'Uploading...' : 'Upload Media'}

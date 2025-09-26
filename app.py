@@ -20,6 +20,8 @@ import fitz
 from PIL import Image
 import bcrypt
 from datetime import timedelta
+import google.generativeai as genai
+import traceback 
 
 from Database.admindatahandler import  is_admin
 from Database.userdatahandler import ( 
@@ -162,8 +164,88 @@ def upload_images(user_id):
     except Exception as e:
         logging.error(f"Upload error: {str(e)}")  # Add logging
         return jsonify({'error': f'Error uploading file: {str(e)}'}), 500
+    
+api_key = os.getenv("GOOGLE_API_KEY")
+if not api_key:
+    raise ValueError("GOOGLE_API_KEY environment variable not set")
+    
+genai.configure(api_key=api_key)
+print("Available models that support 'generateContent':")
+for m in genai.list_models():
+  if 'generateContent' in m.supported_generation_methods:
+    print(f"- {m.name}")
 
+@app.route('/api/analyze-media', methods=['POST'])
+def analyze_media():
+    # ... (code to get image_file, audio_file, and build prompt_parts remains the same) ...
+    image_file = request.files.get('image')
+    audio_file = request.files.get('audio')
 
+    if image_file and image_file.mimetype == 'application/pdf':
+        return jsonify({
+            "title": "PDF Document Uploaded",
+            "description": "Please provide a description for this PDF file.",
+            "sentiment": "neutral"
+        })
+
+    if not image_file and not audio_file:
+        return jsonify({"error": "No media provided for analysis"}), 400
+
+    prompt_parts = []
+    
+    if image_file:
+        image_data = image_file.read()
+        image_parts = [{"mime_type": image_file.mimetype, "data": image_data}]
+        prompt_parts.extend(image_parts)
+        prompt_parts.append("\nAnalyze the image.")
+
+    if audio_file:
+        transcript = "This is a placeholder for the transcribed audio text." 
+        prompt_parts.append(f"\nAlso consider this audio transcript: '{transcript}'.")
+
+    prompt_parts.append(
+        """
+        Based on the media provided, generate ONLY a single, valid JSON object with the following keys:
+        1. "title": A short, descriptive title (max 10 words).
+        2. "description": A concise summary (2-3 sentences).
+        3. "sentiment": Classify the overall mood as strictly one of 'positive', 'neutral', or 'negative'.
+        Do not include any other text, explanations, or markdown formatting like ```json.
+        """
+    )
+    
+    try:
+        model = genai.GenerativeModel('gemini-flash-latest')
+        response = model.generate_content(prompt_parts)
+
+        # 💡 Check if the response was blocked due to safety settings
+        if not response.parts:
+            error_message = f"Response was blocked. Feedback: {response.prompt_feedback}"
+            print(f"⚠️ {error_message}")
+            return jsonify({"error": "Content blocked by safety filters"}), 400
+
+        raw_text = response.text
+        print(f"--- RAW AI RESPONSE ---\n{raw_text}\n-----------------------")
+
+        # Use regex to find the JSON block, even if there's extra text
+        json_match = re.search(r'\{.*\}', raw_text, re.DOTALL)
+        
+        if not json_match:
+            print("❌ Error: No JSON object found in the AI response.")
+            return jsonify({"error": "AI response did not contain a valid JSON object"}), 500
+
+        json_string = json_match.group(0)
+        result_json = json.loads(json_string)
+        
+        return jsonify(result_json)
+
+    except json.JSONDecodeError as e:
+        print(f"❌ JSON Parsing Error: {e}")
+        print(f"Content that failed to parse: {json_string}")
+        return jsonify({"error": "Failed to parse the AI's JSON response"}), 500
+    except Exception as e:
+        print(f"❌ An unexpected error occurred: {e}")
+        traceback.print_exc() # This will print the full error details to your terminal
+        return jsonify({"error": "An unexpected error occurred during AI analysis"}), 500
 
 # generate thumbnail for the pdf
 def generate_pdf_thumbnail(pdf_path, filename):
