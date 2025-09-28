@@ -6,6 +6,7 @@ import datetime
 import pathlib
 import re
 import sys
+import tempfile
 from flask import Flask, abort, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
 from flask_cors import CORS
 from bson import ObjectId
@@ -72,7 +73,18 @@ flow = Flow.from_client_secrets_file(
     scopes=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email", "openid"],
     redirect_uri="http://127.0.0.1:5000/admin/login/callback"
 )
+#load models once application startup
+try:
+    api_key = os.getenv("GOOGLE_API_KEY")
+    if not api_key:
+        raise ValueError("GOOGLE_API_KEY environment variable not set")
+    genai.configure(api_key=api_key)
 
+    whisper_model = WhisperModel("base")
+    generative_model = genai.GenerativeModel('gemini-flash-latest')
+except Exception as e:
+    whisper_model = None
+    generative_model = None
 
 def login_is_required(function):
     @wraps(function)  # Add this import from functools
@@ -97,7 +109,6 @@ def role_required(required_role):
                 user = get_user_by_username(session["username"])
                 
                 if user is None:
-                    print("User not found in session!")
                     return render_template('403.html')  
 
                 if user.get('role') != required_role:
@@ -175,6 +186,9 @@ genai.configure(api_key=api_key)
 @app.route('/api/analyze-media', methods=['POST'])
 def analyze_media():
     # code to get image_file, audio_file
+    if not whisper_model or not generative_model:
+        return jsonify({"error": "AI models are not available due to a startup error"}), 503
+    
     image_file = request.files.get('image')
     audio_file = request.files.get('audio')
 
@@ -199,18 +213,23 @@ def analyze_media():
     model = WhisperModel("base")  # or "small", "medium", "large-v2"
 
     if audio_file:
-    # Save uploaded audio
-        with open("temp_audio.wav", "wb") as f:
-            f.write(audio_file.read())
+        try:
+            # Create a unique temporary file
+            with tempfile.NamedTemporaryFile(suffix=".wav", delete=True) as tmp:
+                tmp.write(audio_file.read())
+                tmp.flush()  # make sure data is written to disk
 
-        segments, info = model.transcribe("temp_audio.wav", language="en")
-    
-        transcript = " ".join([segment.text for segment in segments]).strip()
+                segments, info = model.transcribe(tmp.name, language="en")
+                transcript = " ".join([segment.text for segment in segments]).strip()
 
-        if transcript:
-            prompt_parts.append(f"\nAlso consider this audio transcript: '{transcript}'.")
-        else:
-            prompt_parts.append("\nAn audio file was provided but could not be transcribed.")
+                if transcript:
+                    prompt_parts.append(f"\nAlso consider this audio transcript: '{transcript}'.")
+                else:
+                    prompt_parts.append("\nAn audio file was provided but could not be transcribed.")
+
+        except Exception as e:
+
+            prompt_parts.append("\nAn audio file was provided but failed during transcription.")
 
     prompt_parts.append(
         """

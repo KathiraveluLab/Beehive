@@ -219,7 +219,21 @@ const Upload = () => {
       formData.append('sentiment', sentiment === 'custom' ? customSentiment : sentiment);
 
       if (selectedVoiceNote) {
-        formData.append('audioData', selectedVoiceNote);
+        const audioReader = new FileReader();
+        audioReader.readAsDataURL(selectedVoiceNote);
+
+        await new Promise<void>((resolve, reject) => {
+          audioReader.onloadend = () => {
+            try {
+              const base64Audio = (audioReader.result as string).split(',')[1];
+              formData.append('audioData', base64Audio);
+              resolve();
+            } catch (error) {
+              reject(error);
+            }
+          };
+          audioReader.onerror = reject;
+        });
       }
 
       const token = await clerk.session?.getToken();
