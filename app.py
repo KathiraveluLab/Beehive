@@ -7,7 +7,7 @@ import pathlib
 import re
 import sys
 import tempfile
-from flask import Flask, abort, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
+from flask import Flask, abort, logging, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
 from flask_cors import CORS
 from bson import ObjectId
 from google_auth_oauthlib.flow import Flow
@@ -265,7 +265,7 @@ def analyze_media():
     except json.JSONDecodeError as e:
         return jsonify({"error": "Failed to parse the AI's JSON response"}), 500
     except Exception as e:
-        traceback.print_exc() # This will print the full error details to your terminal
+        logging.error("An unexpected error occurred during AI analysis", exc_info=True)
         return jsonify({"error": "An unexpected error occurred during AI analysis"}), 500
 
 # generate thumbnail for the pdf
