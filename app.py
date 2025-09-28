@@ -20,6 +20,7 @@ import fitz
 from PIL import Image
 import bcrypt
 from datetime import timedelta
+from faster_whisper import WhisperModel
 import google.generativeai as genai
 import traceback 
 
@@ -170,14 +171,10 @@ if not api_key:
     raise ValueError("GOOGLE_API_KEY environment variable not set")
     
 genai.configure(api_key=api_key)
-print("Available models that support 'generateContent':")
-for m in genai.list_models():
-  if 'generateContent' in m.supported_generation_methods:
-    print(f"- {m.name}")
 
 @app.route('/api/analyze-media', methods=['POST'])
 def analyze_media():
-    # ... (code to get image_file, audio_file, and build prompt_parts remains the same) ...
+    # code to get image_file, audio_file
     image_file = request.files.get('image')
     audio_file = request.files.get('audio')
 
@@ -199,9 +196,21 @@ def analyze_media():
         prompt_parts.extend(image_parts)
         prompt_parts.append("\nAnalyze the image.")
 
+    model = WhisperModel("base")  # or "small", "medium", "large-v2"
+
     if audio_file:
-        transcript = "This is a placeholder for the transcribed audio text." 
-        prompt_parts.append(f"\nAlso consider this audio transcript: '{transcript}'.")
+    # Save uploaded audio
+        with open("temp_audio.wav", "wb") as f:
+            f.write(audio_file.read())
+
+        segments, info = model.transcribe("temp_audio.wav", language="en")
+    
+        transcript = " ".join([segment.text for segment in segments]).strip()
+
+        if transcript:
+            prompt_parts.append(f"\nAlso consider this audio transcript: '{transcript}'.")
+        else:
+            prompt_parts.append("\nAn audio file was provided but could not be transcribed.")
 
     prompt_parts.append(
         """
@@ -217,20 +226,16 @@ def analyze_media():
         model = genai.GenerativeModel('gemini-flash-latest')
         response = model.generate_content(prompt_parts)
 
-        # 💡 Check if the response was blocked due to safety settings
+        #  Check if the response was blocked due to safety settings
         if not response.parts:
             error_message = f"Response was blocked. Feedback: {response.prompt_feedback}"
-            print(f"⚠️ {error_message}")
             return jsonify({"error": "Content blocked by safety filters"}), 400
 
         raw_text = response.text
-        print(f"--- RAW AI RESPONSE ---\n{raw_text}\n-----------------------")
 
-        # Use regex to find the JSON block, even if there's extra text
         json_match = re.search(r'\{.*\}', raw_text, re.DOTALL)
         
         if not json_match:
-            print("❌ Error: No JSON object found in the AI response.")
             return jsonify({"error": "AI response did not contain a valid JSON object"}), 500
 
         json_string = json_match.group(0)
@@ -239,11 +244,8 @@ def analyze_media():
         return jsonify(result_json)
 
     except json.JSONDecodeError as e:
-        print(f"❌ JSON Parsing Error: {e}")
-        print(f"Content that failed to parse: {json_string}")
         return jsonify({"error": "Failed to parse the AI's JSON response"}), 500
     except Exception as e:
-        print(f"❌ An unexpected error occurred: {e}")
         traceback.print_exc() # This will print the full error details to your terminal
         return jsonify({"error": "An unexpected error occurred during AI analysis"}), 500
 
