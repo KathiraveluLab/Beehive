@@ -109,6 +109,7 @@ def role_required(required_role):
                 user = get_user_by_username(session["username"])
                 
                 if user is None:
+                    print("User not found in session!")
                     return render_template('403.html')  
 
                 if user.get('role') != required_role:

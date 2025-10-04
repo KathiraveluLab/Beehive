@@ -104,6 +104,7 @@ const Upload = () => {
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // check file type
       const allowedTypes = [
         'image/jpeg',
         'image/png',
@@ -175,8 +176,11 @@ const Upload = () => {
   };
   
   const handlePlayback = () => {
+    // console.log("playing audio")
     if (audioRef.current) {
+      // console.log("playing audio")
       if (isPlaying) {
+        // console.log("playing audio")        
         audioRef.current.pause();
         setIsPlaying(false);
       } else {
@@ -200,10 +204,12 @@ const Upload = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (!selectedImage) {
       toast.error('Please select an image');
       return;
     }
+
     if (!user?.id) {
       toast.error('User not authenticated');
       return;
@@ -211,6 +217,7 @@ const Upload = () => {
 
     try {
       setIsUploading(true);
+      // Create FormData
       const formData = new FormData();
       formData.append('username', user.firstName + ' ' + user.lastName);
       formData.append('files', selectedImage);
@@ -218,6 +225,7 @@ const Upload = () => {
       formData.append('description', description);
       formData.append('sentiment', sentiment === 'custom' ? customSentiment : sentiment);
 
+      // Add audio data if available 
       if (selectedVoiceNote) {
         const audioReader = new FileReader();
         audioReader.readAsDataURL(selectedVoiceNote);
@@ -235,7 +243,7 @@ const Upload = () => {
           audioReader.onerror = reject;
         });
       }
-
+      // Make the upload request
       const token = await clerk.session?.getToken();
       const response = await fetch(`http://127.0.0.1:5000/api/user/upload/${user.id}`, {
         method: 'POST',
@@ -246,6 +254,7 @@ const Upload = () => {
       });
 
       const data = await response.json();
+      
       if (!response.ok) {
         throw new Error(data.error || 'Upload failed');
       }
