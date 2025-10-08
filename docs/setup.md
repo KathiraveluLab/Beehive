@@ -1,4 +1,3 @@
-## If you are looking for setup this project.
 # Project Setup
 
 ## Prerequisites
