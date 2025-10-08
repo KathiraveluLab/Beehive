@@ -100,7 +100,7 @@ docker-compose up --build
 
 ---
 
- - ## ** Verify MongoDB**
+ - ## **Verify MongoDB**
 To check if MongoDB is running inside Docker:
 
 ```sh
