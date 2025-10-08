@@ -1,4 +1,3 @@
-## If you are looking for setup this project.
 # Project Setup
 
 ## Prerequisites
@@ -28,12 +27,16 @@ Follow these steps to set up the project:
     ```
 
 4. **Activate the Virtual Environment**
-    - Activate the virtual environment.
-    # Windows
+   
+    ***Windows***
+    ```bash
     .\venv\Scripts\activate
+    ```
 
-    # Unix/MacOS
+    ***Unix/MacOS***
+    ```bash
     source venv/bin/activate
+    ```
 
 5. **Install Required Libraries**
     - Install all the libraries listed in `requirements.txt`.
@@ -96,7 +99,7 @@ docker-compose up --build
 
 ---
 
- - ## ** Verify MongoDB**
+ - ## **Verify MongoDB**
 To check if MongoDB is running inside Docker:
 
 ```sh
@@ -117,7 +120,7 @@ mongodb://localhost:27017
 
 ---
 
- - ## ** Stopping the Containers**
+ - ## **Stopping the Containers**
 To **stop** the containers:
 
 ```sh
