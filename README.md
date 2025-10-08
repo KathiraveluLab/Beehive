@@ -1,15 +1,15 @@
 # Beehive  
 <img align="left" src="static/favicon.svg" width="30" title="Beehive Logo" alt="Beehive Logo">
 
-A Data Federation Approach to Analyze Behavioral Health and Complement Healthcare Practice with Community Health Metrics  
+A Data Framework for Behavioral Health with Digitized Drawings and Photographs. 
 
 ## Project Description  
 
-This project aims to analyze behavioral health and complement healthcare practice with community health metrics in Alaska using a data federation approach. By leveraging data from various sources, we can gain insights into behavioral health patterns and improve healthcare practices in the community.  
+This project aims to analyze behavioral health and complement healthcare practice with community health metrics in Alaska using a data federation approach. By leveraging data from various sources, we can gain insights into behavioral health patterns and improve healthcare practices in the community.
 
 ## Tech Stacks Used  
-- **Language/Framework**: Flask (Python)  
-- **Authentication**: Google OAuth2  
+- **Language/Framework**: Flask (Python)
+- **Authentication**: Google OAuth2
 - **Database**: MongoDB
   
 ## Workflow
@@ -27,19 +27,13 @@ graph TD;
 
 ## Setup Instructions  
 
-If you want to run this project locally, see the [setup.md](docs/setup.md).  
+For instructions to configure and run this project locally, see the [setup.md](docs/setup.md).
 
 ## Contributing  
 
-**Note**: `dev` branch is our primary development branch. The `main` branch is our stable branch. Please create pull requests against the dev branch if you are contributing to ongoing development. For specific contribution guidelines, see the [contributing.md](docs/contributing.md).  
-> **NOTE:**  
-> We currently have **two active branches** for development:  
->  
-> - **`dev` Branch** – General development and feature updates.  
-> - **`modular` Branch** – Focused on modularizing the codebase.  
->  
-> You are welcome to contribute to **either of these branches** based on your interest.  
-> The **`main` branch is frozen** for direct commits and only pull requests from a stable development branch (dev, modular, ...) are merged into the main branch.  
+**Note**: `dev` branch is our primary development branch. The `main` branch is our stable branch. Please create pull requests against the dev branch if you are contributing to ongoing development. For specific contribution guidelines, see the [contributing.md](docs/contributing.md).
+
+The **`main` branch is frozen** for direct commits and only pull requests from a stable development branch are merged into the main branch.
 
 
 ## License  
