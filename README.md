@@ -35,7 +35,3 @@ For instructions to configure and run this project locally, see the [setup.md](d
 
 The **`main` branch is frozen** for direct commits and only pull requests from a stable development branch are merged into the main branch.
 
-
-## License  
-
-This project is licensed under the BSD-3-Clause License. See the [LICENSE](LICENSE) file for more details.
