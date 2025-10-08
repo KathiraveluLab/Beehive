@@ -121,7 +121,7 @@ mongodb://localhost:27017
 
 ---
 
- - ## ** Stopping the Containers**
+ - ## **Stopping the Containers**
 To **stop** the containers:
 
 ```sh
