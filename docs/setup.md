@@ -39,22 +39,22 @@ Follow these steps to set up the project:
     source venv/bin/activate
     ```
 
-6. **Install Required Libraries**
+5. **Install Required Libraries**
     - Install all the libraries listed in `requirements.txt`.
     ```bash
     pip install -r requirements.txt
     ```
 
-7. **Configure Environment Variables**
+6. **Configure Environment Variables**
     - Rename `.env.example` to `.env`.
     - Rename `client_secret_example.json` to `client_secret.json`.
 
-8. **Create Google OAuth API Key**
+7. **Create Google OAuth API Key**
     - Create a Google OAuth API key.
     - Download the `client_secret.json` file and place it in the project directory.
     - Update your Google Cloud Console to include the new redirect URI: ```http://localhost:5000/login/google/callback```
 
-9. **Update `.env` File**
+8. **Update `.env` File**
     - Open the `.env` file and add the required credentials.
     ```
     MONGODB_CONNECTION_STRING=mongodb://...
@@ -64,7 +64,7 @@ Follow these steps to set up the project:
     ADMIN_EMAILS=admin1@example.com,admin2@example.com
     ```
     NOTE: Add or modify the ADMIN_EMAILS variable with comma-separated emails.Make sure there are no spaces before or after the commas.
-10. **Run the Application**
+9. **Run the Application**
     - Execute the `app.py` file to run the application.
     ```bash
     python app.py
