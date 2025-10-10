@@ -4,7 +4,6 @@
 - Python 3.x
 - MongoDB
 - Google OAuth2 credentials
-- IDE (VS Code recommended)
 
 # Setup Instructions
 
@@ -53,7 +52,13 @@ Follow these steps to set up the project:
     - Download the `client_secret.json` file and place it in the project directory.
     - Update your Google Cloud Console to include the new redirect URI: ```http://localhost:5000/login/google/callback```
 
-8. **Update `.env` File**
+
+8. **Set Up Clerk Authentication and create Clerk Keys**
+    - Go to Clerk Dashboard
+    - Create a New Application
+    - You will get your Publishable Key and Secret Key
+      
+9. **Update `.env` File**
     - Open the `.env` file and add the required credentials.
     ```
     MONGODB_CONNECTION_STRING=mongodb://...
@@ -86,10 +91,6 @@ Follow these steps to set up the project:
     npm run dev
      ```
 
-12. **Set Up Clerk Authentication**
-    - Go to Clerk Dashboard
-    - Create a New Application
-    - You will get your Publishable Key and Secret Key
 
     
 By following these steps, you will have the project set up and ready to use.
