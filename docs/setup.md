@@ -76,15 +76,16 @@ Follow these steps to set up the project:
     python app.py
     ```
 
-    This sets up the backend
+    This sets up the backend.
 
 11. **Run the frontend**
-    Add .env file in the frontend folder.
+    - Add .env file in the frontend folder.
 
     ```
     VITE_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
     ```
-    Then run the following commmands
+    
+    - Run the following commmands
      ```bash
     cd frontend
     npm install
