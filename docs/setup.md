@@ -77,7 +77,7 @@ Follow these steps to set up the project:
     Add .env file in the frontend folder.
 
     ```
-    VITE_CLERK_PUBLISHABLE_KEY=enter_ your_vite_perishable_key
+    VITE_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
     ```
     Then run the following commmands
      ```bash
