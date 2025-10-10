@@ -16,8 +16,26 @@ Follow these steps to set up the project:
     git clone https://github.com/your-username/Beehive.git
     ```
 
-2. **Open the Project in Your IDE**
-    - Open the project in your favorite IDE, such as Visual Studio Code or PyCharm.
+2. **Install and MongoDB**
+    - Make sure MongoDB is installed and is currently running.
+    - In Linux, the command to check the status is:
+   ```bash
+    sudo systemctl status mongod
+    ```
+    You should see a status, such as:
+    ```bash
+     mongod.service - MongoDB Database Server
+     Loaded: loaded (/usr/lib/systemd/system/mongod.service; enabled; preset: enabled)
+     Active: active (running) since Fri 2025-10-10 05:40:36 AKDT; 58min ago
+       Docs: https://docs.mongodb.org/manual
+     Main PID: 1665 (mongod)
+     Memory: 257.1M (peak: 345.8M)
+     CPU: 13.341s
+     CGroup: /system.slice/mongod.service
+             └─1665 /usr/bin/mongod --config /etc/mongod.conf
+     Oct 10 05:40:36 Llovizna systemd[1]: Started mongod.service - MongoDB Database Server.
+     Oct 10 05:40:46 Llovizna mongod[1665]: {"t":{"$date":"2025-10-10T13:40:46.804Z"},"s":"I",  "c":"CONTROL",  "id":7484500, "ctx":"main","msg":"Environment variable MONGODB_CONFIG_OVERRI>
+    ```
 
 3. **Create a Virtual Environment**
     - Navigate to the project directory and create a virtual environment.
@@ -45,11 +63,10 @@ Follow these steps to set up the project:
 
 6. **Configure Environment Variables**
     - Rename `.env.example` to `.env`.
-    - Rename `client_secret_example.json` to `client_secret.json`.
 
 7. **Create Google OAuth API Key**
     - Create a Google OAuth API key.
-    - Download the `client_secret.json` file and place it in the project directory.
+    - Download the `client_secret.json` file and place it in the Beehive project/root directory.
     - Update your Google Cloud Console to include the new redirect URI: ```http://localhost:5000/login/google/callback```
 
 
