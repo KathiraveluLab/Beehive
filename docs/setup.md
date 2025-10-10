@@ -9,11 +9,11 @@
 
 Follow these steps to set up the project:
 
-1. **Fork and Clone the Repository**
-    - Fork the repository to your GitHub profile.
-    - Clone the forked repository to your local machine.
+1. **Clone the Beehive Repository**
+    - Clone the Beehive repository to your local machine.
     ```bash
-    git clone https://github.com/your-username/Beehive.git
+    git clone https://github.com/kathiravelulab/Beehive.git'
+    cd Beehive
     ```
 
 2. **Install and MongoDB**
@@ -71,9 +71,10 @@ Follow these steps to set up the project:
 
 
 8. **Set Up Clerk Authentication and create Clerk Keys**
-    - Go to Clerk Dashboard
-    - Create a New Application
-    - You will get your Publishable Key and Secret Key
+    - Sign up for a Clerk account at [https://clerk.dev](https://clerk.dev)
+    - Log in to Clerk and go to Clerk Dashboard
+    - Create a new application in Clerk
+    - Copy your Publishable Key and Secret Key from Clerk.
       
 9. **Update `.env` File**
     - Open the `.env` file and add the required credentials.
@@ -96,6 +97,18 @@ Follow these steps to set up the project:
     This sets up the backend.
 
 11. **Run the frontend**
+    - Install the frontend dependencies.
+    ```bash
+    cd frontend
+    npm install
+    ```
+
+    - Create a `.env` file in the frontend directory and add your Clerk publishable key:
+    ```
+    VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key_here
+    ```
+
+11. **Run the frontend**
     - Add .env file in the frontend folder.
 
     ```
@@ -104,11 +117,15 @@ Follow these steps to set up the project:
     
     - Run the following commmands
      ```bash
-    cd frontend
-    npm install
     npm run dev
      ```
 
+    - Start the development server:
+    ```bash
+    npm run dev
+    ```
 
+12. **Confirm the App is working.**
+    - Open [http://localhost:5173](http://localhost:5173) to view the app in your browser.
     
 By following these steps, you will have the project set up and ready to use.
