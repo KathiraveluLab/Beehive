@@ -15,7 +15,7 @@ import requests
 from google.oauth2 import id_token
 import google.auth.transport.requests
 from pip._vendor import cachecontrol
-from Database import userdatahandler
+from database import userdatahandler
 from werkzeug.utils import secure_filename
 import fitz  
 from PIL import Image
@@ -25,8 +25,8 @@ from faster_whisper import WhisperModel
 import google.generativeai as genai
 import traceback 
 
-from Database.admindatahandler import  is_admin
-from Database.userdatahandler import ( 
+from database.admindatahandler import  is_admin
+from database.userdatahandler import ( 
     delete_image,
     get_image_by_id,
     get_images_by_user, 
@@ -36,7 +36,7 @@ from Database.userdatahandler import (
     save_notification,
     get_all_users
 )
-from Database.databaseConfig import get_beehive_notification_collection, get_beehive_message_collection
+from database.databaseConfig import get_beehive_notification_collection, get_beehive_message_collection
 from utils.clerk_auth import require_auth
 
 # Import blueprints
@@ -44,7 +44,7 @@ from Routes.adminRoutes import admin_bp
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from OAuth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
+from oauth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
 
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp', 'heif', 'pdf'}
 
