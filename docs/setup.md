@@ -78,6 +78,7 @@ Follow these steps to set up the project:
       
 9. **Update `.env` File**
     - Open the `.env` file and add the required credentials.
+    - Note: Add or modify the ADMIN_EMAILS variable with comma-separated emails. Make sure there are no spaces before or after the commas.
     ```
     MONGODB_CONNECTION_STRING=mongodb://...
     GOOGLE_CLIENT_ID=your-client-id
@@ -86,7 +87,6 @@ Follow these steps to set up the project:
     ADMIN_EMAILS=admin1@example.com,admin2@example.com
     CLERK_SECRET_KEY = your clerk secret key
     ```
-    NOTE: Add or modify the ADMIN_EMAILS variable with comma-separated emails.Make sure there are no spaces before or after the commas.
    
 10. **Run the backend**
     - Execute the `app.py` file to run the application.
@@ -96,7 +96,7 @@ Follow these steps to set up the project:
 
     This sets up the backend.
 
-11. **Run the frontend**
+11. **Configure the frontend**
     - Install the frontend dependencies.
     ```bash
     cd frontend
