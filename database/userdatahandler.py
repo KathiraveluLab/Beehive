@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 # import re
 # import bcrypt
 from flask import session
-from database import databaseConfig
+from Database import databaseConfig
 import requests
 import os
 
