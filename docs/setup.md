@@ -61,82 +61,35 @@ Follow these steps to set up the project:
     GOOGLE_CLIENT_SECRET=your-client-secret
     REDIRECT_URI=http://localhost:5000/admin/login/callback
     ADMIN_EMAILS=admin1@example.com,admin2@example.com
+    CLERK_SECRET_KEY = your clerk secret key
     ```
     NOTE: Add or modify the ADMIN_EMAILS variable with comma-separated emails.Make sure there are no spaces before or after the commas.
-9. **Run the Application**
+   
+10. **Run the backend**
     - Execute the `app.py` file to run the application.
     ```bash
     python app.py
     ```
-## Directory Structure
-The application expects certain directories to exist for proper operation:
-- `static/uploads` - For general file uploads
-- `static/uploads/profile` - For user and admin profile photos
-- `static/uploads/thumbnails` - For PDF thumbnails
 
-These directories will be created automatically if they don't exist, but for proper deployment you may want to ensure they're included in your repository or created during setup.
+    This sets up the backend
 
-10. **Setup Guide for Running Flask with MongoDB in Docker**
+11. **Run the frontend**
+    Add .env file in the frontend folder.
 
-This guide will help you set up and run your **Flask application with MongoDB** inside Docker using `docker-compose`.
+    ```
+    VITE_CLERK_PUBLISHABLE_KEY=enter_ your_vite_perishable_key
+    ```
+    Then run the following commmands
+     ```bash
+    cd frontend
+    npm install
+    npm run dev
+     ```
 
----
+12. **Set Up Clerk Authentication**
+    - Go to Clerk Dashboard
+    - Create a New Application
+    - You will get your Publishable Key and Secret Key
 
-## **Prerequisites**
-Before you begin, ensure you have installed:
-- **Docker**: [Download here](https://www.docker.com/get-started)
-
----
-
- - Run the following command to **build and start** the containers:
-```sh
-docker-compose up --build
-```
-
- This will start both **Flask** and **MongoDB**.  
- Flask will be available at `http://localhost:5000`.  
- MongoDB will run inside Docker and be accessible on **port 27017**.
-
----
-
- - ## **Verify MongoDB**
-To check if MongoDB is running inside Docker:
-
-```sh
-docker ps
-```
-
-To enter the MongoDB container and check data:
-
-```sh
-docker exec -it mongodb mongosh
-```
-
-If you want to use **MongoDB Compass**, connect to:
-
-```
-mongodb://localhost:27017
-```
-
----
-
- - ## **Stopping the Containers**
-To **stop** the containers:
-
-```sh
-docker-compose down
-```
-
-This will stop and remove the containers, but **data will persist** due to the volume (`mongo-data`).
-
----
-
-## **RUN command**
-You have successfully set up **Flask with MongoDB in Docker**!  
-Now, every time you want to run your project, just use:
-
-```sh
-docker-compose up
-```
-
+    
 By following these steps, you will have the project set up and ready to use.
