@@ -36,7 +36,7 @@ from database.databaseConfig import get_beehive_notification_collection, get_bee
 from utils.clerk_auth import require_auth
 
 # Import blueprints
-from Routes.adminRoutes import admin_bp
+from routes.adminroutes import admin_bp
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 

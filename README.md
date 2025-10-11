@@ -8,9 +8,12 @@ A Data Framework for Behavioral Health with Digitized Drawings and Photographs.
 This project aims to analyze behavioral health and complement healthcare practice with community health metrics in Alaska using a data federation approach. By leveraging data from various sources, we can gain insights into behavioral health patterns and improve healthcare practices in the community.
 
 ## Tech Stacks Used  
-- **Language/Framework**: Flask (Python)
-- **Authentication**: Google OAuth2
+- **Backend**: Flask (Python)
+- **Frontend**: React (TypeScript) in `frontend/`
+- **User Authentication**: Google OAuth2
+- **Local Authentication**: Clerk REST API
 - **Database**: MongoDB
+- **Storage**: Local filesystem for media uploads in `static/uploads/` with PDF thumbnails in `static/uploads/thumbnails/`
   
 ## Workflow
 ```mermaid
