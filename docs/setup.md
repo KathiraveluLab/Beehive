@@ -115,15 +115,10 @@ Follow these steps to set up the project:
     VITE_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
     ```
     
-    - Run the following commmands
+    - Run the following commmands to start the development server:
      ```bash
     npm run dev
      ```
-
-    - Start the development server:
-    ```bash
-    npm run dev
-    ```
 
 12. **Confirm the App is working.**
     - Open [http://localhost:5173](http://localhost:5173) to view the app in your browser.
