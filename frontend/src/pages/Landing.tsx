@@ -626,22 +626,22 @@ const Landing = () => {
               {[
                 {
                   title: "Office Location",
-                  description: "123 Healthcare Avenue, Anchorage, Alaska 99501",
+                  description: "UAA College of Engineering, 3211 Providence Drive, ECB 308G, Anchorage, AK 99508.",
                   icon: "📍"
                 },
                 {
                   title: "Email Us",
-                  description: "contact@beehive-health.com",
+                  description: "pkathiravelu@alaska.edu",
                   icon: "✉️"
                 },
                 {
                   title: "Call Us",
-                  description: "(907) 555-0123",
+                  description: "(907) 786-0619",
                   icon: "📞"
                 },
                 {
                   title: "Business Hours",
-                  description: "Monday - Friday: 9:00 AM - 5:00 PM AKST",
+                  description: "Monday - Friday: 7:00 AM - 5:00 PM AKST",
                   icon: "🕒"
                 }
               ].map((item, index) => (
@@ -705,7 +705,7 @@ const Landing = () => {
                 { name: "Twitter", href: "#" },
                 { name: "LinkedIn", href: "#" },
                 { name: "Facebook", href: "#" },
-                { name: "GitHub", href: "#" }
+                { name: "GitHub", href: "https://github.com/kathiravelulab/beehive" }
               ]
             }
           ].map((section, index) => (
