@@ -87,19 +87,27 @@ Added logic to check the session after a password reset and synchronize it with 
 
 ## 5. Naming Conventions  
 
-To maintain consistency across the project, please follow these naming conventions when adding new files or folders:  
+To maintain consistency across the project, please follow these naming conventions when adding new files or folders:
 
-- **Folders should use lowercase names** (e.g., `docs`, `database`, `oauth`).  
-- **Files should also use lowercase names**, unless they are standard files like `README.md`, `LICENSE`, etc.  
-- **For headings and labels in the application UI**, we prefer **Title Case** where applicable.  
+- **Folders should use lowercase names** (e.g., `docs`, `database`, `oauth`).
+- **Files should also use lowercase names**, unless they are standard files such as `README.md` and `LICENSE`
+- **For headings and labels in the application UI**, we prefer **Title Case** where applicable.
 
-> NOTE: Some folder and file names are referenced throughout the codebase. If renaming an existing file/folder, please ensure all references are updated accordingly to avoid breaking functionality.  
+> NOTE: Some folder and file names are referenced throughout the codebase. If renaming an existing file/folder, please ensure all references are updated accordingly to avoid breaking functionality.
 
-## 6. Code of Conduct
+## 6. Contributing
+
+- Fork the repository
+- Create your feature branch (`git checkout -b feature/amazing-feature`)
+- Commit your changes (`git commit -m 'Add some amazing feature'`)
+- Push to the branch (`git push origin feature/amazing-feature`)
+- Open a Pull Request against the dev branch.
+
+## 7. Code of Conduct
 
 Please ensure that you read and follow our [Code of Conduct](/CODE_OF_CONDUCT.md), which outlines the expectations for respectful and inclusive behavior within the community.
 
-## 7. Questions or Issues?
+## 8. Questions or Issues?
 
 If you have any questions, feel free to reach out by opening an issue, or ask in the project’s discussion channel. We are happy to help!
 

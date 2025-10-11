@@ -55,7 +55,10 @@ const UserUploads = () => {
           throw new Error(data.error);
         }
         
-        setUploads(data.images);
+        const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+        setUploads(sortedImages);
       } catch (error) {
         console.error('Error fetching uploads:', error);
         toast.error('Failed to fetch uploads');

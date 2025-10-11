@@ -70,18 +70,7 @@ const AboutUs = () => {
       },
       bio: "Focusing on system architecture and integration."
     },
-    {
-      name: "Mahmoud",
-      role: "Developer",
-      affiliation: "Open Source Contributor",
-      image: "/team/member5.jpeg",
-      socials: {
-        github: "#",
-        linkedin: "#",
-      },
-      bio: "Contributing to various aspects of the project."
-    },
-    
+ 
     // Add more team members as needed
   ];
 
