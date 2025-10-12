@@ -338,14 +338,11 @@ def get_chat_messages():
             # If the requester is an admin, they can specify a user_id
             user_id = request.args.get('user_id')
             if not user_id:
-                return jsonify({'error': 'user_id parameter is required for admin view'}), 400
+                return jsonify({'error': 'user_id is required'}), 400
         else:
             # We'll be ignoring any user_id passed in the query to prevent data leakage.
             user_id = current_user['id']
 
-        with_admin = request.args.get('with_admin', 'false').lower() == 'true'
-        if not user_id:
-            return jsonify({'error': 'user_id is required'}), 400
         messages_col = get_beehive_message_collection()
         # Get messages between this user and admin
         query = {

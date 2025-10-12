@@ -47,21 +47,8 @@ def require_auth(f):
                     print("No user ID found in token")
                     return jsonify({'error': 'No user ID in token'}), 401
                 
-                clerk_api_key = os.getenv('CLERK_SECRET_KEY')
-                api_url = f"https://api.clerk.com/v1/users/{user_id}"
-                headers = {'Authorization': f'Bearer {clerk_api_key}'}
-                
-                response = requests.get(api_url, headers=headers)
+                role = decoded.get('role', 'user')
 
-                if not response.ok:
-                    raise Exception(f"Clerk API error: {response.text}")
-                
-                user_data = response.json()
-                
-                # Safely get the role from unsafe_metadata, defaulting to 'user'
-                role = user_data.get('unsafe_metadata', {}).get('role', 'user')
-                
-                
                 # Token is valid, user is authenticated
                 request.current_user = {
                     'id': user_id,
