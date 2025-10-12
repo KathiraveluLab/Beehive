@@ -89,8 +89,6 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ userId, userRole, targetUserId,
     setLoading(true);
     try {
       const payload = {
-        from_id: userId,
-        from_role: userRole,
         to_id: userRole === 'admin' ? adminTargetId : 'admin',
         to_role: userRole === 'admin' ? 'user' : 'admin',
         content: input.trim(),
