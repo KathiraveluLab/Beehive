@@ -11,8 +11,9 @@ def login_is_required(function):
         if "google_id" not in session:
             return "Unauthorized", 401
         else:
-            return function()
+            return function(*args, **kwargs)
     return login_wrapper
+
 
 
 def role_required(required_role):

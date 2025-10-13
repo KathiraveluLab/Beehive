@@ -6,13 +6,14 @@ import datetime
 import pathlib
 import re
 import sys
-from flask import Flask, abort, logging, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory # type: ignore
+import logging
+from flask import Flask, abort, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
 from flask_cors import CORS
 from bson import ObjectId
 from google_auth_oauthlib.flow import Flow
 import requests
 from google.oauth2 import id_token
-import google.auth.transport.requests # type: ignore
+import google.auth.transport.requests
 from pip._vendor import cachecontrol
 from database import userdatahandler
 from werkzeug.utils import secure_filename
