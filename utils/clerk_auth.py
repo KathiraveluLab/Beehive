@@ -52,7 +52,6 @@ def require_auth(f):
                 # Token is valid, user is authenticated
                 request.current_user = {
                     'id': user_id,
-                    'userid': user_id,  # Your session claim
                     'role': role
                 }
                 print(f"Authentication successful for user: {user_id} with role: {role}")
