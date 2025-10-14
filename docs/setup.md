@@ -80,7 +80,7 @@ Follow these steps to set up the project:
     - Add the following inside **Claims** and save the changes:
     ```
     {
-      "role": "{{user.unsafe_metadata.role || 'user'}}"    
+      "role": "{{user.public_metadata.role || 'user'}}"    
     }
     ```
       
