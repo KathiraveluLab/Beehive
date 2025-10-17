@@ -21,7 +21,7 @@ const SignUpPage = () => {
           socialButtonsBlockButtonText: 
             'text-gray-600 dark:text-gray-300 font-medium',
           formFieldLabel: 
-            'text-gray-700 dark:text-gray-1000 font-medium',
+            'text-gray-700 dark:text-gray-900 font-medium',
           formFieldInput: 
             'bg-white dark:bg-gray-100 border border-gray-200 dark:border-gray-700 focus:border-yellow-500 dark:focus:border-yellow-500 focus:ring-4 focus:ring-yellow-500/20 dark:focus:ring-yellow-500/20 rounded-xl transition-all duration-200',
           footerActionLink: 
