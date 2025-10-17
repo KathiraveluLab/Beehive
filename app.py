@@ -36,7 +36,7 @@ from database.userdatahandler import (
 from database.databaseConfig import get_beehive_notification_collection, get_beehive_message_collection
 from utils.clerk_auth import require_auth
 
-from decorators import login_is_required, role_required
+from decorators import login_is_required, require_admin_role
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
