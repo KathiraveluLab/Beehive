@@ -36,7 +36,7 @@ const FloatingParticles = () => (
 
 const GradientBackground = () => (
   <div className="absolute inset-0">
-    <div className="absolute inset-0 bg-gradient-to-br from-yellow-100/30 via-white to-yellow-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-black" />
+    <div className="absolute inset-0 bg-gradient-to-br from-yellow-100/30 via-white to-yellow-50/30 dark:from-white dark:via-yellow-200 dark:to-white" />
     <motion.div
       animate={{
         scale: [1, 1.2, 1],
@@ -47,7 +47,8 @@ const GradientBackground = () => (
         repeat: Infinity,
         ease: "easeInOut"
       }}
-      className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-yellow-200/20 to-transparent dark:from-yellow-900/10"
+      className="absolute top-0 left-0 w-full h-full bg-gradient-to-br
+       from-yellow-200/20 to-transparent dark:from-yellow-900/10"
       style={{ filter: 'blur(100px)' }}
     />
   </div>
