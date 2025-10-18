@@ -6,6 +6,7 @@ import datetime
 import pathlib
 import re
 import sys
+import logging
 from flask import Flask, abort, render_template, request, redirect, url_for, flash, session, jsonify, send_from_directory
 from flask_cors import CORS
 from bson import ObjectId
@@ -35,8 +36,7 @@ from database.userdatahandler import (
 from database.databaseConfig import get_beehive_notification_collection, get_beehive_message_collection
 from utils.clerk_auth import require_auth
 
-# Import blueprints
-from routes.adminroutes import admin_bp
+from decorators import login_is_required, require_admin_role
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
@@ -62,51 +62,12 @@ app.config['PDF_THUMBNAIL_FOLDER'] = 'static/uploads/thumbnails/'
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
 
-# Register blueprints
-app.register_blueprint(admin_bp)
+
 flow = Flow.from_client_secrets_file(
     client_secrets_file=client_secrets_file,
     scopes=["https://www.googleapis.com/auth/userinfo.profile", "https://www.googleapis.com/auth/userinfo.email", "openid"],
     redirect_uri="http://127.0.0.1:5000/admin/login/callback"
 )
-
-
-def login_is_required(function):
-    @wraps(function)  # Add this import from functools
-    def login_wrapper(*args, **kwargs):
-        if "google_id" not in session:
-            return abort(401)  
-        else:
-            return function()
-    return login_wrapper
-
-def role_required(required_role):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            # Admin authentication via Google
-            if "google_id" in session:
-                if required_role == 'admin' and not is_admin():
-                    return render_template('403.html')
-                    
-            # Regular user authentication - either via traditional login or Google SSO
-            elif "username" in session:
-                user = get_user_by_username(session["username"])
-                
-                if user is None:
-                    print("User not found in session!")
-                    return render_template('403.html')  
-
-                if user.get('role') != required_role:
-                    return render_template('403.html')
-            else:
-                return render_template('403.html')
-
-            return func(*args, **kwargs)
-
-        return wrapper
-    return decorator
-
     
 # Upload images 
 @app.route('/api/user/upload/<user_id>', methods=['POST'])
@@ -360,7 +321,9 @@ def get_chat_messages():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-
+# Import blueprints
+from routes.adminroutes import admin_bp
+app.register_blueprint(admin_bp)
 
 if __name__ == '__main__':
     app.run(debug=True)

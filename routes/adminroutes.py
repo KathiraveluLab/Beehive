@@ -1,16 +1,15 @@
 from flask import Blueprint, request, jsonify
 import os
 import requests
-from database.admindatahandler import is_admin
+from decorators import require_admin_role
 from database.userdatahandler import get_images_by_user, get_recent_uploads, get_upload_stats
-from utils.clerk_auth import require_auth
 
 # Create admin blueprint
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
 # Get all images uploaded by a user (admin access)
 @admin_bp.route('/user_uploads/<user_id>')
-@require_auth
+@require_admin_role
 def admin_user_images_show(user_id):
     try:
         images = get_images_by_user(user_id)
@@ -24,7 +23,7 @@ def admin_user_images_show(user_id):
 
 # Get all users
 @admin_bp.route('/users', methods=['GET'])
-@require_auth
+@require_admin_role
 def get_users():
     try:
         # Get query parameters
@@ -74,7 +73,7 @@ def get_users():
 
 # Get only users (not admins)
 @admin_bp.route('/users/only-users', methods=['GET'])
-@require_auth
+@require_admin_role
 def get_only_users():
     try:
         # Get query parameters
@@ -127,7 +126,7 @@ def get_only_users():
 
 # Get dashboard statistics and recent activity
 @admin_bp.route('/dashboard', methods=['GET'])
-@require_auth
+@require_admin_role
 def get_dashboard_data():
     try:
         # Get query parameters for recent activity
