@@ -48,7 +48,7 @@ app = Flask(__name__, static_folder='static', static_url_path='/static')
 CORS(app, resources={
     r"/*": {
         "origins": ["http://localhost:5173", "http://127.0.0.1:5173"],
-        "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         "allow_headers": ["Content-Type", "Authorization"],
         "expose_headers": ["Content-Type", "Authorization"],
         "supports_credentials": True,
@@ -190,7 +190,7 @@ def generate_pdf_thumbnail(pdf_path, filename):
     return thumbnail_path
 
 # Edit images uploaded by the user
-@app.route('/edit/<image_id>', methods=['POST'])
+@app.route('/edit/<image_id>', methods=['PATCH'])
 @require_auth
 def edit_image(image_id):
     try:
@@ -224,7 +224,7 @@ def serve_audio(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
    
 # Delete images uploaded by the user
-@app.route('/delete/<image_id>')
+@app.route('/delete/<image_id>', methods=['DELETE'])
 @require_auth
 def delete_image_route(image_id):
     try:

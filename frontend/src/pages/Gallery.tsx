@@ -181,7 +181,7 @@ const Gallery = () => {
       const token = await window.Clerk.session?.getToken();
 
       const response = await fetch(`http://127.0.0.1:5000/edit/${id}`, {
-        method: 'POST',
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -215,7 +215,7 @@ const Gallery = () => {
       const token = await window.Clerk.session?.getToken();
 
       const response = await fetch(`http://127.0.0.1:5000/delete/${id}`, {
-        method: 'GET',
+        method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
         },

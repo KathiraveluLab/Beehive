@@ -12,11 +12,11 @@
 6. If PDF, generate thumbnail to `static/uploads/thumbnails/`.
 
 ### 3) Edit Media
-1. Owner hits `POST /edit/{image_id}` with new `title`, `description`, optional `sentiment`.
+1. Owner hits `PATCH /edit/{image_id}` with new `title`, `description`, optional `sentiment`.
 2. Backend finds image and updates fields in MongoDB.
 
 ### 4) Delete Media
-1. Owner hits `GET /delete/{image_id}`.
+1. Owner hits `DELETE /delete/{image_id}`.
 2. Backend deletes file from `static/uploads/`, removes audio and PDF thumbnail if exist.
 3. Deletes MongoDB image document.
 

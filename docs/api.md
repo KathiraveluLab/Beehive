@@ -36,7 +36,7 @@ Side effects:
 
 ### Image Management
 
-#### POST `/edit/{image_id}`
+#### PATCH `/edit/{image_id}`
 - **Description**: Update title, description, and optionally sentiment for an image.
 - **Auth**: Owner (or admin).
 - **Content-Type**: `application/x-www-form-urlencoded` or `multipart/form-data`
@@ -47,7 +47,7 @@ Side effects:
   - 404: `{ error: "Image not found." }`
   - 500: `{ error: "Error updating image: ..." }`
 
-#### GET `/delete/{image_id}`
+#### DELETE `/delete/{image_id}`
 - **Description**: Delete image, associated audio, and PDF thumbnail (if any), and remove DB record.
 - **Auth**: Owner (or admin).
 - **Responses**:
@@ -142,8 +142,8 @@ Side effects:
 ### User Profile
 - `GET /profile` - User profile page
 - `POST /upload` - Upload new image
-- `POST /edit/<image_id>` - Edit image details
-- `GET /delete/<image_id>` - Delete image
+- `PATCH /edit/<image_id>` - Edit image details
+- `DELETE /delete/<image_id>` - Delete image
 
 ## Admin Routes
 - `GET /signingoogle` - Google sign in page
