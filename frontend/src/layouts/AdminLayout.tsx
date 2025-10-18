@@ -13,7 +13,7 @@ const AdminLayout = () => {
 
   const navigate = useNavigate();
 
-  const isAdmin = user?.unsafeMetadata?.role === 'admin';
+  const isAdmin = user?.publicMetadata?.role === 'admin';
 
   const adminNavigation = [
     { name: 'Dashboard', href: '/admin' },

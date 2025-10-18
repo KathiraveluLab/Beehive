@@ -47,12 +47,14 @@ def require_auth(f):
                     print("No user ID found in token")
                     return jsonify({'error': 'No user ID in token'}), 401
                 
+                role = decoded.get('role', 'user')
+
                 # Token is valid, user is authenticated
                 request.current_user = {
                     'id': user_id,
-                    'userid': user_id  # Your session claim
+                    'role': role
                 }
-                print("Authentication successful for user:", user_id)
+                print(f"Authentication successful for user: {user_id} with role: {role}")
                 
                 return f(*args, **kwargs)
                 
