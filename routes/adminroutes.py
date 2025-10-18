@@ -2,9 +2,7 @@ from flask import Blueprint, request, jsonify
 import os
 import requests
 from decorators import require_admin_role
-from database.admindatahandler import is_admin
 from database.userdatahandler import get_images_by_user, get_recent_uploads, get_upload_stats
-from utils.clerk_auth import require_auth
 
 # Create admin blueprint
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')

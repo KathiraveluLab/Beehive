@@ -1,8 +1,6 @@
 import base64
 from functools import wraps
-from flask import json, jsonify, request, session, render_template
-from database.admindatahandler import is_admin
-from database.userdatahandler import get_user_by_username
+from flask import json, jsonify, request, session
 
 # Shared decorators to prevent circular imports
 
