@@ -8,6 +8,7 @@ import os
 
 beehive_image_collection = databaseConfig.get_beehive_image_collection()
 beehive_notification_collection = databaseConfig.get_beehive_notification_collection()
+beehive_user_collection = databaseConfig.get_beehive_user_collection()
 
 # Get user by username from MongoDB
 def get_user_by_username(username: str):
