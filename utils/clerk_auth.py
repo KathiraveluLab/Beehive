@@ -84,11 +84,11 @@ def require_auth(f):
     
     return decorated_function
 
+# Authorization done here
 def is_owner_or_admin(f):
     """Simple decorator to check user is either the owner of resources or an admin"""
     @wraps(f)
     def wrapper(*args, **kwargs):
-        # Authorization: Only owner or admin can delete)
         
         image_id = kwargs.get('image_id') or (args[0] if args else None)
         user_id = kwargs.get('user_id')
