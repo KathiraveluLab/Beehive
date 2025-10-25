@@ -10,6 +10,22 @@ beehive_image_collection = databaseConfig.get_beehive_image_collection()
 beehive_notification_collection = databaseConfig.get_beehive_notification_collection()
 beehive_user_collection = databaseConfig.get_beehive_user_collection()
 
+# Immitating create_admin
+def create_user(name: str, email: str, google_id: str):
+    
+    user_data = { 
+        "username" : name,
+        "mail_id" : email,
+        "google_id" : google_id,
+        "account_created_at" : datetime.now(),
+        "role" : "user"
+    }
+    user_inserted_id = beehive_user_collection.insert_one(user_data).inserted_id
+    beehive_user_collection.update_one(
+        {"_id": user_inserted_id},
+        {"$set": {"user_id": str(user_inserted_id)}}    # this will create an extra field 'user_id' = '_id' because images database contains a field 'user_id'
+    )
+
 # Get user by username from MongoDB
 def get_user_by_username(username: str):
     query = {
@@ -57,7 +73,8 @@ def get_currentuser_from_session():
     if not user_id:
         return None
     
-    user = beehive_user_collection.find_one({'_id': user_id})
+    from bson import ObjectId # Fix: converts str format to ObjectId() format
+    user = beehive_user_collection.find_one({'_id': ObjectId(user_id)}) 
     return user
 
 # Get all images from MongoDB
@@ -207,3 +224,12 @@ def save_notification(user_id, username, filename, title, time_created,sentiment
 def get_all_users():
     users = beehive_user_collection.find({}, {'_id': 1, 'username': 1})
     return list(users)    
+
+# returns the user_id of the owner of the image_id
+def get_userid_by_imageid(image_id):
+    """Return the user_id for a given image_id."""
+    image = beehive_image_collection.find_one({'_id': image_id})
+    if image:
+        print("The image is : " , image)
+        return image.get('user_id')
+    return None

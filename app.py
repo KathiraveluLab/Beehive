@@ -33,7 +33,7 @@ from database.userdatahandler import (
     get_all_users
 )
 from database.databaseConfig import get_beehive_notification_collection, get_beehive_message_collection
-from utils.clerk_auth import require_auth
+from utils.clerk_auth import require_auth, is_owner_or_admin
 
 # Import blueprints
 from routes.adminroutes import admin_bp
@@ -192,6 +192,7 @@ def generate_pdf_thumbnail(pdf_path, filename):
 # Edit images uploaded by the user
 @app.route('/edit/<image_id>', methods=['POST'])
 @require_auth
+@is_owner_or_admin
 def edit_image(image_id):
     try:
         # Get form data
@@ -226,6 +227,7 @@ def serve_audio(filename):
 # Delete images uploaded by the user
 @app.route('/delete/<image_id>')
 @require_auth
+@is_owner_or_admin
 def delete_image_route(image_id):
     try:
         try:
@@ -265,6 +267,7 @@ def delete_image_route(image_id):
 # Get all images uploaded by a user
 @app.route('/api/user/user_uploads/<user_id>')
 @require_auth
+@is_owner_or_admin
 def user_images_show(user_id):
     try:
         images = get_images_by_user(user_id)

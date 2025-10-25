@@ -24,7 +24,7 @@ def check_admin_available(google_id: str):
     }
 
     count = beehive_admin_collection.count_documents(query)
-    return count == 0
+    return count == 1 # Fix: logical error
 
 def is_admin():
     # Check admin based on google_id (for Google sign-in)
