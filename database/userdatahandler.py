@@ -73,7 +73,7 @@ def get_currentuser_from_session():
     if not user_id:
         return None
     
-    from bson import ObjectId # Fix: converts str format to ObjectId() format
+    
     user = beehive_user_collection.find_one({'_id': ObjectId(user_id)}) 
     return user
 
