@@ -29,7 +29,7 @@ class SecurityConfig:
         """Validate JWT token with proper signature verification"""
         try:
             secret = SecurityConfig.get_jwt_secret()
-            decoded = jwt.decode(token, secret, algorithms=['HS256'])
+            decoded = jwt.decode(token, secret, algorithms=['HS256'], audience=os.getenv('JWT_AUDIENCE'), issuer=os.getenv('JWT_ISSUER'))
             return decoded
         except jwt.InvalidTokenError:
             return None
