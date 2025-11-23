@@ -32,6 +32,10 @@ graph TD;
 
 For instructions to configure and run this project locally, see the [setup.md](docs/setup.md).
 
+## GitHub Stars
+
+[![Star History Chart](https://api.star-history.com/svg?repos=KathiraveluLab/Beehive&type=date&legend=top-left)](https://www.star-history.com/#KathiraveluLab/Beehive&type=date&legend=top-left)
+
 ## Contributing  
 
 **Note**: `dev` branch is our primary development branch. The `main` branch is our stable branch. Please create pull requests against the dev branch if you are contributing to ongoing development. For specific contribution guidelines, see the [contributing.md](docs/contributing.md).
