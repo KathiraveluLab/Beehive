@@ -624,7 +624,6 @@ const Landing = () => {
                   <textarea
                     id="message" placeholder="Write your message here..."
                     rows={4} className="mt-1 block w-full px-4 py-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-black dark:text-white shadow-sm focus:border-yellow-500 focus:ring-yellow-500 focus:ring-1 placeholder-gray-400 dark:placeholder-gray-500 transition-colors duration-200 resize-vertical"
-                    className="mt-1 block w-full px-4 py-3 rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-black dark:text-white shadow-sm focus:border-yellow-500 focus:ring-yellow-500 focus:ring-1 placeholder-gray-400 dark:placeholder-gray-500 transition-colors duration-200"
                   ></textarea>
                 </div>
                 <motion.button
