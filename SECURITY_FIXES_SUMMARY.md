@@ -53,10 +53,10 @@ This directly responds to mentor guidance:
 > "Beehive has several more critical issues, such as security vulnerabilities, privacy concerns, backend issues, and shortcomings in user/role identification. I think we should prioritize critical features and any potential vulnerability in the current backend."
 
 ### Issues Identified & Addressed:
-✅ **Security Vulnerabilities**: Hardcoded credentials fixed  
-✅ **Backend Issues**: Added security infrastructure  
-🔄 **User/Role Identification**: Security foundation established  
-🔄 **Privacy Concerns**: Security packages added for data protection  
+- [x] **Security Vulnerabilities**: Hardcoded credentials fixed  
+- [x] **Backend Issues**: Added security infrastructure  
+- [ ] **User/Role Identification**: Security foundation established  
+- [ ] **Privacy Concerns**: Security packages added for data protection  
 
 ## 🔍 Additional Vulnerabilities Discovered
 
