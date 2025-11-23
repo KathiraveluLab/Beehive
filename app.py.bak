@@ -71,10 +71,7 @@ CORS(app, resources={
     }
 })  # Enable CORS for all routes with specific configuration
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
-# SECURITY FIX: Use secure secret key from environment
-app.secret_key = os.getenv('FLASK_SECRET_KEY')
-if not app.secret_key or app.secret_key in ['beehive', 'beehive-secret-key']:
-    raise ValueError('CRITICAL: Set secure FLASK_SECRET_KEY in environment!')
+app.secret_key = 'beehive'
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['PDF_THUMBNAIL_FOLDER'] = 'static/uploads/thumbnails/'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024

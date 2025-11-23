@@ -46,3 +46,19 @@ pre-commit
 pytest-flask
 google-generativeai
 python-magic
+# Security packages
+Flask-Limiter>=3.5.0
+Flask-WTF>=1.2.1
+PyJWT>=2.8.0
+cryptography>=41.0.0
+Werkzeug>=2.3.0
+# Additional security utilities
+validators>=0.22.0
+bleach>=6.1.0
+
+# Security packages for vulnerability fixes
+Flask-Limiter>=3.5.0
+Flask-WTF>=1.2.1
+PyJWT>=2.8.0
+validators>=0.22.0
+bleach>=6.1.0

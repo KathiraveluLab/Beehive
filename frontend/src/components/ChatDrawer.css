@@ -1,0 +1,243 @@
+/* Chat Drawer Enhancements */
+
+/* Custom scrollbar for chat messages */
+.chat-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #fbbf24 #f3f4f6;
+}
+
+.chat-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 3px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border-radius: 3px;
+}
+
+.chat-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+/* Dark mode scrollbar */
+.dark .chat-scrollbar {
+  scrollbar-color: #fbbf24 #374151;
+}
+
+.dark .chat-scrollbar::-webkit-scrollbar-track {
+  background: #374151;
+}
+
+.dark .chat-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+}
+
+/* Message animations */
+.message-bubble {
+  transform: translateY(10px);
+  opacity: 0;
+  animation: slideInMessage 0.3s ease-out forwards;
+}
+
+@keyframes slideInMessage {
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Typing indicator animation */
+.typing-dot {
+  animation: typingDot 1.4s infinite;
+}
+
+.typing-dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typingDot {
+  0%, 60%, 100% {
+    transform: scale(1);
+    opacity: 0.4;
+  }
+  30% {
+    transform: scale(1.2);
+    opacity: 1;
+  }
+}
+
+/* Custom input focus glow */
+.chat-input:focus {
+  box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+}
+
+/* User avatar glow effect */
+.user-avatar {
+  position: relative;
+}
+
+.user-avatar::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  background: linear-gradient(45deg, #fbbf24, #f59e0b, #d97706, #b45309);
+  border-radius: 50%;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.user-avatar.selected::before {
+  opacity: 1;
+}
+
+/* Custom button hover effects */
+.chat-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.chat-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.chat-button:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+/* Glass morphism effect for overlay */
+.chat-overlay {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* Message status indicators */
+.message-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  opacity: 0.6;
+}
+
+.message-status.sent {
+  color: #10b981;
+}
+
+.message-status.delivered {
+  color: #3b82f6;
+}
+
+.message-status.read {
+  color: #8b5cf6;
+}
+
+/* Chat drawer specific styles */
+.chat-drawer {
+  border-radius: 0;
+}
+
+@media (min-width: 640px) {
+  .chat-drawer {
+    border-top-left-radius: 1rem;
+    border-bottom-left-radius: 1rem;
+  }
+}
+
+/* Responsive improvements */
+@media (max-width: 640px) {
+  .message-bubble {
+    max-width: 85%;
+  }
+  
+  .user-list-mobile {
+    max-height: 120px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .message-bubble {
+    border: 2px solid currentColor;
+  }
+  
+  .chat-input {
+    border: 2px solid currentColor;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .message-bubble {
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
+  
+  .typing-dot {
+    animation: none;
+  }
+  
+  .chat-button::before {
+    transition: none;
+  }
+}
+
+/* Focus visible improvements for accessibility */
+.chat-user-item:focus-visible,
+.chat-button:focus-visible,
+.chat-input:focus-visible {
+  outline: 2px solid #fbbf24;
+  outline-offset: 2px;
+}
+
+/* Loading shimmer effect */
+.loading-shimmer {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .loading-shimmer {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200% 100%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Custom selection styling */
+.chat-content ::selection {
+  background: rgba(251, 191, 36, 0.3);
+}
+
+.dark .chat-content ::selection {
+  background: rgba(251, 191, 36, 0.4);
+}
