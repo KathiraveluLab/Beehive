@@ -74,7 +74,15 @@ Follow these steps to set up the project:
     - Sign up for a Clerk account at [https://clerk.dev](https://clerk.dev)
     - Log in to Clerk and go to Clerk Dashboard
     - Create a new application in Clerk
-    - Copy your Publishable Key and Secret Key from Clerk.
+    - Copy your Publishable Key and Secret Key from Clerk and update your `.env` file.
+    - Navigate to **Configure**.
+    - Select **Sessions** under **Session Management**.
+    - Add the following inside **Claims** and save the changes:
+    ```
+    {
+      "role": "{{user.public_metadata.role || 'user'}}"    
+    }
+    ```
       
 9. **Update `.env` File**
     - Open the `.env` file and add the required credentials.

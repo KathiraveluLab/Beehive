@@ -8,7 +8,7 @@ itsdangerous==2.2.0
 click==8.1.8
 blinker==1.9.0
 
-# Security packages (added in this PR)
+# Security packages (added in security infrastructure PR)
 Flask-Limiter==4.0.0
 Flask-WTF==1.2.2  
 PyJWT==2.8.0
@@ -30,6 +30,9 @@ google-auth-httplib2==0.2.0
 google-auth-oauthlib==1.2.1
 googleapis-common-protos==1.66.0
 oauthlib==3.2.2
+
+# AI & ML (added from dev branch)
+google-generativeai==0.8.3
 
 # HTTP & Networking
 requests==2.32.4
@@ -56,6 +59,7 @@ cffi==1.17.1
 # File processing
 PyMuPDF==1.24.14
 Pillow==10.4.0
+python-magic==0.4.27
 
 # Development tools
 black==24.10.0

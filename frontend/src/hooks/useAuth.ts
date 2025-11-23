@@ -4,13 +4,13 @@ export const useAuth = () => {
   const { user } = useUser();
   
   const isAdmin = () => {
-    // console.log(user?.unsafeMetadata?.role);
-    return user?.unsafeMetadata?.role === "admin";
+    // console.log(user?.publicMetadata?.role);
+    return user?.publicMetadata?.role === "admin";
   };
 
   const isUser = () => {
-    // console.log(user?.unsafeMetadata?.role);
-    return !user?.unsafeMetadata?.role || user?.unsafeMetadata?.role === "user";
+    // console.log(user?.publicMetadata?.role);
+    return !user?.publicMetadata?.role || user?.publicMetadata?.role === "user";
   };
 
   return {

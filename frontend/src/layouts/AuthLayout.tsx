@@ -36,7 +36,7 @@ const FloatingParticles = () => (
 
 const GradientBackground = () => (
   <div className="absolute inset-0">
-    <div className="absolute inset-0 bg-gradient-to-br from-yellow-100/30 via-white to-yellow-50/30 dark:from-gray-900 dark:via-gray-900 dark:to-black" />
+    <div className="absolute inset-0 bg-gradient-to-br from-yellow-100/30 via-white to-yellow-50/30 dark:from-white dark:via-yellow-200 dark:to-white" />
     <motion.div
       animate={{
         scale: [1, 1.2, 1],
@@ -47,20 +47,34 @@ const GradientBackground = () => (
         repeat: Infinity,
         ease: "easeInOut"
       }}
-      className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-yellow-200/20 to-transparent dark:from-yellow-900/10"
+      className="absolute top-0 left-0 w-full h-full bg-gradient-to-br
+       from-yellow-200/20 to-transparent dark:from-yellow-900/10"
       style={{ filter: 'blur(100px)' }}
     />
   </div>
 );
 
 const AuthLayout = () => {
-  // const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme } = useTheme();
 
   return (
-    <div className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-yellow-200">
+    <div className="relative min-h-screen w-full flex flex-col items-center justify-center overflow-hidden bg-yellow-200 dark:bg-gray-900">
       {/* Background Effects */}
       <GradientBackground />
       {/* <FloatingParticles /> */}
+      
+      {/* Theme Toggle */}
+      <button
+        onClick={toggleTheme}
+        className="absolute top-4 right-4 p-2 rounded-lg bg-white/20 hover:bg-white/30 dark:bg-black/20 dark:hover:bg-black/30 backdrop-blur-sm transition-colors duration-200 z-20"
+        aria-label="Toggle theme"
+      >
+        {theme === 'dark' ? (
+          <SunIcon className="h-5 w-5 text-gray-800 dark:text-gray-200" />
+        ) : (
+          <MoonIcon className="h-5 w-5 text-gray-800 dark:text-gray-200" />
+        )}
+      </button>
       
       <SignedIn>
         <RedirectToSignIn />

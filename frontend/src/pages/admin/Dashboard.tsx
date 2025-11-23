@@ -43,7 +43,7 @@ const StatCard = ({
   <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md transition-colors duration-200">
     <div className="p-6">
       <div className="flex items-center">
-        <div className={`p-3 rounded-lg ${color} bg-opacity-10 mr-4`}>
+        <div className={`p-3 rounded-lg ${color}/10 mr-4`}>
           <Icon className={`h-6 w-6 ${color}`} />
         </div>
         <div>

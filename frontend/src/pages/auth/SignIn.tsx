@@ -1,9 +1,6 @@
 import { SignIn } from '@clerk/clerk-react';
-import { useNavigate } from 'react-router-dom';
 
 const SignInPage = () => {
-  const navigate = useNavigate();
-
   return (
     <SignIn
       appearance={{
@@ -15,15 +12,15 @@ const SignInPage = () => {
           headerTitle: 
             'text-2xl font-bold text-gray-900 dark:text-white',
           headerSubtitle: 
-            'text-gray-500 dark:text-gray-400',
+            'text-gray-500 dark:text-gray-900',
           socialButtonsBlockButton: 
             'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 rounded-xl shadow-sm hover:shadow transform hover:-translate-y-0.5',
           socialButtonsBlockButtonText: 
             'text-gray-600 dark:text-gray-300 font-medium',
           formFieldLabel: 
-            'text-gray-700 dark:text-gray-300 font-medium',
+            'text-gray-700 dark:text-gray-900 font-medium',
           formFieldInput: 
-            'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-yellow-500 dark:focus:border-yellow-500 focus:ring-4 focus:ring-yellow-500/20 dark:focus:ring-yellow-500/20 rounded-xl transition-all duration-200',
+            'bg-white dark:bg-gray-100 border border-gray-200 dark:border-gray-700 focus:border-yellow-500 dark:focus:border-yellow-500 focus:ring-4 focus:ring-yellow-500/20 dark:focus:ring-yellow-500/20 rounded-xl transition-all duration-200',
           footerActionLink: 
             'text-yellow-600 dark:text-yellow-500 hover:text-yellow-700 dark:hover:text-yellow-400 transition-colors duration-200 font-semibold',
           dividerLine: 
@@ -33,7 +30,7 @@ const SignInPage = () => {
           formFieldInputShowPasswordButton: 
             'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300',
           otpCodeFieldInput: 
-            'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-yellow-500 dark:focus:border-yellow-500 focus:ring-4 focus:ring-yellow-500/20 dark:focus:ring-yellow-500/20 rounded-xl transition-all duration-200',
+            'bg-white dark:bg-gray-100 border border-gray-200 dark:border-gray-700 focus:border-yellow-500 dark:focus:border-yellow-500 focus:ring-4 focus:ring-yellow-500/20 dark:focus:ring-yellow-500/20 rounded-xl transition-all duration-200',
           footer: 
             'pb-6',
           main: 
@@ -60,7 +57,6 @@ const SignInPage = () => {
       path="/sign-in"
       signUpUrl="/sign-up"
       afterSignInUrl="/landing"
-      redirectUrl="/sign-in"
     />
   );
 };

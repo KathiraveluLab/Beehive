@@ -10,20 +10,28 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => {
+  const [theme, setTheme] = useState<Theme>('light'); // Start with light theme
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // Initialize theme on mount
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       // Check localStorage first
       const savedTheme = localStorage.getItem('theme') as Theme;
-      if (savedTheme) {
-        return savedTheme;
+      if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+        setTheme(savedTheme);
+      } else {
+        // Then check system preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setTheme(prefersDark ? 'dark' : 'light');
       }
-      // Then check system preference
-      return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      setIsInitialized(true);
     }
-    return 'light'; // Default theme
-  });
+  }, []);
 
   useEffect(() => {
+    if (!isInitialized) return;
+    
     const root = window.document.documentElement;
     
     // Remove both classes first
@@ -42,12 +50,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     
     // Save to localStorage
     localStorage.setItem('theme', theme);
-  }, [theme]);
+  }, [theme, isInitialized]);
 
   // Listen for system theme changes
   useEffect(() => {
+    if (!isInitialized) return;
+    
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = (e: MediaQueryListEvent) => {
+      // Only follow system changes if user hasn't set a preference
       if (!localStorage.getItem('theme')) {
         setTheme(e.matches ? 'dark' : 'light');
       }
@@ -55,15 +66,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
     // Add event listener
     mediaQuery.addEventListener('change', handleChange);
-    
-    // Initial check
-    if (!localStorage.getItem('theme')) {
-      setTheme(mediaQuery.matches ? 'dark' : 'light');
-    }
 
     // Cleanup
     return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+  }, [isInitialized]);
 
   const toggleTheme = () => {
     setTheme((prevTheme) => {

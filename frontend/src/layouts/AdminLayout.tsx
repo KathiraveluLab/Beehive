@@ -13,7 +13,7 @@ const AdminLayout = () => {
 
   const navigate = useNavigate();
 
-  const isAdmin = user?.unsafeMetadata?.role === 'admin';
+  const isAdmin = user?.publicMetadata?.role === 'admin';
 
   const adminNavigation = [
     { name: 'Dashboard', href: '/admin' },
@@ -140,7 +140,7 @@ const AdminLayout = () => {
                 </button>
               )}
               <div className="flex-shrink-0 flex items-center">
-                <Link to="/" className="sm:text-2xl text-lg font-bold text-black">
+                <Link to="/" className="sm:text-2xl text-lg font-bold text-black dark:text-white">
                   <img src="/favicon.png" alt="Beehive Logo" className="sm:h-8 sm:w-8 inline-block sm:mr-2 mr-1 h-6 w-6" />
                   Beehive <span className="text-yellow-500 align-super sm:text-sm text-xs">Admin</span>
                 </Link>
@@ -251,7 +251,7 @@ const AdminLayout = () => {
         <>
           {/* Overlay */}
           <div
-            className="fixed inset-0 z-40 bg-black bg-opacity-40 transition-opacity"
+            className="fixed inset-0 z-40 bg-black/40 transition-opacity"
             onClick={() => setSidebarOpen(false)}
           ></div>
           {/* Sidebar */}
