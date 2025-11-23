@@ -1,0 +1,15 @@
+{
+  "extends": ["./eslint.config.js"],
+  "rules": {
+    "no-duplicate-class-names": "error",
+    "jsx-no-duplicate-props": "error"
+  },
+  "overrides": [
+    {
+      "files": ["*.tsx"],
+      "rules": {
+        "react/jsx-no-duplicate-props": "error"
+      }
+    }
+  ]
+}
