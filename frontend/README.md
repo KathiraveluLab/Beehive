@@ -1,44 +1,49 @@
-# Beehive Frontend
+# Frontend Development Setup
 
-This folder contains the frontend for the Beehive platform where users can upload images and voice notes, while admins can view, analyze, and manage media content via an admin portal.
+## Prerequisites
+- Node.js 18+ and npm
+- Git configured properly
 
-## Features
+## Initial Setup
 
-- User Authentication with Clerk
-- Image and Voice Note Upload
-- Media Gallery with Edit and Delete Functionality
-- Admin Dashboard with Analytics
-- User Management
-- Dark/Light Mode Support
-- Responsive Design
+```bash
+# Install dependencies (generates package-lock.json locally)
+npm ci
 
-## Tech Stack
+# Start development server
+npm run dev
 
-- React with TypeScript
-- Vite for Build Tool
-- Clerk for Authentication
-- Tailwind CSS for Styling
-- React Router for Navigation
-- React Icons and Heroicons
-
-
-## Project Structure
-
-```
-src/
-├── components/     # Reusable UI components
-├── context/       # React context providers
-├── hooks/         # Custom React hooks
-├── layouts/       # Page layout components
-├── pages/         # Page components
-│   ├── admin/     # Admin-specific pages
-│   └── auth/      # Authentication pages
-├── types/         # TypeScript type definitions
-└── utils/         # Utility functions
+# Run ESLint checks
+npm run lint
 ```
 
-## Available Scripts
+## Important Notes
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build locally
+### Package Lock File
+- `package-lock.json` is **NOT** committed to avoid merge conflicts
+- Always use `npm ci` for consistent installs across environments
+- Local `package-lock.json` will be generated automatically
+
+### ESLint Configuration
+- Uses modern flat config format (`eslint.config.js`)
+- Includes React rules for duplicate prop detection
+- Run `npm run lint` to check for code quality issues
+
+### Development Workflow
+1. `npm ci` (first time setup)
+2. `npm run dev` (start development)
+3. `npm run lint` (check code quality)
+4. `npm run build` (production build)
+
+## Troubleshooting
+
+**If you see dependency conflicts:**
+```bash
+rm -f package-lock.json node_modules -rf
+npm ci
+```
+
+**If ESLint fails:**
+```bash
+npm run lint --fix  # Auto-fix issues where possible
+```
