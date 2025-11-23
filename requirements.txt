@@ -44,3 +44,11 @@ flake8
 isort
 pre-commit
 pytest-flask
+
+# Security packages
+Flask-Limiter==4.0.0
+Flask-WTF==1.2.2  
+PyJWT==2.8.0
+validators==0.35.0
+bleach==4.1.0
+bcrypt==4.2.1
