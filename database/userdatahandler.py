@@ -190,18 +190,27 @@ def get_recent_uploads(limit=10):
         print(f"Error getting recent uploads: {str(e)}")
         return []
 
-def save_notification(user_id, username, filename, title, time_created,sentiment):
-            # Insert notification for admin
-                notification = {
-                    "type": "image_upload",
-                    "user_id": user_id,
-                    "username": username,
-                    "image_filename": filename,
-                    "title": title,
-                    "timestamp": time_created,
-                    "seen": False
-                }
-                beehive_notification_collection.insert_one(notification)    
+def save_notification(user_id, username, filename, title, time_created, sentiment, description=None, file_size=None, file_path=None):
+    # Insert notification with details
+    notification = {
+        "type": "image_upload",
+        "user_id": user_id,
+        "username": username,
+        "image_filename": filename,
+        "title": title,
+        "timestamp": time_created,
+        "seen": False,
+        "details": {
+            "file_name": filename,
+            "file_size": file_size,
+            "file_path": file_path,
+            "title": title,
+            "description": description,
+            "sentiment": sentiment,
+            "upload_timestamp": time_created.isoformat() if time_created else None
+        }
+    }
+    beehive_notification_collection.insert_one(notification)
 
 def get_all_users():
     users = beehive_user_collection.find({}, {'_id': 1, 'username': 1})

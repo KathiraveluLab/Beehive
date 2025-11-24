@@ -2,7 +2,7 @@ import base64
 from functools import wraps
 import json
 import os
-import datetime
+from datetime import datetime
 import pathlib
 import re
 import sys
@@ -112,58 +112,76 @@ def role_required(required_role):
 @app.route('/api/user/upload/<user_id>', methods=['POST'])
 def upload_images(user_id):
     try:
-        username = request.form.get('username', '')
-        files = request.files.getlist('files')  # Supports multiple file uploads
-        title = request.form.get('title', '')
-        sentiment = request.form.get('sentiment')
-        description = request.form.get('description', '')
-        audio_data = request.form.get('audioData')
-
-        if not files or not files[0]:
+        # Check if file exists
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        
+        if file.filename == '':
             return jsonify({'error': 'No file selected'}), 400
-
-        if not title or not description:
-            return jsonify({'error': 'Title and description are required'}), 400
-
-        # notification_collection = get_beehive_notification_collection()
-
-        for file in files:
-            if file:
-                # Check file extension
-                filename = secure_filename(file.filename)
-                file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
-                if file_ext not in ALLOWED_EXTENSIONS:
-                    return jsonify({'error': f'File type not allowed. Allowed types: {", ".join(ALLOWED_EXTENSIONS)}'}), 400
-
-                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-                os.makedirs(os.path.dirname(filepath), exist_ok=True)
-                file.save(filepath)
-
-                # Handle audio file if provided
-                audio_filename = None
-                if audio_data:
-                    audio_filename = f"{secure_filename(title)}.wav"
-                    audio_path = os.path.join(app.config['UPLOAD_FOLDER'], audio_filename)
-                    os.makedirs(os.path.dirname(audio_path), exist_ok=True)
-                    audio_binary = base64.b64decode(audio_data.split(',')[1])
-                    with open(audio_path, "wb") as f:
-                        f.write(audio_binary)
-
-                time_created = datetime.datetime.now()
-                save_image(user_id, filename, title, description, time_created, audio_filename, sentiment)
-                save_notification(user_id, username, filename, title, time_created, sentiment)
-
-                # Generate PDF thumbnail if applicable
-                if filename.lower().endswith('.pdf'):
-                    generate_pdf_thumbnail(filepath, filename)
-
-        return jsonify({'message': 'Upload successful'}), 200
-
+        
+        # Get form data
+        title = request.form.get('title', '')
+        description = request.form.get('description', '')
+        sentiment = request.form.get('sentiment', '')
+        
+        # Handle voice note if present
+        voice_note_data = None
+        if 'voice_note' in request.files:
+            voice_note = request.files['voice_note']
+            if voice_note.filename:
+                voice_note_filename = secure_filename(f"voice_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{voice_note.filename}")
+                voice_note_path = os.path.join(app.config['UPLOAD_FOLDER'], voice_note_filename)
+                voice_note.save(voice_note_path)
+                voice_note_data = voice_note_filename
+        
+        # Save the file
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        
+        # Generate thumbnail for PDFs
+        thumbnail_path = None
+        if filename.lower().endswith('.pdf'):
+            thumbnail_path = generate_pdf_thumbnail(file_path, filename)
+        
+        # Get file size
+        file_size = os.path.getsize(file_path)
+        
+        # Save to database
+        image_id = save_image(
+            id=user_id,
+            filename=filename,
+            title=title,
+            description=description,
+            time_created=datetime.utcnow(),
+            audio_filename=voice_note_data,
+            sentiment=sentiment
+        )
+        
+        # Save notification
+        save_notification(
+            user_id=user_id,
+            username=user_id,
+            filename=filename,
+            title=title,
+            time_created=datetime.utcnow(),
+            sentiment=sentiment,
+            description=description,
+            file_size=file_size,
+            file_path=file_path
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Upload successful',
+            'image_id': str(image_id)
+        }), 200
+        
     except Exception as e:
-        logging.error(f"Upload error: {str(e)}")  # Add logging
-        return jsonify({'error': f'Error uploading file: {str(e)}'}), 500
-
-
+        print(f"Upload error: {str(e)}")
+        return jsonify({'error': str(e)}), 500
 
 # generate thumbnail for the pdf
 def generate_pdf_thumbnail(pdf_path, filename):
@@ -301,6 +319,40 @@ def get_admin_notifications():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/user/notifications/<user_id>', methods=['GET'])
+ @require_auth
+def get_user_notifications(user_id):
+    """Get all notifications for a specific user"""
+    try:
+        notification_collection = get_beehive_notification_collection()
+        
+        # Get notifications for this user
+        notifications = list(notification_collection.find({
+            'user_id': user_id
+        }).sort('created_at', -1).limit(50))
+        
+        # Format response - INCLUDE DETAILS!
+        formatted_notifications = []
+        for notif in notifications:
+            formatted_notifications.append({
+                'id': str(notif['_id']),
+                'type': notif.get('type', 'info'),
+                'message': notif.get('message', ''),
+                'details': notif.get('details', {}),
+                'is_read': notif.get('is_read', False),
+                'created_at': notif.get('created_at').isoformat() if notif.get('created_at') else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'notifications': formatted_notifications
+        }), 200
+        
+    except Exception as e:
+        print(f"Error fetching notifications: {str(e)}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/chat/send', methods=['POST'])
 @require_auth
 def send_chat_message():
@@ -311,7 +363,7 @@ def send_chat_message():
         to_id = data.get('to_id')
         to_role = data.get('to_role')
         content = data.get('content')
-        timestamp = datetime.datetime.now()
+        timestamp = datetime.now()
         if not (from_id and from_role and to_id and to_role and content):
             return jsonify({'error': 'Missing required fields'}), 400
         message = {
