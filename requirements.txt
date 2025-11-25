@@ -1,6 +1,7 @@
 # Core Flask dependencies
 Flask==3.1.1
 Flask-Cors==4.0.0
+Flask-Cors==6.0.1
 Werkzeug==3.1.3
 Jinja2==3.1.5
 MarkupSafe==3.0.2
@@ -19,6 +20,8 @@ cryptography==44.0.1
 
 # Database
 pymongo==4.11
+# Database
+pymongo==4.11.0
 dnspython==2.7.0
 
 # Authentication & OAuth
@@ -43,6 +46,10 @@ certifi==2025.1.31
 charset-normalizer==3.4.1
 idna==3.10
 
+# Image processing & PDFs
+Pillow==10.4.0
+PyMuPDF==1.24.14
+
 # Utilities
 python-dotenv==1.0.1
 cachetools==5.5.1
@@ -62,9 +69,18 @@ Pillow==10.4.0
 python-magic==0.4.27
 
 # Development tools
+# Development & Testing tools
+bcrypt==4.2.1
 black==24.10.0
 flake8==7.1.1
 isort==5.13.2
 pre-commit==4.0.1
 pytest-flask==1.3.0
 colorama==0.4.6
+
+# AI & Magic detection
+google-generativeai==0.8.3
+python-magic==0.4.27
+
+# Basic security (will be enhanced in separate security PR)
+cryptography==44.0.1
