@@ -1,8 +1,6 @@
 # Security Infrastructure
 
 This document describes the security infrastructure changes added to this repository.
-These are code changes introduced on the `security/add-security-infrastructure` branch —
-not a separate project or external repository.
 
 The changes include:
 - JWT validation utilities

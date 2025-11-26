@@ -72,7 +72,7 @@ def init_security_middleware(app):
         key_func=get_remote_address,
         default_limits=["200 per day", "50 per hour"]
     )
-    
+      
     # Security Headers
     @app.after_request
     def add_security_headers(response):
