@@ -1,8 +1,10 @@
-import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SignedIn, SignedOut, useUser } from '@clerk/clerk-react';
+import { SunIcon, MoonIcon } from '@heroicons/react/24/outline';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../context/ThemeContext';
 import Spotlightcard from '../components/ui/Spotlightcard';
 import Blurtext from '../components/ui/Blurtext';
 import CardSwap,{Card} from '../components/ui/CardSwap';
@@ -63,16 +65,14 @@ const SpotlightEffect = ({ mousePosition }: SpotlightEffectProps) => {
 };
 
 const Landing = () => {
-  const [isLoaded, setIsLoaded] = useState(false);
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isScrolled, setIsScrolled] = useState(false);
   const navigate = useNavigate();
-  const { isAdmin, isUser } = useAuth();
+  const { isAdmin } = useAuth();
   const { user } = useUser();
-  const { scrollY } = useScroll();
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
-    setIsLoaded(true);
     const handleMouseMove = (e: MouseEvent) => {
       setMousePosition({ x: e.clientX, y: e.clientY });
     };
@@ -103,7 +103,7 @@ const Landing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-white relative overflow-hidden">
+    <div className="min-h-screen bg-white dark:bg-gray-900 relative overflow-hidden transition-colors duration-200">
       <HoneycombBackground />
       <SpotlightEffect mousePosition={mousePosition} />
 
@@ -111,8 +111,8 @@ const Landing = () => {
       <motion.nav
         className={`fixed w-full z-50 transition-all duration-300 ${
           isScrolled
-            ? 'mt-8 ml-6 lg:ml-12 mx-auto max-w-[90%] rounded-full bg-gray-50/90 backdrop-blur-md shadow-lg'
-            : 'bg-gray-100/80 backdrop-blur-md shadow-sm'
+            ? 'mt-8 ml-6 lg:ml-12 mx-auto max-w-[90%] rounded-full bg-gray-50/90 dark:bg-gray-800/90 backdrop-blur-md shadow-lg'
+            : 'bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-md shadow-sm'
         }`}
         initial={{ y: -100 }}
         animate={{ y: 0 }}
@@ -137,7 +137,7 @@ const Landing = () => {
                 whileHover={{ scale: 1.1, rotate: 10 }}
                 transition={{ type: "spring", stiffness: 300 }}
               />
-              <span className={`font-bold text-black transition-all duration-300 ${
+              <span className={`font-bold text-black dark:text-white transition-all duration-300 ${
                 isScrolled ? 'text-xl' : 'text-2xl'
               }`}>
                 Beehive
@@ -151,11 +151,11 @@ const Landing = () => {
                 transition={{ duration: 0.5, delay: 0.2 }}
                 className="hidden md:flex space-x-8"
               >
-                {["About", "Features", "Contact"].map((item, index) => (
+                {["About", "Features", "Contact"].map((item) => (
                   <motion.a
                     key={item}
                     href={`#${item.toLowerCase()}`}
-                    className={`text-gray-800 hover:text-yellow-500 transition-all duration-300 ${
+                    className={`text-gray-800 dark:text-gray-200 hover:text-yellow-500 transition-all duration-300 ${
                       isScrolled ? 'text-sm' : 'text-base'
                     } relative group`}
                     whileHover={{ scale: 1.05 }}
@@ -169,6 +169,25 @@ const Landing = () => {
                   </motion.a>
                 ))}
               </motion.div>
+
+              {/* Dark Mode Toggle */}
+              <motion.button
+                onClick={toggleTheme}
+                className={`p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 ${
+                  isScrolled ? 'p-1.5' : 'p-2'
+                }`}
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {theme === 'dark' ? (
+                  <SunIcon className={`${isScrolled ? 'h-4 w-4' : 'h-5 w-5'} text-gray-800 dark:text-gray-200`} />
+                ) : (
+                  <MoonIcon className={`${isScrolled ? 'h-4 w-4' : 'h-5 w-5'} text-gray-800 dark:text-gray-200`} />
+                )}
+              </motion.button>
 
               {/* Auth Buttons */}
               <motion.div
@@ -198,7 +217,7 @@ const Landing = () => {
                 <SignedOut>
                   <motion.button
                     onClick={() => navigate('/sign-in')}
-                    className={`text-gray-800 hover:text-yellow-500 transition-colors ${
+                    className={`text-gray-800 dark:text-gray-200 hover:text-yellow-500 transition-colors ${
                       isScrolled ? 'text-sm' : 'text-base'
                     }`}
                     whileHover={{ scale: 1.05 }}
@@ -233,13 +252,13 @@ const Landing = () => {
           >
             <Blurtext
               text="Transforming Alaska's Behavioral Health Insights"
-              className="text-5xl md:text-6xl font-bold text-black mb-6 [&>span:nth-child(2)]:text-yellow-500"
+              className="text-5xl md:text-6xl font-bold text-black dark:text-white mb-6 [&>span:nth-child(2)]:text-yellow-500"
               delay={200}
               animateBy="words"
               direction="top"
             />
             <motion.p 
-              className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto"
+              className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ duration: 0.8, delay: 0.4 }}
@@ -308,7 +327,7 @@ const Landing = () => {
                       initial={{ y: 20, opacity: 0 }}
                       whileInView={{ y: 0, opacity: 1 }}
                       transition={{ delay: 0.3, duration: 0.8 }}
-                      className="text-3xl font-light text-gray-800 leading-relaxed mb-8"
+                      className="text-3xl font-light text-gray-800 dark:text-gray-200 leading-relaxed mb-8"
                     >
                       Transforming healthcare data into actionable insights, one decision at a time.
                     </motion.blockquote>
@@ -319,7 +338,7 @@ const Landing = () => {
                       className="flex items-center space-x-4"
                     >
                       <div className="w-12 h-1 bg-yellow-400"></div>
-                      <p className="text-gray-600 font-medium">Beehive Developer Community</p>
+                      <p className="text-gray-600 dark:text-gray-400 font-medium">Beehive Developer Community</p>
                     </motion.div>
                   </div>
 
@@ -330,13 +349,13 @@ const Landing = () => {
                     transition={{ delay: 0.7, duration: 0.8 }}
                     className="grid grid-cols-2 gap-8 mt-12"
                   >
-                    <div className="p-6 bg-gray-100 rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300">
+                    <div className="p-6 bg-gray-100 dark:bg-gray-800 rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300">
                       <div className="text-3xl font-bold text-yellow-500 mb-2">99.9%</div>
-                      <div className="text-gray-600">Uptime Reliability</div>
+                      <div className="text-gray-600 dark:text-gray-300">Uptime Reliability</div>
                     </div>
-                    <div className="p-6 bg-gray-100 rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300">
+                    <div className="p-6 bg-gray-100 dark:bg-gray-800 rounded-xl shadow-xl hover:shadow-2xl transition-shadow duration-300">
                       <div className="text-3xl font-bold text-yellow-500 mb-2">24/7</div>
-                      <div className="text-gray-600">Support Available</div>
+                      <div className="text-gray-600 dark:text-gray-300">Support Available</div>
                     </div>
                   </motion.div>
                 </motion.div>
@@ -444,11 +463,11 @@ const Landing = () => {
           >
             <Blurtext
               text="Powerful Features for Better Healthcare"
-              className="text-4xl md:text-5xl font-bold text-black mb-6"
+              className="text-4xl md:text-5xl font-bold text-black dark:text-white mb-6"
               delay={100}
               animateBy="words"
             />
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
               Discover how Beehive is revolutionizing behavioral health data management in Alaska
             </p>
           </motion.div>
@@ -509,11 +528,11 @@ const Landing = () => {
             >
               <Blurtext
                 text="Our Mission"
-                className="text-4xl md:text-5xl font-bold text-black mb-6"
+                className="text-4xl md:text-5xl font-bold text-black dark:text-white mb-6"
                 delay={100}
                 animateBy="words"
               />
-              <div className="space-y-6 text-gray-600">
+              <div className="space-y-6 text-gray-600 dark:text-gray-300">
                 <p className="text-lg">
                   At Beehive, we're committed to transforming behavioral healthcare in Alaska through innovative data solutions and collaborative approaches.
                 </p>
@@ -549,7 +568,7 @@ const Landing = () => {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      <section id="contact" className="py-20 px-4 sm:px-6 lg:px-8 bg-gray-50 dark:bg-gray-800">
         <div className="max-w-7xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -559,70 +578,16 @@ const Landing = () => {
           >
             <Blurtext
               text="Get in Touch"
-              className="text-4xl md:text-5xl font-bold text-black mb-6"
+              className="text-4xl md:text-5xl font-bold text-black dark:text-white mb-6"
               delay={100}
               animateBy="words"
             />
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
               Have questions about Beehive? We're here to help!
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              className="bg-white p-8 rounded-xl shadow-lg"
-            >
-              <form className="space-y-6">
-                <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    id="name"
-                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border border-yellow-500 focus:ring-yellow-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    id="email"
-                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border border-yellow-500 focus:ring-yellow-500"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="message" className="block text-sm font-medium text-gray-700">
-                    Message
-                  </label>
-                  <textarea
-                    id="message"
-                    rows={4}
-                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white shadow-sm focus:border border-yellow-500 focus:ring-yellow-500"
-                  ></textarea>
-                </div>
-                <motion.button
-                  type="submit"
-                  className="w-full bg-yellow-400 text-black px-8 py-3 rounded-full hover:bg-yellow-500 transition-all shadow-lg hover:shadow-xl"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Send Message
-                </motion.button>
-              </form>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              className="space-y-8"
-            >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
               {[
                 {
                   title: "Office Location",
@@ -646,18 +611,20 @@ const Landing = () => {
                 }
               ].map((item, index) => (
                 <motion.div
+                initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
                   key={index}
-                  className="flex items-start space-x-4"
+                  className="flex flex-col items-center text-center p-6 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow"
                   whileHover={{ x: 5 }}
                 >
                   <div className="text-3xl">{item.icon}</div>
                   <div>
-                    <h3 className="text-lg font-semibold">{item.title}</h3>
-                    <p className="text-gray-600">{item.description}</p>
+                    <h3 className="text-lg font-semibold text-black dark:text-white">{item.title}</h3>
+                    <p className="text-gray-600 dark:text-gray-300">{item.description}</p>
                   </div>
                 </motion.div>
               ))}
-            </motion.div>
           </div>
         </div>
       </section>

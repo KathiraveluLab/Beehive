@@ -43,7 +43,7 @@ const EditModal = ({ image, onClose, onSave }: EditModalProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full transition-colors duration-200">
         <form onSubmit={handleSubmit} className="p-6">
           <h2 className="text-2xl font-bold mb-4">Edit Image</h2>
@@ -130,7 +130,7 @@ const Gallery = () => {
         // Get the authentication token from Clerk
         const token = await window.Clerk.session?.getToken();
         
-        const response = await fetch(`http://127.0.0.1:5000/api/user/user_uploads/${user.id}`, {
+        const response = await fetch(`http://127.0.0.1:5000/api/user/user_uploads`, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -181,7 +181,7 @@ const Gallery = () => {
       const token = await window.Clerk.session?.getToken();
 
       const response = await fetch(`http://127.0.0.1:5000/edit/${id}`, {
-        method: 'POST',
+        method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -215,7 +215,7 @@ const Gallery = () => {
       const token = await window.Clerk.session?.getToken();
 
       const response = await fetch(`http://127.0.0.1:5000/delete/${id}`, {
-        method: 'GET',
+        method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -644,7 +644,7 @@ const Gallery = () => {
                       {image.sentiment}
                     </motion.span>
                   )}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity duration-200" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-opacity duration-200" />
                 </motion.div>
 
                 <div className={`p-4 ${viewMode === 'list' ? 'flex-grow flex flex-col justify-between min-w-0' : ''}`}>

@@ -6,7 +6,14 @@ export default {
   ],
   darkMode: 'class',
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        primary: {
+          DEFAULT: '#facc15', // yellow-400
+          dark: '#eab308', // yellow-500
+        }
+      }
+    },
   },
   plugins: [],
 } 

@@ -74,19 +74,93 @@ Follow these steps to set up the project:
     - Sign up for a Clerk account at [https://clerk.dev](https://clerk.dev)
     - Log in to Clerk and go to Clerk Dashboard
     - Create a new application in Clerk
-    - Copy your Publishable Key and Secret Key from Clerk.
-      
-9. **Update `.env` File**
-    - Open the `.env` file and add the required credentials.
-    - Note: Add or modify the ADMIN_EMAILS variable with comma-separated emails. Make sure there are no spaces before or after the commas.
+    - Copy your Publishable Key and Secret Key from Clerk and update your `.env` file.
+    - Navigate to **Configure**.
+    - Select **Sessions** under **Session Management**.
+    - Add the following inside **Claims** and save the changes:
     ```
+    {
+      "role": "{{user.public_metadata.role || 'user'}}"    
+    }
+    ```
+      
+      
+9. **Update `.env` File** 
+
+    Open the `.env` file and add the required credentials. **All environment variables below are mandatory** for the application to function properly.
+
+    **Note: Add or modify the ADMIN_EMAILS variable with comma-separated emails. Make sure there are no spaces before or after the commas.**
+
+    ```bash
+    # Database Configuration (Required)
     MONGODB_CONNECTION_STRING=mongodb://...
+
+    # Google OAuth Configuration (Required for Google authentication)
     GOOGLE_CLIENT_ID=your-client-id
     GOOGLE_CLIENT_SECRET=your-client-secret
     REDIRECT_URI=http://localhost:5000/admin/login/callback
+
+    # Admin Configuration (Required for admin access)
     ADMIN_EMAILS=admin1@example.com,admin2@example.com
-    CLERK_SECRET_KEY = your clerk secret key
+
+    # Clerk Authentication (REQUIRED - App will not start without this)
+    CLERK_SECRET_KEY=your_clerk_secret_key
+
+    # Flask Security (Optional - defaults to 'beehive' if not set)
+    FLASK_SECRET_KEY=your_custom_flask_secret
     ```
+
+    #### 🔑 **Finding Your CLERK_SECRET_KEY:**
+    1. Go to your [Clerk Dashboard](https://dashboard.clerk.dev/)
+    2. Select your application
+    3. Navigate to "API Keys" in the sidebar
+    4. Copy the **Secret key** (starts with `sk_`)
+    5. Paste it as the value for `CLERK_SECRET_KEY` in your `.env` file
+
+    #### **Important Notes:**
+    - **CLERK_SECRET_KEY is mandatory**: The application will fail to start with a `ValueError` if this is missing
+    - **No quotes needed**: Environment variable values should not be wrapped in quotes
+    - **Keep it secure**: Never commit your `.env` file to version control (it's already in `.gitignore`)
+
+    #### 🔧 **Troubleshooting:**
+    If you see errors like:
+    - `ValueError: Missing required environment variable: CLERK_SECRET_KEY`
+    - `Config validation failed`
+
+    Make sure your `.env` file contains all required variables and restart the application.
+   
+    GOOGLE_CLIENT_ID=your-client-id
+    GOOGLE_CLIENT_SECRET=your-client-secret
+    REDIRECT_URI=http://localhost:5000/admin/login/callback
+
+    ### Admin Configuration (Required for admin access)
+    ADMIN_EMAILS=admin1@example.com,admin2@example.com
+
+    ### Clerk Authentication (REQUIRED - App will not start without this)
+    CLERK_SECRET_KEY=your_clerk_secret_key
+
+    ### Flask Security (Optional - defaults to 'beehive' if not set)
+    FLASK_SECRET_KEY=your_custom_flask_secret
+    ```
+
+    #### 🔑 **Finding Your CLERK_SECRET_KEY:**
+    1. Go to your [Clerk Dashboard](https://dashboard.clerk.dev/)
+    2. Select your application
+    3. Navigate to "API Keys" in the sidebar
+    4. Copy the **Secret key** (starts with `sk_`)
+    5. Paste it as the value for `CLERK_SECRET_KEY` in your `.env` file
+
+    #### **Important Notes:**
+    - **CLERK_SECRET_KEY is mandatory**: The application will fail to start with a `ValueError` if this is missing
+    - **No quotes needed**: Environment variable values should not be wrapped in quotes
+    - **Keep it secure**: Never commit your `.env` file to version control (it's already in `.gitignore`)
+
+    #### 🔧 **Troubleshooting:**
+    If you see errors like:
+    - `ValueError: Missing required environment variable: CLERK_SECRET_KEY`
+    - `Config validation failed`
+
+    Make sure your `.env` file contains all required variables and restart the application.
    
 10. **Run the backend**
     - Execute the `app.py` file to run the application.

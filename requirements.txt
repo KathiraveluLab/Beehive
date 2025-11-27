@@ -1,46 +1,65 @@
-﻿Authlib==1.6.5
-blinker==1.9.0
-cachetools==5.5.1
-certifi==2025.1.31
-cffi==1.17.1
-charset-normalizer==3.4.1
-click==8.1.8
-colorama==0.4.6
-cryptography==44.0.1
-dnspython==2.7.0
+# Core Flask dependencies
 Flask==3.1.1
-Flask-Cors
+Flask-Cors==6.0.1
+Werkzeug==3.1.3
+Jinja2==3.1.5
+MarkupSafe==3.0.2
+itsdangerous==2.2.0
+click==8.1.8
+blinker==1.9.0
+
+# Database
+pymongo==4.11.0
+dnspython==2.7.0
+
+# Authentication & OAuth
+Authlib==1.6.5
 google-api-core==2.24.1
 google-api-python-client==2.160.0
 google-auth==2.38.0
 google-auth-httplib2==0.2.0
 google-auth-oauthlib==1.2.1
 googleapis-common-protos==1.66.0
-httplib2==0.22.0
-idna==3.10
-itsdangerous==2.2.0
-Jinja2==3.1.5
-MarkupSafe==3.0.2
 oauthlib==3.2.2
+
+# HTTP & Networking
+requests==2.32.4
+requests-oauthlib==2.0.0
+urllib3==2.5.0
+httplib2==0.22.0
+certifi==2025.1.31
+charset-normalizer==3.4.1
+idna==3.10
+
+# Image processing & PDFs
+Pillow==10.4.0
+PyMuPDF==1.24.14
+
+# Utilities
+python-dotenv==1.0.1
+cachetools==5.5.1
 proto-plus==1.26.0
 protobuf==5.29.5
 pyasn1==0.6.1
 pyasn1_modules==0.4.1
-pycparser==2.22
-pymongo==4.11
 pyparsing==3.2.1
-python-dotenv==1.0.1
-requests==2.32.4
-requests-oauthlib==2.0.0
-rsa==4.9
 uritemplate==4.1.1
-urllib3==2.5.0
-Werkzeug==3.1.3
-PyMuPDF
-Pillow
-bcrypt
-black
-flake8
-isort
-pre-commit
-pytest-flask
+rsa==4.9
+pycparser==2.22
+cffi==1.17.1
+
+# Development & Testing tools
+bcrypt==4.2.1
+black==24.10.0
+flake8==7.1.1
+isort==5.13.2
+pre-commit==4.0.1
+pytest-flask==1.3.0
+colorama==0.4.6
+
+# AI & Magic detection
+google-generativeai==0.8.3
+python-magic==0.4.27
+
+# Basic security (will be enhanced in separate security PR)
+cryptography==44.0.1
