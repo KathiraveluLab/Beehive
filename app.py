@@ -1,4 +1,4 @@
-import base64
+	import base64
 from functools import wraps
 import json
 import os
@@ -109,74 +109,90 @@ def role_required(required_role):
 
     
 # Upload images 
+# Upload images 
 @app.route('/api/user/upload/<user_id>', methods=['POST'])
 def upload_images(user_id):
     try:
-        # Check if file exists
-        if 'file' not in request.files:
+        # Check if files exist (support both single 'file' and multiple 'files')
+        files_list = request.files.getlist('files') if 'files' in request.files else []
+        if not files_list and 'file' in request.files:
+            files_list = [request.files['file']]
+        
+        if not files_list:
             return jsonify({'error': 'No file provided'}), 400
         
-        file = request.files['file']
+        uploaded_files = []
         
-        if file.filename == '':
-            return jsonify({'error': 'No file selected'}), 400
-        
-        # Get form data
-        title = request.form.get('title', '')
-        description = request.form.get('description', '')
-        sentiment = request.form.get('sentiment', '')
-        
-        # Handle voice note if present
-        voice_note_data = None
-        if 'voice_note' in request.files:
-            voice_note = request.files['voice_note']
-            if voice_note.filename:
-                voice_note_filename = secure_filename(f"voice_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{voice_note.filename}")
-                voice_note_path = os.path.join(app.config['UPLOAD_FOLDER'], voice_note_filename)
-                voice_note.save(voice_note_path)
-                voice_note_data = voice_note_filename
-        
-        # Save the file
-        filename = secure_filename(file.filename)
-        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(file_path)
-        
-        # Generate thumbnail for PDFs
-        thumbnail_path = None
-        if filename.lower().endswith('.pdf'):
-            thumbnail_path = generate_pdf_thumbnail(file_path, filename)
-        
-        # Get file size
-        file_size = os.path.getsize(file_path)
-        
-        # Save to database
-        image_id = save_image(
-            id=user_id,
-            filename=filename,
-            title=title,
-            description=description,
-            time_created=datetime.utcnow(),
-            audio_filename=voice_note_data,
-            sentiment=sentiment
-        )
-        
-        # Save notification
-        save_notification(
-            user_id=user_id,
-            username=user_id,
-            filename=filename,
-            title=title,
-            time_created=datetime.utcnow(),
-            sentiment=sentiment,
-            description=description,
-            file_size=file_size,
-            file_path=file_path
-        )
+        # Process each file
+        for file in files_list:
+            if file.filename == '':
+                continue  # Skip empty files
+            
+            # SECURITY: Validate file extension
+            if not ('.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS):
+                return jsonify({'error': f'File type not allowed: {file.filename}'}), 400
+            
+            # Get form data
+            title = request.form.get('title', '')
+            description = request.form.get('description', '')
+            sentiment = request.form.get('sentiment', '')
+            
+            # Handle voice note if present (only for first file)
+            voice_note_data = None
+            if 'voice_note' in request.files and len(uploaded_files) == 0:
+                voice_note = request.files['voice_note']
+                if voice_note.filename:
+                    voice_note_filename = secure_filename(f"voice_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{voice_note.filename}")
+                    voice_note_path = os.path.join(app.config['UPLOAD_FOLDER'], voice_note_filename)
+                    voice_note.save(voice_note_path)
+                    voice_note_data = voice_note_filename
+            
+            # Save the file
+            filename = secure_filename(file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            file.save(file_path)
+            
+            # Generate thumbnail for PDFs
+            thumbnail_path = None
+            if filename.lower().endswith('.pdf'):
+                thumbnail_path = generate_pdf_thumbnail(file_path, filename)
+            
+            # Get file size
+            file_size = os.path.getsize(file_path)
+            
+            # Save to database
+            image_id = save_image(
+                id=user_id,
+                filename=filename,
+                title=title,
+                description=description,
+                time_created=datetime.utcnow(),
+                audio_filename=voice_note_data,
+                sentiment=sentiment
+            )
+            
+            # Save notification (FIX #2: Use 'timestamp' not 'created_at')
+            save_notification(
+                user_id=user_id,
+                username=user_id,
+                filename=filename,
+                title=title,
+                time_created=datetime.utcnow(),
+                sentiment=sentiment,
+                description=description,
+                file_size=file_size,
+                file_path=file_path
+            )
+            
+            uploaded_files.append({
+                'filename': filename,
+                'image_id': str(image_id)
+            })
         
         return jsonify({
             'success': True,
-            'message': 'Upload successful',
-            'image_id': str(image_id)
+            'message': f'{len(uploaded_files)} file(s) uploaded successfully',
+            'files': uploaded_files
         }), 200
         
     except Exception as e:
@@ -334,14 +350,14 @@ def get_user_notifications(user_id):
         # Format response - INCLUDE DETAILS!
         formatted_notifications = []
         for notif in notifications:
-            formatted_notifications.append({
-                'id': str(notif['_id']),
-                'type': notif.get('type', 'info'),
-                'message': notif.get('message', ''),
-                'details': notif.get('details', {}),
-                'is_read': notif.get('is_read', False),
-                'created_at': notif.get('created_at').isoformat() if notif.get('created_at') else None
-            })
+           formatted_notifications.append({
+    'id': str(notif['_id']),
+    'type': notif.get('type', 'info'),
+    'message': notif.get('message', ''),
+    'details': notif.get('details', {}),
+    'is_read': notif.get('is_read', False),
+    'created_at': notif.get('timestamp').isoformat() if notif.get('timestamp') else None  # ✅ CORRECT
+})
         
         return jsonify({
             'success': True,
