@@ -81,6 +81,19 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
 
+# Initialize security middleware (CSRF, rate limiting, headers)
+try:
+    from utils.security_middleware import init_security_middleware
+    _mw = init_security_middleware(app)
+    # Attach to app for potential later usage
+    app.csrf = _mw.get('csrf')
+    app.limiter = _mw.get('limiter')
+except Exception as _e:
+    # If middleware fails to initialize, surface a clear error
+    import logging
+    logging.exception('Failed to initialize security middleware')
+    raise
+
 
 flow = Flow.from_client_secrets_file(
     client_secrets_file=client_secrets_file,

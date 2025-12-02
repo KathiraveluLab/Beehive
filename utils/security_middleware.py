@@ -3,6 +3,7 @@ Security middleware for Flask application
 Provides CSRF protection, rate limiting, input validation, and security headers
 """
 import os
+import logging
 import jwt
 import bleach
 import validators
@@ -29,9 +30,17 @@ class SecurityConfig:
         """Validate JWT token with proper signature verification"""
         try:
             secret = SecurityConfig.get_jwt_secret()
-            decoded = jwt.decode(token, secret, algorithms=['HS256'], audience=os.getenv('JWT_AUDIENCE'), issuer=os.getenv('JWT_ISSUER'))
+            decoded = jwt.decode(
+                token,
+                secret,
+                algorithms=['HS256'],
+                audience=os.getenv('JWT_AUDIENCE'),
+                issuer=os.getenv('JWT_ISSUER')
+            )
             return decoded
-        except jwt.InvalidTokenError:
+        except Exception as e:
+            # Log exception for debugging (do not leak sensitive details)
+            logging.exception('JWT validation failed')
             return None
 
 
@@ -48,16 +57,19 @@ class InputValidator:
     @staticmethod
     def validate_email(email):
         """Validate email format"""
-        if not email:
+        # validators.email() returns a ValidationFailure on failure; convert to bool
+        try:
+            return bool(validators.email(email))
+        except Exception:
             return False
-        return validators.email(email)
     
     @staticmethod
     def validate_url(url):
         """Validate URL format"""  
-        if not url:
+        try:
+            return bool(validators.url(url))
+        except Exception:
             return False
-        return validators.url(url)
 
 
 def init_security_middleware(app):
@@ -68,10 +80,10 @@ def init_security_middleware(app):
     
     # Rate Limiting
     limiter = Limiter(
-        app,
         key_func=get_remote_address,
         default_limits=["200 per day", "50 per hour"]
     )
+    limiter.init_app(app)
       
     # Security Headers
     @app.after_request
@@ -92,10 +104,11 @@ def require_auth(f):
         token = request.headers.get('Authorization')
         if not token:
             return jsonify({'error': 'Authentication required'}), 401
-        
-        if token.startswith('Bearer '):
-            token = token[7:]
-        
+        # Expect header in form: "Bearer <token>"
+        if not token.startswith('Bearer '):
+            return jsonify({'error': 'Authorization header must be of type Bearer.'}), 401
+        token = token[7:]
+
         user_data = SecurityConfig.validate_jwt_token(token)
         if not user_data:
             return jsonify({'error': 'Invalid token'}), 401

@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 import os
 import requests
 from decorators import require_admin_role
+from utils.security_middleware import require_auth as mw_require_auth
 from database.userdatahandler import get_images_by_user, get_recent_uploads, get_upload_stats, get_upload_analytics, get_user_analytics
 
 # Create admin blueprint
@@ -23,6 +24,7 @@ def admin_user_images_show(user_id):
 
 # Get all users
 @admin_bp.route('/users', methods=['GET'])
+@mw_require_auth
 @require_admin_role
 def get_users():
     try:
