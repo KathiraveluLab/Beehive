@@ -15,6 +15,15 @@ import {
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
 
+const allowedFileTypes = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'image/webp',
+  'image/heif',
+  'application/pdf',
+];
+
 type SentimentType = 'positive' | 'neutral' | 'negative' | 'custom';
 
 const Upload = () => {
@@ -33,6 +42,7 @@ const Upload = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false); 
+  const [isDragActive, setIsDragActive] = useState(false); 
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -85,6 +95,21 @@ const Upload = () => {
     }
   },[]);
 
+  const handleImageProcessing = useCallback((file: File) => {
+    if (!allowedFileTypes.includes(file.type)) {
+      toast.error('Invalid file type. Please upload an image or PDF.');
+      return;
+    }
+
+    setSelectedImage(file);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+    handleAnalyzeMedia(file, selectedVoiceNote);
+  }, [selectedVoiceNote, handleAnalyzeMedia]);
+
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -99,31 +124,34 @@ const Upload = () => {
     };
   }, [isPreviewing]);
 
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLLabelElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLLabelElement>) => { 
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLLabelElement>) => { 
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false); 
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) { 
+      const file = e.dataTransfer.files[0];
+      if (file) {
+        handleImageProcessing(file);
+      }
+    }
+  }, [selectedVoiceNote, handleAnalyzeMedia]);
+
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // check file type
-      const allowedTypes = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'image/webp',
-        'image/heif',
-        'application/pdf',
-      ];
-      if (!allowedTypes.includes(file.type)) {
-        toast.error('Invalid file type. Please upload an image or PDF.');
-        return;
-      }
-
-      setSelectedImage(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-      // Trigger AI analysis
-      handleAnalyzeMedia(file, selectedVoiceNote);
+      handleImageProcessing(file);
     }
   };
 
@@ -289,7 +317,14 @@ const Upload = () => {
                   </div>
                 </div>
               ) : (
-                <label className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 border-gray-300 dark:border-gray-600 transition-colors duration-200">
+                <label
+                  className={`flex flex-col items-center justify-center w-full h-64 border-2 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-200
+                    ${isDragActive ? 'border-yellow-500 bg-gray-50 dark:bg-gray-700' : 'border-gray-300 dark:border-gray-600'}
+                  `}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                > 
                   <div className="flex flex-col items-center justify-center pt-5 pb-6">
                     <CloudArrowUpIcon className="w-10 h-10 text-gray-400 mb-3" />
                     <p className="mb-2 text-sm text-gray-500 dark:text-gray-400">

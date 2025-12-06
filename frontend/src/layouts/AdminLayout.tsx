@@ -5,6 +5,14 @@ import { useTheme } from '../context/ThemeContext';
 import { useState, useEffect, useRef } from 'react';
 import ChatDrawer from '../components/ChatDrawer';
 
+interface NotificationItem {
+  _id: string;
+  title: string;
+  username?: string;
+  timestamp?: string;
+  seen: boolean;
+}
+
 const AdminLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
@@ -22,12 +30,17 @@ const AdminLayout = () => {
   ];
 
   // Notification state
-  const [notifications, setNotifications] = useState<any[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unseenCount, setUnseenCount] = useState(0);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const adminId = user?.id || 'admin';
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const NOTIFICATION_PAGE_SIZE = 5;
 
   // Sidebar state
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -44,22 +57,15 @@ const AdminLayout = () => {
   const fetchUnseenNotifications = async () => {
     try {
       const token = await clerk.session?.getToken();
-      const response = await fetch('http://127.0.0.1:5000/api/admin/notifications', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const res = await fetch(`http://127.0.0.1:5000/api/admin/notifications?page=1&limit=${NOTIFICATION_PAGE_SIZE}`, {
+        headers: { Authorization: `Bearer ${token}` },
         credentials: 'include',
       });
-      if (!response.ok) return;
-      const data = await response.json();
-      if (data.notifications && data.notifications.length > 0) {
-        setUnseenCount(data.notifications.length);
-      } else {
-        setUnseenCount(0);
-      }
-    } catch (e) {
-      // Ignore notification errors
+      if (!res.ok) return;
+      const data = await res.json();
+      setUnseenCount(data.unseen_count);
+    } catch (error) {
+      console.error("Error fetching unseen notifications:", error);
     }
   };
 
@@ -67,21 +73,75 @@ const AdminLayout = () => {
   const fetchAndMarkNotifications = async () => {
     try {
       const token = await clerk.session?.getToken();
-      const response = await fetch('http://127.0.0.1:5000/api/admin/notifications?mark_seen=true', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include',
-      });
-      if (!response.ok) return;
-      const data = await response.json();
-      if (data.notifications) {
-        setNotifications(data.notifications);
-        setUnseenCount(0);
+
+      // Fetch without marking seen
+      const res = await fetch(
+        `http://127.0.0.1:5000/api/admin/notifications?page=1&limit=${NOTIFICATION_PAGE_SIZE}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include',
+        }
+      );
+      if (!res.ok) return;
+
+      const data = await res.json();
+
+      setNotifications(data.notifications);
+      setPage(1);
+      setHasMore(data.notifications.length === NOTIFICATION_PAGE_SIZE);
+
+      // Get only unseen IDs
+      const unseenIds: string[] = data.notifications
+        .filter((n: NotificationItem) => !n.seen)
+        .map((n: NotificationItem) => n._id);
+
+      // Mark only these as seen
+      if (unseenIds.length > 0) {
+        await fetch("http://127.0.0.1:5000/api/admin/notifications/mark_seen", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          credentials: 'include',
+          body: JSON.stringify({ ids: unseenIds })
+        });
+
+        // Decrease badge count
+        setUnseenCount(prev => Math.max(prev - unseenIds.length, 0));
       }
-    } catch (e) {
-      // Ignore notification errors
+    } catch (error) {
+      // console.error("Error fetching/marking notifications:", error);
+    }
+  };
+
+  // Load more notifications
+  const loadMoreNotifications = async () => {
+    try {
+      const nextPage = page + 1;
+      const token = await clerk.session?.getToken();
+
+      const res = await fetch(
+        `http://127.0.0.1:5000/api/admin/notifications?page=${nextPage}&limit=${NOTIFICATION_PAGE_SIZE}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include',
+        }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+
+      if (data.notifications.length === 0) {
+        setHasMore(false);
+        return;
+      }
+
+      setNotifications(prev => [...prev, ...data.notifications]);
+      setPage(nextPage);
+
+      if (data.notifications.length < NOTIFICATION_PAGE_SIZE) setHasMore(false);
+    } catch (error) {
+      // console.error("Error loading more notifications:", error);
     }
   };
 
@@ -153,11 +213,10 @@ const AdminLayout = () => {
                       <Link
                         key={item.name}
                         to={item.href}
-                        className={`${
-                          location.pathname === item.href
+                        className={`${location.pathname === item.href
                             ? 'border-yellow-400'
                             : 'border-transparent hover:border-gray-300'
-                        } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200`}
+                          } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200`}
                       >
                         {item.name}
                       </Link>
@@ -180,33 +239,60 @@ const AdminLayout = () => {
               {isAdmin && (
                 <div className="relative" ref={dropdownRef}>
                   <button
-                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200 relative"
-                    onClick={handleBellClick}
+                    className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative"
                     aria-label="Notifications"
+                    onClick={handleBellClick}
                   >
                     <BellIcon className="h-4 w-4 sm:h-6 sm:w-6 text-gray-700 dark:text-gray-200" />
                     {unseenCount > 0 && (
-                      <span className="absolute top-0 right-0 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
+                      <span className="absolute top-0 right-0 bg-red-600 text-white rounded-full text-xs px-1.5 py-0.5 font-bold">
                         {unseenCount}
                       </span>
                     )}
                   </button>
+
                   {dropdownOpen && (
                     <div className="absolute right-0 mt-2 w-48 sm:w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50">
-                      <div className="p-4 max-h-80 overflow-y-auto">
-                        <h3 className="text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">Notifications</h3>
+                      <div className="p-4 max-h-80 overflow-y-auto notification-scroll">
+                        <h3 className="text-sm font-semibold mb-2 text-gray-700 dark:text-gray-200">
+                          Notifications
+                        </h3>
+
                         {notifications.length === 0 ? (
-                          <div className="text-gray-500 text-sm">No new notifications</div>
+                          <div className="text-gray-500 text-sm">No notifications</div>
                         ) : (
                           <ul>
                             {notifications.map((notif, idx) => (
-                              <li key={notif._id || idx} className="mb-2 last:mb-0 text-sm text-gray-800 dark:text-gray-100">
-                                <span className="font-medium">Image uploaded by {notif.username || 'a user'}</span>: {notif.title}
-                                <div className="text-xs text-gray-500">{notif.timestamp ? new Date(notif.timestamp).toLocaleString() : ''}</div>
+                              <li
+                                key={notif._id || idx}
+                                className={`mb-2 last:mb-0 text-sm rounded-lg p-2 ${notif.seen
+                                    ? "bg-transparent"
+                                    : "bg-yellow-100 dark:bg-yellow-900"
+                                  }`}
+                              >
+                                <span className="font-medium">
+                                  Image uploaded by {notif.username || 'a user'}
+                                </span>
+                                : {notif.title}
+
+                                <div className="text-xs text-gray-500">
+                                  {notif.timestamp ? new Date(notif.timestamp).toLocaleString() : ""}
+                                </div>
                               </li>
                             ))}
                           </ul>
                         )}
+
+                        {/* LOAD MORE BUTTON */}
+                        {hasMore && (
+                          <button
+                            onClick={loadMoreNotifications}
+                            className="w-full mt-3 py-1.5 text-sm font-medium text-center rounded-lg bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+                          >
+                            Load More
+                          </button>
+                        )}
+
                       </div>
                     </div>
                   )}
@@ -306,4 +392,4 @@ const AdminLayout = () => {
   );
 };
 
-export default AdminLayout; 
+export default AdminLayout;

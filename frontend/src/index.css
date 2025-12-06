@@ -28,3 +28,29 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
+
+/* Light & Dark themed scrollbar for notifications box */
+.notification-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.notification-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notification-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3); /* light mode */
+  border-radius: 10px;
+}
+
+.dark .notification-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3); /* dark mode */
+}
+
+.notification-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.dark .notification-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}

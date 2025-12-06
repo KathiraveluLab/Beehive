@@ -99,7 +99,7 @@ const AuthLayout = () => {
                 whileHover={{ scale: 1.1, rotate: 10 }}
                 transition={{ type: "spring", stiffness: 400 }}
               />
-              <h1 className="text-3xl font-bold bg-clip-text text-black bg-gradient-to-r from-gray-900 to-gray-600 dark:from-white dark:to-gray-400">
+              <h1 className="text-3xl font-bold bg-clip-text text-black bg-gradient-to-r from-gray-900 to-gray-600 dark:text-white dark:from-white dark:to-gray-400">
                 Beehive
               </h1>
             </div>

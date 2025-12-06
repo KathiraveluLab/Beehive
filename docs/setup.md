@@ -5,9 +5,11 @@
 - MongoDB
 - Google OAuth2 credentials
 
-# Setup Instructions
+## Setup Instructions
 
 Follow these steps to set up the project:
+
+> **Note:** For Docker-based setup, see [docker-setup.md](docker-setup.md)
 
 1. **Clone the Beehive Repository**
     - Clone the Beehive repository to your local machine.
@@ -84,11 +86,6 @@ Follow these steps to set up the project:
     }
     ```
       
-9. **Update `.env` File**
-    - Open the `.env` file and add the required credentials.
-    - Note: Add or modify the ADMIN_EMAILS variable with comma-separated emails. Make sure there are no spaces before or after the commas.
-    ```
-      
       
 9. **Update `.env` File** 
 
@@ -138,13 +135,13 @@ Follow these steps to set up the project:
     GOOGLE_CLIENT_SECRET=your-client-secret
     REDIRECT_URI=http://localhost:5000/admin/login/callback
 
-    # Admin Configuration (Required for admin access)
+    ### Admin Configuration (Required for admin access)
     ADMIN_EMAILS=admin1@example.com,admin2@example.com
 
-    # Clerk Authentication (REQUIRED - App will not start without this)
+    ### Clerk Authentication (REQUIRED - App will not start without this)
     CLERK_SECRET_KEY=your_clerk_secret_key
 
-    # Flask Security (Optional - defaults to 'beehive' if not set)
+    ### Flask Security (Optional - defaults to 'beehive' if not set)
     FLASK_SECRET_KEY=your_custom_flask_secret
     ```
 
