@@ -21,17 +21,23 @@ const Pagination = ({
   const endItem = Math.min(currentPage * itemsPerPage, totalCount);
 
   const getPageNumbers = () => {
-    const pages: (number | string)[] = [];
+    interface PageItem {
+      type: 'page' | 'ellipsis';
+      value: number | string;
+      key: string;
+    }
+
+    const pages: PageItem[] = [];
     const maxVisiblePages = 7;
 
     if (totalPages <= maxVisiblePages) {
       // Show all pages if total pages is less than max visible
       for (let i = 1; i <= totalPages; i++) {
-        pages.push(i);
+        pages.push({ type: 'page', value: i, key: `page-${i}` });
       }
     } else {
       // Always show first page
-      pages.push(1);
+      pages.push({ type: 'page', value: 1, key: 'page-1' });
 
       // Calculate start and end of middle pages
       let start = Math.max(2, currentPage - 2);
@@ -49,21 +55,21 @@ const Pagination = ({
 
       // Add ellipsis after first page if needed
       if (start > 2) {
-        pages.push('...');
+        pages.push({ type: 'ellipsis', value: '...', key: 'ellipsis-start' });
       }
 
       // Add middle pages
       for (let i = start; i <= end; i++) {
-        pages.push(i);
+        pages.push({ type: 'page', value: i, key: `page-${i}` });
       }
 
       // Add ellipsis before last page if needed
       if (end < totalPages - 1) {
-        pages.push('...');
+        pages.push({ type: 'ellipsis', value: '...', key: 'ellipsis-end' });
       }
 
       // Always show last page
-      pages.push(totalPages);
+      pages.push({ type: 'page', value: totalPages, key: `page-${totalPages}` });
     }
 
     return pages;
@@ -114,22 +120,22 @@ const Pagination = ({
 
           {/* Page numbers */}
           <div className="flex items-center gap-1">
-            {getPageNumbers().map((page, index) => {
-              if (page === '...') {
+            {getPageNumbers().map((pageItem) => {
+              if (pageItem.type === 'ellipsis') {
                 return (
                   <span
-                    key={`ellipsis-${index}`}
+                    key={pageItem.key}
                     className="px-2 text-gray-500 dark:text-gray-400"
                   >
-                    ...
+                    {pageItem.value}
                   </span>
                 );
               }
 
-              const pageNum = page as number;
+              const pageNum = pageItem.value as number;
               return (
                 <button
-                  key={pageNum}
+                  key={pageItem.key}
                   onClick={() => onPageChange(pageNum)}
                   className={`px-3 py-1.5 text-sm rounded-lg transition-colors duration-200 ${
                     currentPage === pageNum

@@ -10,6 +10,8 @@ from database.userdatahandler import (
     get_upload_stats,
     get_user_analytics,
 )
+from utils.pagination import parse_pagination_params
+
 # Create admin blueprint
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
@@ -18,18 +20,11 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 @require_admin_role
 def admin_user_images_show(user_id):
     try:
-        try:
-            page = int(request.args.get("page", 1))
-            limit = int(request.args.get("limit", 20))
-        except ValueError:
-            return jsonify({"error": "Invalid 'page' or 'limit' parameter. Must be an integer."}), 400
-        if page < 1:
-            page = 1
-        if limit < 1:
-            limit = 20
-        if limit > 100:
-            limit = 100  
-        offset = (page - 1) * limit
+        pagination_result = parse_pagination_params()
+        if isinstance(pagination_result, tuple) and len(pagination_result) == 2:
+            return pagination_result[0], pagination_result[1]
+        
+        page, limit, offset = pagination_result
         total_count = count_images_by_user(user_id)
         images = get_images_by_user(user_id, limit=limit, offset=offset)       
         total_pages = (total_count + limit - 1) // limit if total_count > 0 else 0

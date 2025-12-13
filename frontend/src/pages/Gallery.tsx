@@ -242,8 +242,12 @@ const Gallery = () => {
         throw new Error(data.error || 'Failed to delete image');
       }
 
-      setImages(images.filter(img => img.id !== id));
+      const newImages = images.filter(img => img.id !== id);
+      setImages(newImages);
       setTotalCount(prev => Math.max(0, prev - 1));
+      if (newImages.length === 0 && currentPage > 1) {
+        setCurrentPage(currentPage - 1);
+      }
       toast.success('Image deleted successfully!');
     } catch (error) {
       console.error('Error deleting image:', error);
