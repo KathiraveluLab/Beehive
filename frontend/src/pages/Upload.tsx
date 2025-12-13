@@ -11,9 +11,11 @@ import {
   XMarkIcon,
   DocumentIcon,
   SparklesIcon,
+  PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { useNavigate } from 'react-router-dom';
+import ImageEditor from '../components/ImageEditor';
 
 const allowedFileTypes = [
   'image/jpeg',
@@ -42,14 +44,15 @@ const Upload = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false); 
-  const [isDragActive, setIsDragActive] = useState(false); 
+  const [isDragActive, setIsDragActive] = useState(false);
+  const [isEditing, setIsEditing] = useState(false); 
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Block restricted contents
-const aiBlock = (error: unknown) => {
+const aiBlock =useCallback((error: unknown) => {
   const errorMessage = error instanceof Error ? error.message : 'Analysis failed';
   
   const isBlocked = errorMessage.includes('blocked') || errorMessage.includes('restricted');
@@ -57,15 +60,35 @@ const aiBlock = (error: unknown) => {
     toast.error("This image couldn't be analyzed due to content restrictions and was not uploaded.");
     handleRemoveFile();
   }
-};
+},[]);
 
  const handleRemoveFile = () => {
     setSelectedImage(null);
     setImagePreview(null);
     setIsPreviewing(false);
+    setIsEditing(false);
   };
 
- // AI Analysis Function
+  const handleEditImage = () => {
+    if (selectedImage && imagePreview) {
+      setIsEditing(true);
+      setIsPreviewing(false);
+    }
+  };
+
+  const handleSaveEditedImage = useCallback((editedImage: File) => {
+    setSelectedImage(editedImage);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setImagePreview(reader.result as string);
+      setIsEditing(false);
+      setIsPreviewing(false);
+      toast.success('Image edited successfully!');
+    };
+    reader.readAsDataURL(editedImage);
+  }, []);
+
+  // AI Analysis Function
   const handleAnalyzeMedia = useCallback(async (imageFile: File | null, audioFile: File | null) => {
     if (!imageFile && !audioFile) return;
 
@@ -112,7 +135,7 @@ const aiBlock = (error: unknown) => {
     } finally {
       setIsAnalyzing(false);
     }
-  },[aiBlock]);
+  }, [aiBlock]);
 
 const MAX_SIZE:Record<string,number>={
 "image/jpeg": 10 * 1024 * 1024, 
@@ -329,6 +352,14 @@ const MAX_SIZE:Record<string,number>={
                     <span className="text-sm font-medium truncate">{selectedImage.name}</span>
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleEditImage}
+                      className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                      title="Edit Image"
+                    >
+                      <PencilSquareIcon className="h-5 w-5 text-blue-500" />
+                    </button>
                     <button
                       type="button"
                       onClick={() => setIsPreviewing(true)}
@@ -556,6 +587,16 @@ const MAX_SIZE:Record<string,number>={
             )}
           </div>
         </div>
+      )}
+
+      {/* Image Editor */}
+      {isEditing && selectedImage && imagePreview && (
+        <ImageEditor
+          imageFile={selectedImage}
+          imagePreview={imagePreview}
+          onSave={handleSaveEditedImage}
+          onCancel={() => setIsEditing(false)}
+        />
       )}
     </div>
   );
