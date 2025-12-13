@@ -2,19 +2,45 @@ from flask import Blueprint, request, jsonify
 import os
 import requests
 from decorators import require_admin_role
-from database.userdatahandler import get_images_by_user, get_recent_uploads, get_upload_stats, get_upload_analytics, get_user_analytics
-
+from database.userdatahandler import (
+    count_images_by_user,
+    get_images_by_user,
+    get_recent_uploads,
+    get_upload_analytics,
+    get_upload_stats,
+    get_user_analytics,
+)
 # Create admin blueprint
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
-# Get all images uploaded by a user (admin access)
+# Get all images uploaded by a user (admin access) with pagination
 @admin_bp.route('/user_uploads/<user_id>')
 @require_admin_role
 def admin_user_images_show(user_id):
     try:
-        images = get_images_by_user(user_id)
+        try:
+            page = int(request.args.get("page", 1))
+            limit = int(request.args.get("limit", 20))
+        except ValueError:
+            return jsonify({"error": "Invalid 'page' or 'limit' parameter. Must be an integer."}), 400
+        if page < 1:
+            page = 1
+        if limit < 1:
+            limit = 20
+        if limit > 100:
+            limit = 100  
+        offset = (page - 1) * limit
+        total_count = count_images_by_user(user_id)
+        images = get_images_by_user(user_id, limit=limit, offset=offset)       
+        total_pages = (total_count + limit - 1) // limit if total_count > 0 else 0
         return jsonify({
-            'images': images
+            "images": images,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "totalCount": total_count,
+                "totalPages": total_pages,
+            }
         })
     except Exception as e:
         return jsonify({

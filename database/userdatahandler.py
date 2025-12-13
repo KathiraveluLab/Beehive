@@ -60,8 +60,12 @@ def get_currentuser_from_session():
     return user
 
 # Get all images from MongoDB
-def get_images_by_user(user_id):
-    images = beehive_image_collection.find({'user_id': user_id})
+def get_images_by_user(user_id, limit=None, offset=0):
+    query = {"user_id": user_id}
+    cursor = beehive_image_collection.find(query).sort("created_at", -1)
+    if limit:
+        cursor = cursor.skip(offset).limit(limit)
+    images = list(cursor)
     return [{
         'id': str(image['_id']),
         'filename': image['filename'],
@@ -71,6 +75,10 @@ def get_images_by_user(user_id):
         'sentiment': image.get('sentiment', ""),
         'created_at': image['created_at']['$date'] if isinstance(image.get('created_at'), dict) else image.get('created_at')
     } for image in images]
+
+# Count images by user
+def count_images_by_user(user_id):
+    return beehive_image_collection.count_documents({"user_id": user_id})
 
 # Get images by sentiments list from MongoDB ( Route to be used with the dreams prototype for analysis page)
 # def get_images_by_sentiments(username, sentiment_list, match_all):

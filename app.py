@@ -44,6 +44,7 @@ from database.databaseConfig import (
     get_beehive_notification_collection,
 )
 from database.userdatahandler import (
+    count_images_by_user,
     delete_image,
     get_all_users,
     get_image_by_id,
@@ -444,10 +445,29 @@ def delete_image_route(image_id):
 def user_images_show():
     try:
         user_id = request.current_user["id"]
-        images = get_images_by_user(user_id)
-        images_list = list(images) if images else []
+        try:
+            page = int(request.args.get("page", 1))
+            limit = int(request.args.get("limit", 20))
+        except ValueError:
+            return jsonify({"error": "Invalid 'page' or 'limit' parameter. Must be an integer."}), 400
+        if page < 1:
+            page = 1
+        if limit < 1:
+            limit = 20
+        if limit > 100:
+            limit = 100 
+        offset = (page - 1) * limit
+        total_count = count_images_by_user(user_id)
+        images = get_images_by_user(user_id, limit=limit, offset=offset)
+        total_pages = (total_count + limit - 1) // limit if total_count > 0 else 0
         response_data = {
-            "images": images_list,
+            "images": images,
+            "pagination": {
+                "page": page,
+                "limit": limit,
+                "totalCount": total_count,
+                "totalPages": total_pages,
+            },
             "user_id": user_id,
             "message": "Success",
         }

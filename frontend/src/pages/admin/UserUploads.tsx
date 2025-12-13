@@ -4,6 +4,7 @@ import { useClerk } from '@clerk/clerk-react';
 import { motion } from 'framer-motion';
 import { ArrowLeftIcon, XMarkIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
+import Pagination from '../../components/ui/Pagination';
 
 interface Upload {
   id: string;
@@ -26,24 +27,32 @@ const UserUploads = () => {
   const [currentAudio, setCurrentAudio] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
 
   useEffect(() => {
     const fetchUploads = async () => {
+      if (!userId) return;
       try {
         setLoading(true);
         
         // Get the authentication token from Clerk
         const token = await clerk.session?.getToken();
         
-        const response = await fetch(`http://127.0.0.1:5000/api/admin/user_uploads/${userId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          credentials: 'include',
-          mode: 'cors'
-        });
+        const response = await fetch(
+          `http://127.0.0.1:5000/api/admin/user_uploads/${userId}?page=${currentPage}&limit=${itemsPerPage}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            credentials: 'include',
+            mode: 'cors'
+          }
+        );
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -55,10 +64,11 @@ const UserUploads = () => {
           throw new Error(data.error);
         }
         
-        const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-        setUploads(sortedImages);
+        setUploads(data.images || []);
+        if (data.pagination) {
+          setTotalPages(data.pagination.totalPages);
+          setTotalCount(data.pagination.totalCount);
+        }
       } catch (error) {
         console.error('Error fetching uploads:', error);
         toast.error('Failed to fetch uploads');
@@ -67,7 +77,7 @@ const UserUploads = () => {
       }
     };
     fetchUploads();
-  }, [userId]);
+  }, [userId, currentPage, itemsPerPage, clerk]);
 
   const handleFileClick = (filename: string) => {
     setSelectedFile(filename);
@@ -272,6 +282,24 @@ const UserUploads = () => {
             )}
           </div>
         </div>
+
+        {/* Pagination */}
+        {!loading && totalPages > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            itemsPerPage={itemsPerPage}
+            onPageChange={(page: number) => {
+              setCurrentPage(page);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onItemsPerPageChange={(newItemsPerPage: number) => {
+              setItemsPerPage(newItemsPerPage);
+              setCurrentPage(1); // Reset to first page when changing items per page
+            }}
+          />
+        )}
       </div>
 
       {/* File Preview Modal */}

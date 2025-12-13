@@ -14,6 +14,7 @@ import {
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import Pagination from '../components/ui/Pagination';
 
 interface Upload {
   id: string;
@@ -120,6 +121,11 @@ const Gallery = () => {
   const [currentRollingIndex, setCurrentRollingIndex] = useState(0);
   const rollingContainerRef = useRef<HTMLDivElement>(null);
   
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(20);
+  const [totalPages, setTotalPages] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
   const [sentimentFilter, setSentimentFilter] = useState<string>('all');
   const [dateFilter, setDateFilter] = useState<string>('all');
@@ -136,15 +142,18 @@ const Gallery = () => {
         // Get the authentication token from Clerk
         const token = await window.Clerk.session?.getToken();
         
-        const response = await fetch(`http://127.0.0.1:5000/api/user/user_uploads`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          credentials: 'include',
-          mode: 'cors'
-        });
+        const response = await fetch(
+          `http://127.0.0.1:5000/api/user/user_uploads?page=${currentPage}&limit=${itemsPerPage}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            credentials: 'include',
+            mode: 'cors'
+          }
+        );
         
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -155,22 +164,22 @@ const Gallery = () => {
           throw new Error(data.error);
         }
         
-        const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-
-        setImages(sortedImages);
-        console.log(sortedImages);
+        setImages(data.images || []);
+        
+        if (data.pagination) {
+          setTotalPages(data.pagination.totalPages);
+          setTotalCount(data.pagination.totalCount);
+        }
       } catch (error) {
         console.error('Error fetching uploads:', error);
-          toast.error('Failed to fetch uploads');
+        toast.error('Failed to fetch uploads');
       } finally {
         setLoading(false);
       }
     };
 
     fetchUploads();
-  }, [user?.id]);
+  }, [user?.id, currentPage, itemsPerPage]);
 
   const handleEdit = (image: Upload) => {
     setEditingImage(image);
@@ -234,6 +243,7 @@ const Gallery = () => {
       }
 
       setImages(images.filter(img => img.id !== id));
+      setTotalCount(prev => Math.max(0, prev - 1));
       toast.success('Image deleted successfully!');
     } catch (error) {
       console.error('Error deleting image:', error);
@@ -407,6 +417,10 @@ const Gallery = () => {
       return prevIndex;
     });
   }, [filteredImages.length]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sentimentFilter, dateFilter, customDateFrom, customDateTo]);
 
   const renderRollingView = () => {
     return (
@@ -880,6 +894,23 @@ const Gallery = () => {
               ))
             )}
           </div>
+        )}
+
+        {!loading && totalPages > 0 && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalCount={totalCount}
+            itemsPerPage={itemsPerPage}
+            onPageChange={(page: number) => {
+              setCurrentPage(page);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            onItemsPerPageChange={(newItemsPerPage: number) => {
+              setItemsPerPage(newItemsPerPage);
+              setCurrentPage(1); // Reset to first page when changing items per page
+            }}
+          />
         )}
 
         {editingImage && (
