@@ -62,29 +62,32 @@ const ImageEditorComponent = ({
     };
   }, [imagePreview]);
 
-  const handleSave = () => {
+    const handleSave = async () => {
     if (!editorRef.current) return;
 
     try {
-      // Export the edited image
-      const dataURL = editorRef.current.toDataURL();
-      
-      // Convert data URL to blob
-      fetch(dataURL)
-        .then((res) => res.blob())
-        .then((blob) => {
-          const editedFile = new File([blob], imageFile.name, {
-            type: 'image/png',
-          });
+      // Preserve original format if it's jpeg, otherwise use png.
+      const format = imageFile.type === 'image/jpeg' ? 'jpeg' : 'png';
+      const dataURL = editorRef.current.toDataURL({ format });
 
-          onSave(editedFile);
-        })
-        .catch(() => {
-          toast.error('Failed to save image');
-        });
+      const res = await fetch(dataURL);
+      if (!res.ok) {
+        throw new Error(`Failed to convert data URL to blob: ${res.statusText}`);
+      }
+      const blob = await res.blob();
+
+      const originalName = imageFile.name;
+      const nameWithoutExtension = originalName.substring(0, originalName.lastIndexOf('.')) || originalName;
+      const newName = `${nameWithoutExtension}.${format}`;
+
+      const editedFile = new File([blob], newName, {
+        type: blob.type,
+      });
+
+      onSave(editedFile);
     } catch (error) {
       toast.error('Error saving image');
-      console.error(error);
+      console.error('Failed to save image:', error);
     }
   };
 
