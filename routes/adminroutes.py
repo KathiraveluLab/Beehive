@@ -45,6 +45,7 @@ def get_users():
             raise Exception(f"Clerk API error: {response.text}")
             
         users_data = response.json()
+        total_count = int(response.headers.get('X-Total-Count', 0)) # Fetch actual total number of users
         
         # Transform user data
         transformed_users = []
@@ -64,7 +65,7 @@ def get_users():
         
         return jsonify({
             'users': transformed_users,
-            'totalCount': len(users_list)  
+            'totalCount': total_count  
         })
         
     except Exception as e:
@@ -95,6 +96,7 @@ def get_only_users():
             raise Exception(f"Clerk API error: {response.text}")
             
         users_data = response.json()
+        total_count = int(response.headers.get('X-Total-Count', 0)) # Fetch actual total number of users
         
         # Transform user data, filter only users with role 'user'
         transformed_users = []
@@ -117,7 +119,7 @@ def get_only_users():
         
         return jsonify({
             'users': transformed_users,
-            'totalCount': len(transformed_users)  
+            'totalCount': total_count  
         })
         
     except Exception as e:
