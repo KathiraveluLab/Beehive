@@ -34,8 +34,8 @@ requests==2.32.4
 requests-oauthlib==2.0.0
 rsa==4.9
 uritemplate==4.1.1
-urllib3==2.5.0
-Werkzeug==3.1.3
+urllib3==2.6.0
+Werkzeug==3.1.4
 PyMuPDF
 Pillow
 bcrypt
