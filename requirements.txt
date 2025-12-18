@@ -66,3 +66,6 @@ cryptography==44.0.1
 
 # input validation and sanitization
 bleach==6.3.0
+
+# Rate limiting
+Flask-Limiter==3.6.0
