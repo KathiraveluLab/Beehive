@@ -52,7 +52,6 @@ from database.userdatahandler import (
     get_all_users,
     get_image_by_id,
     get_images_by_user,
-    get_user_by_username,
     save_image,
     save_notification,
     update_image,
