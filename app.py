@@ -32,6 +32,8 @@ from flask import (
     url_for,
 )
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from PIL import Image
@@ -43,6 +45,7 @@ from database.admindatahandler import is_admin
 from database.databaseConfig import (
     get_beehive_message_collection,
     get_beehive_notification_collection,
+    get_beehive_user_collection,
 )
 from database.userdatahandler import (
     delete_image,
@@ -95,6 +98,7 @@ CORS(
     },
 )  # Enable CORS for all routes with specific configuration
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
+app.config["RATELIMIT_HEADERS_ENABLED"] = True
 # SECURITY FIX: Use environment variable for secret key
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
 if (
@@ -121,6 +125,14 @@ flow = Flow.from_client_secrets_file(
     ],
     redirect_uri="http://127.0.0.1:5000/admin/login/callback",
 )
+
+# Rate limiter 
+limiter = Limiter(
+    get_remote_address,
+    default_limits=[Config.RATE_LIMIT_DEFAULT],
+    storage_uri=Config.RATE_LIMIT_STORAGE_URI,
+)
+limiter.init_app(app)
 
 
 MIME_SIZE_LIMITS = {
@@ -162,6 +174,7 @@ def validate_file_size(file, mime_type, filename):
 # Upload images
 @app.route("/api/user/upload", methods=["POST"])
 @require_auth
+@limiter.limit(Config.RATE_LIMIT_UPLOAD)
 def upload_images():
     user_id = request.current_user["id"]
     try:
@@ -283,6 +296,7 @@ else:
 
 
 @app.route("/api/analyze-media", methods=["POST"])
+@limiter.limit(Config.RATE_LIMIT_ANALYZE_MEDIA)
 def analyze_media():
     image_file = request.files.get("image")
     audio_file = request.files.get("audio")
@@ -388,6 +402,7 @@ def generate_pdf_thumbnail(pdf_path, filename):
 # Edit images uploaded by the user
 @app.route("/edit/<image_id>", methods=["PATCH"])
 @require_auth
+@limiter.limit(Config.RATE_LIMIT_EDIT_DELETE)
 def edit_image(image_id):
     try:
         # Get form data
@@ -431,6 +446,7 @@ def serve_audio(filename):
 # Delete images uploaded by the user
 @app.route("/delete/<image_id>", methods=["DELETE"])
 @require_auth
+@limiter.limit(Config.RATE_LIMIT_EDIT_DELETE)
 def delete_image_route(image_id):
     try:
         try:
@@ -482,6 +498,7 @@ def delete_image_route(image_id):
 # Get all images uploaded by a user
 @app.route("/api/user/user_uploads")
 @require_auth
+@limiter.limit(Config.RATE_LIMIT_CHAT_MESSAGES)
 def user_images_show():
     try:
         user_id = request.current_user["id"]
@@ -499,6 +516,7 @@ def user_images_show():
 
 @app.route("/api/admin/notifications", methods=["GET"])
 @require_auth
+@limiter.limit(Config.RATE_LIMIT_NOTIFICATIONS)
 def get_admin_notifications():
     try:
         notification_collection = get_beehive_notification_collection()
@@ -537,6 +555,7 @@ def get_admin_notifications():
 
 @app.route("/api/admin/notifications/mark_seen", methods=["POST"])
 @require_auth
+@limiter.limit(Config.RATE_LIMIT_NOTIFICATIONS)
 def mark_selected_notifications_seen():
     try:
         notification_collection = get_beehive_notification_collection()
@@ -563,6 +582,7 @@ def mark_selected_notifications_seen():
 
 @app.route("/api/chat/send", methods=["POST"])
 @require_auth
+@limiter.limit(Config.RATE_LIMIT_CHAT_SEND)
 def send_chat_message():
     try:
         data = request.json
@@ -591,6 +611,7 @@ def send_chat_message():
 
 @app.route("/api/chat/messages", methods=["GET"])
 @require_auth
+@limiter.limit(Config.RATE_LIMIT_CHAT_MESSAGES)
 def get_chat_messages():
     try:
         current_user = request.current_user
