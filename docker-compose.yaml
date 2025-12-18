@@ -29,6 +29,7 @@ services:
       - RATE_LIMIT_NOTIFICATIONS=${RATE_LIMIT_NOTIFICATIONS}
       - RATE_LIMIT_GET_UPLOADS=${RATE_LIMIT_GET_UPLOADS}
     depends_on:
+      - redis
       - mongo
     volumes:
       - .:/app:rw
@@ -47,6 +48,16 @@ services:
       - ./frontend:/app:rw
       - /app/node_modules
 
+  redis:
+    image: redis:7-alpine
+    container_name: beehive-redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+
   mongo:
     image: mongo:latest
     container_name: mongodb
@@ -59,5 +70,6 @@ services:
       - mongo-data:/data/db
 
 volumes:
+  redis-data:
   mongo-data:
   

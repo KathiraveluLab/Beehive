@@ -24,8 +24,10 @@ class Config:
     CORS_ORIGINS = [origin.strip() for origin in _cors_origins_env.split(",") if origin.strip()]
     
     # Rate Limiting Configuration
+    # For production/multi-worker deployments, use Redis (redis://redis:6379/0)
+    # For development (single worker), memory:// is acceptable but NOT recommended for production
     RATE_LIMIT_DEFAULT = os.getenv("RATE_LIMIT_DEFAULT", "100/minute")
-    RATE_LIMIT_STORAGE_URI = os.getenv("RATE_LIMIT_STORAGE_URI", "memory://")
+    RATE_LIMIT_STORAGE_URI = os.getenv("RATE_LIMIT_STORAGE_URI", "redis://redis:6379/0")
     # Endpoint-specific overrides
     RATE_LIMIT_UPLOAD = os.getenv("RATE_LIMIT_UPLOAD", "10/minute")
     RATE_LIMIT_ANALYZE_MEDIA = os.getenv("RATE_LIMIT_ANALYZE_MEDIA", "20/minute")
