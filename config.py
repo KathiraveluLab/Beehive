@@ -23,6 +23,17 @@ class Config:
     )
     CORS_ORIGINS = [origin.strip() for origin in _cors_origins_env.split(",") if origin.strip()]
     
+    # Rate Limiting Configuration
+    RATE_LIMIT_DEFAULT = os.getenv("RATE_LIMIT_DEFAULT", "100/minute")
+    RATE_LIMIT_STORAGE_URI = os.getenv("RATE_LIMIT_STORAGE_URI", "memory://")
+    # Endpoint-specific overrides
+    RATE_LIMIT_UPLOAD = os.getenv("RATE_LIMIT_UPLOAD", "10/minute")
+    RATE_LIMIT_ANALYZE_MEDIA = os.getenv("RATE_LIMIT_ANALYZE_MEDIA", "20/minute")
+    RATE_LIMIT_CHAT_SEND = os.getenv("RATE_LIMIT_CHAT_SEND", "60/minute")
+    RATE_LIMIT_CHAT_MESSAGES = os.getenv("RATE_LIMIT_CHAT_MESSAGES", "120/minute")
+    RATE_LIMIT_EDIT_DELETE = os.getenv("RATE_LIMIT_EDIT_DELETE", "30/minute")
+    RATE_LIMIT_NOTIFICATIONS = os.getenv("RATE_LIMIT_NOTIFICATIONS", "60/minute")
+    
     @staticmethod
     def validate_config():
         """Validate that all required configuration is present"""
