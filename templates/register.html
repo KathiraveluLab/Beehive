@@ -1,6 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% if message %}
+    <div>{{ message }}</div>
+{% endif %}
 <h2>Register</h2>
 <form method="POST" action="{{ url_for('register') }}">
 
