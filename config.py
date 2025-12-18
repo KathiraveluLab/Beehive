@@ -33,6 +33,7 @@ class Config:
     RATE_LIMIT_CHAT_MESSAGES = os.getenv("RATE_LIMIT_CHAT_MESSAGES", "120/minute")
     RATE_LIMIT_EDIT_DELETE = os.getenv("RATE_LIMIT_EDIT_DELETE", "30/minute")
     RATE_LIMIT_NOTIFICATIONS = os.getenv("RATE_LIMIT_NOTIFICATIONS", "60/minute")
+    RATE_LIMIT_GET_UPLOADS = os.getenv("RATE_LIMIT_GET_UPLOADS", "60/minute")
     
     @staticmethod
     def validate_config():

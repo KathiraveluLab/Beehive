@@ -498,7 +498,7 @@ def delete_image_route(image_id):
 # Get all images uploaded by a user
 @app.route("/api/user/user_uploads")
 @require_auth
-@limiter.limit(Config.RATE_LIMIT_CHAT_MESSAGES)
+@limiter.limit(Config.RATE_LIMIT_GET_UPLOADS)
 def user_images_show():
     try:
         user_id = request.current_user["id"]
