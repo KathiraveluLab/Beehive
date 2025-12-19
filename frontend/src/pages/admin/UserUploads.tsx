@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useClerk } from '@clerk/clerk-react';
 import { motion } from 'framer-motion';
@@ -27,48 +27,113 @@ const UserUploads = () => {
   const [currentAudio, setCurrentAudio] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const observerTarget = useRef<HTMLDivElement>(null);
+  const pageSize = 12;
 
-  useEffect(() => {
-    const fetchUploads = async () => {
-      try {
+  // Fetch uploads with pagination
+  const fetchUploads = useCallback(async (page: number = 1, append: boolean = false) => {
+    if (!userId) return;
+    
+    try {
+      if (page === 1) {
         setLoading(true);
-        
-        // Get the authentication token from Clerk
-        const token = await clerk.session?.getToken();
-        
-        const response = await fetch(apiUrl(`/api/admin/user_uploads/${userId}`), {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          credentials: 'include',
-          mode: 'cors'
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log(data);
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        
-        const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
+      } else {
+        setLoadingMore(true);
+      }
+      
+      // Get the authentication token from Clerk
+      const token = await clerk.session?.getToken();
+      
+      const response = await fetch(apiUrl(`/api/admin/user_uploads/${userId}?page=${page}&page_size=${pageSize}`), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+        mode: 'cors'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log(data);
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      
+      if (append) {
+        setUploads(prev => [...prev, ...sortedImages]);
+      } else {
         setUploads(sortedImages);
-      } catch (error) {
-        console.error('Error fetching uploads:', error);
+      }
+      
+      setTotalPages(data.totalPages || 1);
+      setTotalCount(data.total_count || 0);
+      setCurrentPage(data.page || 1);
+      
+      console.log(`Loaded page ${page}/${data.totalPages}, ${sortedImages.length} uploads`);
+    } catch (error) {
+      console.error('Error fetching uploads:', error);
+      if (page === 1) {
         toast.error('Failed to fetch uploads');
-      } finally {
-        setLoading(false);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [userId, clerk, pageSize]);
+
+  // Initial fetch
+  useEffect(() => {
+    if (userId) {
+      setCurrentPage(1);
+      fetchUploads(1, false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId]);
+
+  // Infinite scroll with IntersectionObserver
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && !loadingMore && !loading && currentPage < totalPages) {
+          const nextPage = currentPage + 1;
+          console.log(`Loading page ${nextPage}...`);
+          fetchUploads(nextPage, true);
+        }
+      },
+      {
+        root: null,
+        rootMargin: '100px',
+        threshold: 0.1,
+      }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
       }
     };
-    fetchUploads();
-  }, [userId]);
+  }, [currentPage, totalPages, loadingMore, loading, fetchUploads]);
 
   const handleFileClick = (filename: string) => {
     setSelectedFile(filename);
@@ -147,6 +212,11 @@ const UserUploads = () => {
           <h1 className="text-3xl font-bold mt-4">
             Uploads by {userName}
           </h1>
+          {totalCount > 0 && (
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+              Showing {uploads.length} of {totalCount} uploads
+            </p>
+          )}
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
@@ -272,6 +342,29 @@ const UserUploads = () => {
               </table>
             )}
           </div>
+          
+          {/* Infinite scroll observer target */}
+          <div 
+            ref={observerTarget} 
+            className="w-full h-4 mt-8"
+            aria-label="Infinite scroll trigger"
+          />
+
+          {/* Loading indicator */}
+          {loadingMore && (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
+            </div>
+          )}
+
+          {/* End of page indicator */}
+          {currentPage >= totalPages && uploads.length > 0 && (
+            <div className="flex justify-center py-8">
+              <p className="text-gray-500 dark:text-gray-400 text-center">
+                You've viewed all {totalCount} uploads
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

@@ -52,6 +52,8 @@ from database.userdatahandler import (
     get_all_users,
     get_image_by_id,
     get_images_by_user,
+    _get_paginated_images_by_user,
+    get_user_by_username,
     save_image,
     save_notification,
     update_image,
@@ -501,11 +503,25 @@ def delete_image_route(image_id):
 def user_images_show():
     try:
         user_id = request.current_user["id"]
-        images = get_images_by_user(user_id)
-        images_list = list(images) if images else []
+        try:
+            page = int(request.args.get('page', 1))
+            page_size = int(request.args.get('page_size', 12))
+        except ValueError:
+            return jsonify({"error":"Invalid page or page size (must be an integer)"})
+        
+        # Validate pagination parameters
+        page = max(1, page)
+        page_size = min(max(1, page_size), 50)  # Max 50 images per page
+        
+        result = _get_paginated_images_by_user(user_id, page, page_size)
+        
         response_data = {
-            "images": images_list,
+            "images": result['images'],
             "user_id": user_id,
+            "total_count": result['total_count'],
+            "page": result['page'],
+            "pageSize": result['pageSize'],
+            "totalPages": result['totalPages'],
             "message": "Success",
         }
         return jsonify(response_data)

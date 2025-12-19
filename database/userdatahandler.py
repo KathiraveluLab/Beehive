@@ -73,6 +73,48 @@ def get_images_by_user(user_id):
         'created_at': image['created_at']['$date'] if isinstance(image.get('created_at'), dict) else image.get('created_at')
     } for image in images]
 
+# Get paginated images (method)
+def _get_paginated_images_by_user(user_id, page=1, page_size=12):
+    
+    try:
+        skip = (page - 1) * page_size
+        
+        # total count 
+        total_count = beehive_image_collection.count_documents({'user_id': user_id})
+        
+        # Get images
+        images = list(beehive_image_collection.find({'user_id': user_id})
+                      .sort('created_at', -1)
+                      .skip(skip)
+                      .limit(page_size))
+        
+        formatted_images = [{
+            'id': str(image['_id']),
+            'filename': image['filename'],
+            'title': image['title'],
+            'description': image['description'],
+            'audio_filename': image.get('audio_filename', ""),
+            'sentiment': image.get('sentiment', ""),
+            'created_at': image['created_at']['$date'] if isinstance(image.get('created_at'), dict) else image.get('created_at')
+        } for image in images]
+        
+        return {
+            'images': formatted_images,
+            'total_count': total_count,
+            'page': page,
+            'pageSize': page_size,
+            'totalPages': (total_count + page_size - 1) // page_size if page_size > 0 else 0
+        }
+    except Exception as e:
+        print(f"Error getting paginated images: {str(e)}")
+        return {
+            'images': [],
+            'total_count': 0,
+            'page': page,
+            'pageSize': page_size,
+            'totalPages': 0
+        }
+
 # Get images by sentiments list from MongoDB ( Route to be used with the dreams prototype for analysis page)
 # def get_images_by_sentiments(username, sentiment_list, match_all):
 #     if match_all:

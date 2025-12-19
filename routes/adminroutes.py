@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 import os
 import requests
 from decorators import require_admin_role
-from database.userdatahandler import get_images_by_user, get_recent_uploads, get_upload_stats, get_upload_analytics, get_user_analytics
+from database.userdatahandler import get_images_by_user, _get_paginated_images_by_user, get_recent_uploads, get_upload_stats, get_upload_analytics, get_user_analytics
 
 # Create admin blueprint
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
@@ -12,10 +12,15 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 @require_admin_role
 def admin_user_images_show(user_id):
     try:
-        images = get_images_by_user(user_id)
-        return jsonify({
-            'images': images
-        })
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('page_size', 12))
+        
+        # Validate pagination parameters
+        page = max(1, page)
+        page_size = min(max(1, page_size), 50)
+        
+        result = _get_paginated_images_by_user(user_id, page, page_size)
+        return jsonify(result)
     except Exception as e:
         return jsonify({
             'error': str(e)

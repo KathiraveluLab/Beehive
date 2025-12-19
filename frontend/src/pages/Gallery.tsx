@@ -14,7 +14,7 @@ import {
   ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Upload {
   id: string;
@@ -111,6 +111,7 @@ const Gallery = () => {
   const clerk = useClerk();
   const [images, setImages] = useState<Upload[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [editingImage, setEditingImage] = useState<Upload | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -120,7 +121,13 @@ const Gallery = () => {
   const [showLayoutOptions, setShowLayoutOptions] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentRollingIndex, setCurrentRollingIndex] = useState(0);
-  const rollingContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageSize] = useState(9);
+  const observerTarget = useRef<HTMLDivElement>(null);
   
   const [searchQuery, setSearchQuery] = useState('');
   const [sentimentFilter, setSentimentFilter] = useState<string>('all');
@@ -142,46 +149,100 @@ const Gallery = () => {
     });
   }, [clerk]);
 
-  useEffect(() => {
-    const fetchUploads = async () => {
-      if (!user?.id) return;
-      
-      try {
+  // Fetch uploads with pagination support
+  const fetchUploads = useCallback(async (page: number = 1, append: boolean = false) => {
+    if (!user?.id) return;
+    
+    try {
+      if (page === 1) {
         setLoading(true);
-        
-        const response = await authenticatedFetch(`/api/user/user_uploads`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          mode: 'cors'
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        
-        const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
+      } else {
+        setLoadingMore(true);
+      }
+      
+      const response = await authenticatedFetch(`/api/user/user_uploads?page=${page}&page_size=${pageSize}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
 
+      if (append) {
+        setImages(prev => [...prev, ...sortedImages]);
+      } else {
         setImages(sortedImages);
-        console.log(sortedImages);
-      } catch (error) {
-        console.error('Error fetching uploads:', error);
-          toast.error('Failed to fetch uploads');
-      } finally {
-        setLoading(false);
+      }
+      
+      setTotalPages(data.totalPages || 1);
+      setTotalCount(data.total_count || 0);
+      setCurrentPage(data.page || 1);
+      
+      console.log(`Loaded page ${page}/${data.totalPages}, ${sortedImages.length} images`);
+    } catch (error) {
+      console.error('Error fetching uploads:', error);
+      if (page === 1) {
+        toast.error('Failed to fetch uploads');
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [user?.id, authenticatedFetch, pageSize]);
+
+  // Initial fetch
+  useEffect(() => {
+    if (user?.id) {
+      setCurrentPage(1);
+      fetchUploads(1, false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // Infinite scroll 
+  useEffect(() => {
+    if (viewMode === 'rolling') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && !loadingMore && !loading && currentPage < totalPages) {
+          const nextPage = currentPage + 1;
+          console.log(`Loading page ${nextPage}...`);
+          fetchUploads(nextPage, true);
+        }
+      },
+      {
+        root: null,
+        rootMargin: '1200px',
+        threshold: 0,
+      }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
       }
     };
-
-    fetchUploads();
-  }, [user?.id, authenticatedFetch]);
+  }, [currentPage, totalPages, loadingMore, loading, fetchUploads, viewMode]);
 
   const handleEdit = (image: Upload) => {
     setEditingImage(image);
@@ -331,19 +392,6 @@ const Gallery = () => {
         return 'grid-cols-1 md:grid-cols-2';
       default:
         return 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
-    }
-  };
-
-  const getCardSize = () => {
-    switch (gridSize) {
-      case 'small':
-        return 'h-40';
-      case 'medium':
-        return 'h-48';
-      case 'large':
-        return 'h-64';
-      default:
-        return 'h-48';
     }
   };
 
@@ -577,7 +625,14 @@ const Gallery = () => {
     <div className="py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Gallery</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Gallery</h1>
+            {totalCount > 0 && (
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Showing {images.length} of {totalCount} images
+              </p>
+            )}
+          </div>
           
           <div className="flex items-center space-x-4">
             <div className="relative">
@@ -728,20 +783,21 @@ const Gallery = () => {
           </div>
         </div>
 
-        {loading ? (
+        {loading && currentPage === 1 ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
           </div>
         ) : viewMode === 'rolling' ? (
           renderRollingView()
         ) : (
-          <div className={viewMode === 'grid' ? `grid gap-6 ${getGridCols()}` : 'space-y-4'}>
-            {filteredImages.length === 0 ? (
-              <div className="col-span-full flex items-center justify-center h-64">
-                <p className="text-gray-500 dark:text-gray-400 text-lg">No images match your filters</p>
-              </div>
-            ) : (
-              filteredImages.map((image, index) => (
+          <>
+            <div className={viewMode === 'grid' ? `grid gap-6 ${getGridCols()}` : 'space-y-4'}>
+              {filteredImages.length === 0 ? (
+                <div className="col-span-full flex items-center justify-center h-64">
+                  <p className="text-gray-500 dark:text-gray-400 text-lg">No images match your filters</p>
+                </div>
+              ) : (
+                filteredImages.map((image, index) => (
               <motion.div
                 key={image.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -876,7 +932,33 @@ const Gallery = () => {
               </motion.div>
               ))
             )}
-          </div>
+            </div>
+
+
+
+            {/* Infinite scroll observer target */}
+            <div 
+              ref={observerTarget} 
+              className="w-full h-4 mt-8"
+              aria-label="Infinite scroll trigger"
+            />
+
+            {/* Loading indicator */}
+            {loadingMore && (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
+              </div>
+            )}
+
+            {/* End of page indicator */}
+            {currentPage >= totalPages && images.length > 0 && (
+              <div className="flex justify-center py-8">
+                <p className="text-gray-500 dark:text-gray-400 text-center">
+                  You've viewed all {totalCount} images
+                </p>
+              </div>
+            )}
+          </>
         )}
 
         {editingImage && (
