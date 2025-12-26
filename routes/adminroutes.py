@@ -1,8 +1,14 @@
-from flask import Blueprint, request, jsonify
 import os
+
 import requests
+from flask import Blueprint, jsonify, request
+
 from database.admindatahandler import is_admin
-from database.userdatahandler import get_images_by_user, get_recent_uploads, get_upload_stats
+from database.userdatahandler import (
+    get_images_by_user,
+    get_recent_uploads,
+    get_upload_stats,
+)
 from utils.clerk_auth import require_auth
 
 # Create admin blueprint

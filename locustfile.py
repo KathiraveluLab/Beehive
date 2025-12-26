@@ -1,6 +1,8 @@
-from locust import HttpUser, task, between
-import random
 import os
+import random
+
+from locust import HttpUser, between, task
+
 
 class AdminUser(HttpUser):
     wait_time = between(1, 3)  

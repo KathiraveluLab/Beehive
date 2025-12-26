@@ -1,9 +1,11 @@
-import os
-import requests
 import base64
 import json
+import os
 from functools import wraps
-from flask import request, jsonify
+
+import requests
+from flask import jsonify, request
+
 
 def require_auth(f):
     """Simple decorator to check if user is authenticated"""

@@ -2,7 +2,6 @@ import re
 import string
 
 
-
 def is_valid_username(username):
   
   if not username:

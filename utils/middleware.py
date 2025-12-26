@@ -1,5 +1,7 @@
-from flask import request, jsonify
 from functools import wraps
+
+from flask import jsonify, request
+
 
 def handle_cors(f):
     """Middleware to handle CORS preflight requests"""
