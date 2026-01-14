@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
-import { useUser } from '@clerk/clerk-react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { useUser, useClerk } from '@clerk/clerk-react';
+import { apiUrl } from '../utils/api';
 import {
   PencilIcon,
   TrashIcon,
@@ -13,7 +14,7 @@ import {
   ChevronRightIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface Upload {
   id: string;
@@ -43,7 +44,7 @@ const EditModal = ({ image, onClose, onSave }: EditModalProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full transition-colors duration-200">
         <form onSubmit={handleSubmit} className="p-6">
           <h2 className="text-2xl font-bold mb-4">Edit Image</h2>
@@ -107,8 +108,10 @@ const EditModal = ({ image, onClose, onSave }: EditModalProps) => {
 
 const Gallery = () => {
   const { user } = useUser();
+  const clerk = useClerk();
   const [images, setImages] = useState<Upload[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [editingImage, setEditingImage] = useState<Upload | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -118,53 +121,128 @@ const Gallery = () => {
   const [showLayoutOptions, setShowLayoutOptions] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [currentRollingIndex, setCurrentRollingIndex] = useState(0);
-  const rollingContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageSize] = useState(9);
+  const observerTarget = useRef<HTMLDivElement>(null);
+  
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sentimentFilter, setSentimentFilter] = useState<string>('all');
+  const [dateFilter, setDateFilter] = useState<string>('all');
+  const [customDateFrom, setCustomDateFrom] = useState('');
+  const [customDateTo, setCustomDateTo] = useState('');
 
-  useEffect(() => {
-    const fetchUploads = async () => {
-      if (!user?.id) return;
-      
-      try {
+  // Function for authenticated API calls
+  const authenticatedFetch = useCallback(async (path: string, options: RequestInit = {}) => {
+    const token = await clerk.session?.getToken();
+    const headers = {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`,
+    };
+    return fetch(apiUrl(path), { 
+      ...options, 
+      headers, 
+      credentials: 'include' 
+    });
+  }, [clerk]);
+
+  // Fetch uploads with pagination support
+  const fetchUploads = useCallback(async (page: number = 1, append: boolean = false) => {
+    if (!user?.id) return;
+    
+    try {
+      if (page === 1) {
         setLoading(true);
-        
-        // Get the authentication token from Clerk
-        const token = await window.Clerk.session?.getToken();
-        
-        const response = await fetch(`http://127.0.0.1:5000/api/user/user_uploads/${user.id}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          credentials: 'include',
-          mode: 'cors'
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        
-        const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
+      } else {
+        setLoadingMore(true);
+      }
+      
+      const response = await authenticatedFetch(`/api/user/user_uploads?page=${page}&page_size=${pageSize}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
 
+      if (append) {
+        setImages(prev => [...prev, ...sortedImages]);
+      } else {
         setImages(sortedImages);
-        console.log(sortedImages);
-      } catch (error) {
-        console.error('Error fetching uploads:', error);
-          toast.error('Failed to fetch uploads');
-      } finally {
-        setLoading(false);
+      }
+      
+      setTotalPages(data.totalPages || 1);
+      setTotalCount(data.total_count || 0);
+      setCurrentPage(data.page || 1);
+      
+      console.log(`Loaded page ${page}/${data.totalPages}, ${sortedImages.length} images`);
+    } catch (error) {
+      console.error('Error fetching uploads:', error);
+      if (page === 1) {
+        toast.error('Failed to fetch uploads');
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [user?.id, authenticatedFetch, pageSize]);
+
+  // Initial fetch
+  useEffect(() => {
+    if (user?.id) {
+      setCurrentPage(1);
+      fetchUploads(1, false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  // Infinite scroll 
+  useEffect(() => {
+    if (viewMode === 'rolling') return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && !loadingMore && !loading && currentPage < totalPages) {
+          const nextPage = currentPage + 1;
+          console.log(`Loading page ${nextPage}...`);
+          fetchUploads(nextPage, true);
+        }
+      },
+      {
+        root: null,
+        rootMargin: '1200px',
+        threshold: 0,
+      }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
       }
     };
-
-    fetchUploads();
-  }, [user?.id]);
+  }, [currentPage, totalPages, loadingMore, loading, fetchUploads, viewMode]);
 
   const handleEdit = (image: Upload) => {
     setEditingImage(image);
@@ -177,16 +255,9 @@ const Gallery = () => {
       formData.append('description', description);
       formData.append('sentiment', sentiment);
 
-      // Get the authentication token from Clerk
-      const token = await window.Clerk.session?.getToken();
-
-      const response = await fetch(`http://127.0.0.1:5000/edit/${id}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const response = await authenticatedFetch(`/edit/${id}`, {
+        method: 'PATCH',
         body: formData,
-        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -211,15 +282,8 @@ const Gallery = () => {
     }
 
     try {
-      // Get the authentication token from Clerk
-      const token = await window.Clerk.session?.getToken();
-
-      const response = await fetch(`http://127.0.0.1:5000/delete/${id}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include',
+      const response = await authenticatedFetch(`/delete/${id}`, {
+        method: 'DELETE',
       });
 
       if (!response.ok) {
@@ -246,7 +310,7 @@ const Gallery = () => {
   };
 
   const handleDownload = (filename: string) => {
-    const url = `http://127.0.0.1:5000/static/uploads/${filename}`;
+    const url = apiUrl(`/static/uploads/${filename}`);
     window.open(url, '_blank');
     toast.success('File opened in new window!');
   };
@@ -272,7 +336,7 @@ const Gallery = () => {
   const renderFilePreview = () => {
     if (!selectedFile) return null;
 
-    const fileUrl = `http://127.0.0.1:5000/static/uploads/${selectedFile}`;
+    const fileUrl = apiUrl(`/static/uploads/${selectedFile}`);
     const isPDF = selectedFile.toLowerCase().endsWith('.pdf');
 
     if (isPDF) {
@@ -297,10 +361,10 @@ const Gallery = () => {
   const getThumbnailUrl = (filename: string) => {
     if (filename.toLowerCase().endsWith('.pdf')) {
       // For PDFs, use the thumbnail
-      return `http://127.0.0.1:5000/static/uploads/thumbnails/${filename.replace('.pdf', '.jpg')}`;
+      return apiUrl(`/static/uploads/thumbnails/${filename.replace('.pdf', '.jpg')}`);
     }
     // For images, use the original file
-    return `http://127.0.0.1:5000/static/uploads/${filename}`;
+    return apiUrl(`/static/uploads/${filename}`);
   };
 
   const getSentimentColor = (sentiment?: string) => {
@@ -331,26 +395,63 @@ const Gallery = () => {
     }
   };
 
-  const getCardSize = () => {
-    switch (gridSize) {
-      case 'small':
-        return 'h-40';
-      case 'medium':
-        return 'h-48';
-      case 'large':
-        return 'h-64';
-      default:
-        return 'h-48';
-    }
-  };
+  const filteredImages = useMemo((): Upload[] => {
+    const lowercasedQuery = searchQuery.toLowerCase();
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const weekAgo = new Date(today);
+    weekAgo.setDate(today.getDate() - 7);
+    const monthAgo = new Date(today);
+    monthAgo.setDate(today.getDate() - 30);
+    const fromDate = customDateFrom ? new Date(customDateFrom) : null;
+    if (fromDate) fromDate.setHours(0, 0, 0, 0);
+    const toDate = customDateTo ? new Date(customDateTo) : null;
+    if (toDate) toDate.setHours(23, 59, 59, 999);
+
+    return images.filter((image) => {
+      const matchesSearch = lowercasedQuery === '' || 
+        image.title.toLowerCase().includes(lowercasedQuery) || 
+        image.description.toLowerCase().includes(lowercasedQuery);
+      
+      const matchesSentiment = sentimentFilter === 'all' || 
+        (sentimentFilter === 'custom' && image.sentiment && !['positive', 'neutral', 'negative'].includes(image.sentiment.toLowerCase())) ||
+        (image.sentiment?.toLowerCase() === sentimentFilter.toLowerCase());
+      
+      let matchesDate = true;
+      if (dateFilter !== 'all') {
+        const imageDate = new Date(image.created_at);
+        if (dateFilter === 'lastWeek') {
+          matchesDate = imageDate >= weekAgo;
+        } else if (dateFilter === 'lastMonth') {
+          matchesDate = imageDate >= monthAgo;
+        } else if (dateFilter === 'custom' && fromDate && toDate) {
+          matchesDate = imageDate >= fromDate && imageDate <= toDate;
+        } else {
+          matchesDate = false;
+        }
+      }
+      
+      return matchesSearch && matchesSentiment && matchesDate;
+    });
+  }, [images, searchQuery, sentimentFilter, dateFilter, customDateFrom, customDateTo]);
 
   const handleRollingNavigation = (direction: 'prev' | 'next') => {
     if (direction === 'prev') {
-      setCurrentRollingIndex(prevIndex => (prevIndex === 0 ? images.length - 1 : prevIndex - 1));
+      setCurrentRollingIndex(prevIndex => (prevIndex === 0 ? filteredImages.length - 1 : prevIndex - 1));
     } else {
-      setCurrentRollingIndex(prevIndex => (prevIndex === images.length - 1 ? 0 : prevIndex + 1));
+      setCurrentRollingIndex(prevIndex => (prevIndex === filteredImages.length - 1 ? 0 : prevIndex + 1));
     }
   };
+
+  useEffect(() => {
+    setCurrentRollingIndex(prevIndex => {
+      if (prevIndex >= filteredImages.length && filteredImages.length > 0) {
+        return 0;
+      }
+      return prevIndex;
+    });
+  }, [filteredImages.length]);
 
   const renderRollingView = () => {
     return (
@@ -381,31 +482,33 @@ const Gallery = () => {
           </motion.button>
         </div>
 
-        {/* Image Counter */}
         <div className="absolute top-4 right-4 z-10">
           <div className="px-4 py-2 rounded-full bg-black/50 backdrop-blur-sm text-white text-sm font-medium">
-            {currentRollingIndex + 1} / {images.length}
+            {filteredImages.length > 0 ? currentRollingIndex + 1 : 0} / {filteredImages.length}
           </div>
         </div>
-
-        {/* Main Image Display */}
-        <div className="relative h-[75vh] w-full">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentRollingIndex}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.05 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="absolute inset-0 flex items-center justify-center"
-            >
-              <div className="relative w-full h-full max-w-5xl mx-auto">
-                <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl">
-                  <img
-                    src={getThumbnailUrl(images[currentRollingIndex].filename)}
-                    alt={images[currentRollingIndex].title}
-                    className="w-full h-full object-contain bg-gray-100 dark:bg-gray-800"
-                  />
+        {filteredImages.length === 0 ? (
+          <div className="flex items-center justify-center h-[75vh]">
+            <p className="text-gray-500 dark:text-gray-400 text-lg">No images match your filters</p>
+          </div>
+        ) : (
+          <div className="relative h-[75vh] w-full">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentRollingIndex}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.05 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="absolute inset-0 flex items-center justify-center"
+              >
+                <div className="relative w-full h-full max-w-5xl mx-auto">
+                  <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl">
+                    <img
+                      src={getThumbnailUrl(filteredImages[currentRollingIndex].filename)}
+                      alt={filteredImages[currentRollingIndex].title}
+                      className="w-full h-full object-contain bg-gray-100 dark:bg-gray-800"
+                    />
                   
                   {/* Enhanced Overlay */}
                   <motion.div 
@@ -421,7 +524,7 @@ const Gallery = () => {
                         transition={{ delay: 0.3 }}
                         className="text-3xl font-bold text-white mb-3"
                       >
-                        {images[currentRollingIndex].title}
+                        {filteredImages[currentRollingIndex].title}
                       </motion.h3>
                       <motion.p 
                         initial={{ opacity: 0, y: 10 }}
@@ -429,19 +532,19 @@ const Gallery = () => {
                         transition={{ delay: 0.4 }}
                         className="text-gray-200 text-lg mb-6"
                       >
-                        {images[currentRollingIndex].description}
+                        {filteredImages[currentRollingIndex].description}
                       </motion.p>
                       
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-4">
-                          {images[currentRollingIndex].sentiment && (
+                          {filteredImages[currentRollingIndex].sentiment && (
                             <motion.span
                               initial={{ opacity: 0, scale: 0.8 }}
                               animate={{ opacity: 1, scale: 1 }}
                               transition={{ delay: 0.5 }}
-                              className={`px-4 py-2 rounded-full text-sm font-medium ${getSentimentColor(images[currentRollingIndex].sentiment)}`}
+                              className={`px-4 py-2 rounded-full text-sm font-medium ${getSentimentColor(filteredImages[currentRollingIndex].sentiment)}`}
                             >
-                              {images[currentRollingIndex].sentiment}
+                              {filteredImages[currentRollingIndex].sentiment}
                             </motion.span>
                           )}
                           <motion.div
@@ -450,13 +553,13 @@ const Gallery = () => {
                             transition={{ delay: 0.6 }}
                             className="text-sm text-gray-300"
                           >
-                            Uploaded: {new Date(images[currentRollingIndex].created_at).toLocaleDateString()}
+                            Uploaded: {new Date(filteredImages[currentRollingIndex].created_at).toLocaleDateString()}
                           </motion.div>
                         </div>
                         
                         <div className="flex items-center space-x-3">
                           <motion.button
-                            onClick={() => handleEdit(images[currentRollingIndex])}
+                            onClick={() => handleEdit(filteredImages[currentRollingIndex])}
                             className="p-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200 group"
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
@@ -467,7 +570,7 @@ const Gallery = () => {
                             </span>
                           </motion.button>
                           <motion.button
-                            onClick={() => handleDelete(images[currentRollingIndex].id)}
+                            onClick={() => handleDelete(filteredImages[currentRollingIndex].id)}
                             className="p-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200 group"
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
@@ -478,7 +581,7 @@ const Gallery = () => {
                             </span>
                           </motion.button>
                           <motion.button
-                            onClick={() => handleDownload(images[currentRollingIndex].filename)}
+                            onClick={() => handleDownload(filteredImages[currentRollingIndex].filename)}
                             className="p-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200 group"
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
@@ -495,12 +598,12 @@ const Gallery = () => {
                 </div>
               </div>
             </motion.div>
-          </AnimatePresence>
-        </div>
+            </AnimatePresence>
+          </div>
+        )}
 
-        {/* Enhanced Dot Navigation */}
         <div className="mt-6 mb-6 flex justify-center space-x-3">
-          {images.map((_, index) => (
+          {filteredImages.map((_, index) => (
             <motion.button
               key={index}
               onClick={() => setCurrentRollingIndex(index)}
@@ -522,7 +625,14 @@ const Gallery = () => {
     <div className="py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Gallery</h1>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Gallery</h1>
+            {totalCount > 0 && (
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Showing {images.length} of {totalCount} images
+              </p>
+            )}
+          </div>
           
           <div className="flex items-center space-x-4">
             <div className="relative">
@@ -599,15 +709,95 @@ const Gallery = () => {
           </div>
         </div>
 
-        {loading ? (
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
+          <div className="p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="lg:col-span-2">
+                <label className="block mb-2 font-medium">
+                  Search
+                </label>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search by title or description..."
+                  className="w-full px-4 py-2 bg-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200"
+                />
+              </div>
+
+              <div>
+                <label className="block mb-2 font-medium">
+                  Sentiment
+                </label>
+                <select
+                  value={sentimentFilter}
+                  onChange={(e) => setSentimentFilter(e.target.value)}
+                  className="w-full px-4 py-2 bg-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200"
+                >
+                  <option value="all">All</option>
+                  <option value="positive">Positive</option>
+                  <option value="neutral">Neutral</option>
+                  <option value="negative">Negative</option>
+                  <option value="custom">Custom</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block mb-2 font-medium">
+                  Date Range
+                </label>
+                <select
+                  value={dateFilter}
+                  onChange={(e) => {
+                    setDateFilter(e.target.value);
+                    if (e.target.value !== 'custom') {
+                      setCustomDateFrom('');
+                      setCustomDateTo('');
+                    }
+                  }}
+                  className="w-full px-4 py-2 bg-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200 mb-2"
+                >
+                  <option value="all">All Time</option>
+                  <option value="lastWeek">Last Week</option>
+                  <option value="lastMonth">Last Month</option>
+                  <option value="custom">Custom Range</option>
+                </select>
+                {dateFilter === 'custom' && (
+                  <div className="space-y-2 mt-2">
+                    <input
+                      type="date"
+                      value={customDateFrom}
+                      onChange={(e) => setCustomDateFrom(e.target.value)}
+                      className="w-full px-4 py-2 bg-white text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200"
+                    />
+                    <input
+                      type="date"
+                      value={customDateTo}
+                      onChange={(e) => setCustomDateTo(e.target.value)}
+                      className="w-full px-4 py-2 bg-white text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {loading && currentPage === 1 ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
           </div>
         ) : viewMode === 'rolling' ? (
           renderRollingView()
         ) : (
-          <div className={viewMode === 'grid' ? `grid gap-6 ${getGridCols()}` : 'space-y-4'}>
-            {images.map((image, index) => (
+          <>
+            <div className={viewMode === 'grid' ? `grid gap-6 ${getGridCols()}` : 'space-y-4'}>
+              {filteredImages.length === 0 ? (
+                <div className="col-span-full flex items-center justify-center h-64">
+                  <p className="text-gray-500 dark:text-gray-400 text-lg">No images match your filters</p>
+                </div>
+              ) : (
+                filteredImages.map((image, index) => (
               <motion.div
                 key={image.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -624,7 +814,7 @@ const Gallery = () => {
               >
                 <motion.div
                   className={`relative cursor-pointer group ${
-                    viewMode === 'list' ? 'w-32 h-32 flex-shrink-0' : 'w-full'
+                    viewMode === 'list' ? 'w-32 h-32 flex-shrink-0' : 'w-full aspect-[4/3]'
                   }`}
                   onClick={() => handleFileClick(image.filename)}
                   whileHover={{ scale: 1.05 }}
@@ -644,7 +834,7 @@ const Gallery = () => {
                       {image.sentiment}
                     </motion.span>
                   )}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity duration-200" />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-opacity duration-200" />
                 </motion.div>
 
                 <div className={`p-4 ${viewMode === 'list' ? 'flex-grow flex flex-col justify-between min-w-0' : ''}`}>
@@ -727,7 +917,7 @@ const Gallery = () => {
                       {currentAudio === image.audio_filename && (
                         <motion.audio
                           ref={audioRef}
-                          src={`http://127.0.0.1:5000/audio/${image.audio_filename}`}
+                          src={apiUrl(`/audio/${image.audio_filename}`)}
                           controls
                           className="h-6"
                           onEnded={() => setCurrentAudio(null)}
@@ -740,8 +930,35 @@ const Gallery = () => {
                   )}
                 </div>
               </motion.div>
-            ))}
-          </div>
+              ))
+            )}
+            </div>
+
+
+
+            {/* Infinite scroll observer target */}
+            <div 
+              ref={observerTarget} 
+              className="w-full h-4 mt-8"
+              aria-label="Infinite scroll trigger"
+            />
+
+            {/* Loading indicator */}
+            {loadingMore && (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
+              </div>
+            )}
+
+            {/* End of page indicator */}
+            {currentPage >= totalPages && images.length > 0 && (
+              <div className="flex justify-center py-8">
+                <p className="text-gray-500 dark:text-gray-400 text-center">
+                  You've viewed all {totalCount} images
+                </p>
+              </div>
+            )}
+          </>
         )}
 
         {editingImage && (

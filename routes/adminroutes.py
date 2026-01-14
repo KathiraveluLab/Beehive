@@ -1,16 +1,17 @@
 from flask import Blueprint, request, jsonify
 import os
 import requests
-from database.admindatahandler import is_admin
-from database.userdatahandler import get_images_by_user, get_recent_uploads, get_upload_stats
-from utils.clerk_auth import require_auth
+from decorators import require_admin_role
+from database.userdatahandler import get_images_by_user, _get_paginated_images_by_user, get_recent_uploads, get_upload_stats, get_upload_analytics, get_user_analytics
+from utils.logger import Logger
+from utils.sanitize import sanitize_api_query
 
-# Create admin blueprint
+logger = Logger.get_logger("adminroutes")
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
 # Get all images uploaded by a user (admin access)
 @admin_bp.route('/user_uploads/<user_id>')
-@require_auth
+@require_admin_role
 def admin_user_images_show(user_id):
     try:
         if not is_admin():
@@ -20,24 +21,26 @@ def admin_user_images_show(user_id):
             'images': images
         })
     except Exception as e:
-        return jsonify({
-            'error': str(e)
-        }), 500
+        logger.error(f"Error fetching user uploads", exc_info=True)
+        return jsonify({'error': 'Failed to fetch user uploads'}), 500
 
 # Get all users
 @admin_bp.route('/users', methods=['GET'])
-@require_auth
+@require_admin_role
 def get_users():
     try:
         if not is_admin():
             return jsonify({'error': 'Unauthorized'}), 403
         # Get query parameters
-        query = request.args.get('query', '')
+        query = sanitize_api_query(request.args.get('query', ''))
         limit = int(request.args.get('limit', 10))
         offset = int(request.args.get('offset', 0))
         
         # Get users from Clerk using REST API
         clerk_api_key = os.getenv('CLERK_SECRET_KEY')
+        if not clerk_api_key:
+            logger.error("CLERK_SECRET_KEY is not set")
+            return jsonify({'error': 'Server configuration error'}), 500
         headers = {'Authorization': f'Bearer {clerk_api_key}'}
         params = {
             'limit': limit,
@@ -67,7 +70,7 @@ def get_users():
                 'image': user['image_url'],
                 'clerkId': user['id']
             })
-            print(transformed_users)
+            # print(transformed_users)
         
         return jsonify({
             'users': transformed_users,
@@ -75,23 +78,26 @@ def get_users():
         })
         
     except Exception as e:
-        print(f"Error fetching users: {str(e)}")
-        return jsonify({'error': 'Failed to fetch users'}), 500
+        logger.error(f"Error fetching users: {str(e)}")
+        return jsonify({'error': 'Failed to fetch users. Please try again.'}), 500
 
 # Get only users (not admins)
 @admin_bp.route('/users/only-users', methods=['GET'])
-@require_auth
+@require_admin_role
 def get_only_users():
     try:
         if not is_admin():
             return jsonify({'error': 'Unauthorized'}), 403
         # Get query parameters
-        query = request.args.get('query', '')
+        query = sanitize_api_query(request.args.get('query', ''))
         limit = int(request.args.get('limit', 10))
         offset = int(request.args.get('offset', 0))
         
         # Get users from Clerk using REST API
         clerk_api_key = os.getenv('CLERK_SECRET_KEY')
+        if not clerk_api_key:
+            logger.error("CLERK_SECRET_KEY is not set")
+            return jsonify({'error': 'Server configuration error'}), 500
         headers = {'Authorization': f'Bearer {clerk_api_key}'}
         params = {
             'limit': limit,
@@ -101,7 +107,8 @@ def get_only_users():
         response = requests.get('https://api.clerk.com/v1/users', headers=headers, params=params)
         
         if not response.ok:
-            raise Exception(f"Clerk API error: {response.text}")
+            logger.error(f"Clerk API error (only-users): {response.text}")
+            return jsonify({'error': 'Failed to fetch users. Please try again.'}), 500
             
         users_data = response.json()
         users_list = users_data.get('data', [])
@@ -131,12 +138,12 @@ def get_only_users():
         })
         
     except Exception as e:
-        print(f"Error fetching only users: {str(e)}")
-        return jsonify({'error': 'Failed to fetch only users'}), 500
+        logger.error(f"Error fetching only users: {str(e)}")
+        return jsonify({'error': 'Failed to fetch users. Please try again.'}), 500
 
 # Get dashboard statistics and recent activity
 @admin_bp.route('/dashboard', methods=['GET'])
-@require_auth
+@require_admin_role
 def get_dashboard_data():
     try:
         if not is_admin(): 
@@ -156,5 +163,29 @@ def get_dashboard_data():
         })
         
     except Exception as e:
-        print(f"Error fetching dashboard data: {str(e)}")
-        return jsonify({'error': 'Failed to fetch dashboard data'}), 500
+        logger.error(f"Error fetching dashboard data: {str(e)}")
+        return jsonify({'error': 'Failed to fetch dashboard data. Please try again.'}), 500
+    
+
+@admin_bp.route('/analytics', methods=['GET'])
+@require_admin_role
+def get_all_analytics():
+    try:
+        days_ago = 7
+
+        upload_data = get_upload_analytics(trend_days=days_ago)
+        user_data = get_user_analytics(trend_days=days_ago)
+
+        if not upload_data or not user_data:
+            return jsonify({"error": "Failed to retrieve analytics data"}), 500
+
+        combined_data = {
+            "uploads": upload_data,
+            "users": user_data
+        }
+
+        return jsonify(combined_data), 200
+
+    except Exception as e:
+        logger.error(f"Error fetching combined analytics: {str(e)}")
+        return jsonify({"error": "Failed to fetch analytics data. Please try again."}), 500
