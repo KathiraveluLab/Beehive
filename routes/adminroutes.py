@@ -13,6 +13,8 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 @require_auth
 def admin_user_images_show(user_id):
     try:
+        if not is_admin():
+            return jsonify({'error': 'Unauthorized'}), 403
         images = get_images_by_user(user_id)
         return jsonify({
             'images': images
@@ -27,6 +29,8 @@ def admin_user_images_show(user_id):
 @require_auth
 def get_users():
     try:
+        if not is_admin():
+            return jsonify({'error': 'Unauthorized'}), 403
         # Get query parameters
         query = request.args.get('query', '')
         limit = int(request.args.get('limit', 10))
@@ -46,6 +50,8 @@ def get_users():
             raise Exception(f"Clerk API error: {response.text}")
             
         users_data = response.json()
+        users_list = users_data.get('data', [])  
+        total_count = users_data.get('total_count', 0)
         
         # Transform user data
         transformed_users = []
@@ -56,7 +62,7 @@ def get_users():
                 'id': user['id'],
                 'name': f"{user['first_name']} {user['last_name']}".strip(),
                 'email': email,
-                'role': user['unsafe_metadata'].get('role', 'user'),
+                'role': user.get('unsafe_metadata', {}).get('role', 'user'),
                 'lastActive': user['last_active_at'],
                 'image': user['image_url'],
                 'clerkId': user['id']
@@ -65,7 +71,7 @@ def get_users():
         
         return jsonify({
             'users': transformed_users,
-            'totalCount': len(users_list)  
+            'totalCount': total_count  
         })
         
     except Exception as e:
@@ -77,6 +83,8 @@ def get_users():
 @require_auth
 def get_only_users():
     try:
+        if not is_admin():
+            return jsonify({'error': 'Unauthorized'}), 403
         # Get query parameters
         query = request.args.get('query', '')
         limit = int(request.args.get('limit', 10))
@@ -96,12 +104,13 @@ def get_only_users():
             raise Exception(f"Clerk API error: {response.text}")
             
         users_data = response.json()
+        users_list = users_data.get('data', [])
         
         # Transform user data, filter only users with role 'user'
         transformed_users = []
         users_list = users_data  
         for user in users_list:
-            role = user['unsafe_metadata'].get('role', 'user')
+            role = user.get('unsafe_metadata', {}).get('role', 'user')
             if role != 'user':
                 continue
             email = user['email_addresses'][0]['email_address'] if user['email_addresses'] else None
@@ -130,6 +139,8 @@ def get_only_users():
 @require_auth
 def get_dashboard_data():
     try:
+        if not is_admin(): 
+            return jsonify({'error': 'Unauthorized'}), 403
         # Get query parameters for recent activity
         limit = int(request.args.get('limit', 10))
         
