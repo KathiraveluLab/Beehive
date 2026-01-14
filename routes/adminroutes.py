@@ -58,7 +58,7 @@ def get_users():
         
         # Transform user data
         transformed_users = []
-        users_list = users_data  
+          
         for user in users_list:
             email = user['email_addresses'][0]['email_address'] if user['email_addresses'] else None
             transformed_users.append({
@@ -115,7 +115,7 @@ def get_only_users():
         
         # Transform user data, filter only users with role 'user'
         transformed_users = []
-        users_list = users_data  
+        
         for user in users_list:
             role = user.get('unsafe_metadata', {}).get('role', 'user')
             if role != 'user':
@@ -134,7 +134,7 @@ def get_only_users():
         
         return jsonify({
             'users': transformed_users,
-            'totalCount': len(transformed_users)  
+            'totalCount': total_count  
         })
         
     except Exception as e:
