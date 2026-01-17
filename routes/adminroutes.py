@@ -112,7 +112,6 @@ def get_only_users():
         users_list = users_data.get('data', [])
         total_count = users_data.get('total_count', 0)
         
-        
         # Transform user data, filter only users with role 'user'
         transformed_users = []
         
