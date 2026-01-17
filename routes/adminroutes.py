@@ -14,12 +14,13 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 @require_admin_role
 def admin_user_images_show(user_id):
     try:
-        if not is_admin():
-            return jsonify({'error': 'Unauthorized'}), 403
-        images = get_images_by_user(user_id)
-        return jsonify({
-            'images': images
-        })
+        page = int(request.args.get('page', 1))
+        page_size = int(request.args.get('page_size', 12))
+        # Validate pagination parameters
+        page = max(1, page)
+        page_size = min(max(1, page_size), 50)
+        result = _get_paginated_images_by_user(user_id, page, page_size)
+        return jsonify(result)
     except Exception as e:
         logger.error(f"Error fetching user uploads", exc_info=True)
         return jsonify({'error': 'Failed to fetch user uploads'}), 500
@@ -29,8 +30,6 @@ def admin_user_images_show(user_id):
 @require_admin_role
 def get_users():
     try:
-        if not is_admin():
-            return jsonify({'error': 'Unauthorized'}), 403
         # Get query parameters
         query = sanitize_api_query(request.args.get('query', ''))
         limit = int(request.args.get('limit', 10))
@@ -61,6 +60,7 @@ def get_users():
           
         for user in users_list:
             email = user['email_addresses'][0]['email_address'] if user['email_addresses'] else None
+            
             transformed_users.append({
                 'id': user['id'],
                 'name': f"{user['first_name']} {user['last_name']}".strip(),
@@ -86,8 +86,6 @@ def get_users():
 @require_admin_role
 def get_only_users():
     try:
-        if not is_admin():
-            return jsonify({'error': 'Unauthorized'}), 403
         # Get query parameters
         query = sanitize_api_query(request.args.get('query', ''))
         limit = int(request.args.get('limit', 10))
@@ -112,6 +110,8 @@ def get_only_users():
             
         users_data = response.json()
         users_list = users_data.get('data', [])
+        total_count = users_data.get('total_count', 0)
+        
         
         # Transform user data, filter only users with role 'user'
         transformed_users = []
@@ -146,8 +146,6 @@ def get_only_users():
 @require_admin_role
 def get_dashboard_data():
     try:
-        if not is_admin(): 
-            return jsonify({'error': 'Unauthorized'}), 403
         # Get query parameters for recent activity
         limit = int(request.args.get('limit', 10))
         
