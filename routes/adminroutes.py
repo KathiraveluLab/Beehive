@@ -97,11 +97,12 @@ def get_only_users():
             logger.error("CLERK_SECRET_KEY is not set")
             return jsonify({'error': 'Server configuration error'}), 500
         headers = {'Authorization': f'Bearer {clerk_api_key}'}
+        
         params = {
-            'limit': limit,
-            'offset': offset,
+            'limit': 500,
             'query': query if query else None
         }
+        
         response = requests.get('https://api.clerk.com/v1/users', headers=headers, params=params)
         
         if not response.ok:
@@ -109,19 +110,17 @@ def get_only_users():
             return jsonify({'error': 'Failed to fetch users. Please try again.'}), 500
             
         users_data = response.json()
+        all_users = users_data.get('data', [])
         
-        users_list = users_data.get('data', [])
-        total_count = users_data.get('total_count', 0)
+        filtered_users_list = []
         
-        # Transform user data, filter only users with role 'user'
-        transformed_users = []
-        
-        for user in users_list:
+        for user in all_users:
             role = user.get('unsafe_metadata', {}).get('role', 'user')
             if role != 'user':
                 continue
             email = user['email_addresses'][0]['email_address'] if user['email_addresses'] else None
-            transformed_users.append({
+            
+            filtered_users_list.append({
                 'id': user['id'],
                 'name': f"{user['first_name']} {user['last_name']}".strip(),
                 'email': email,
@@ -130,11 +129,13 @@ def get_only_users():
                 'image': user['image_url'],
                 'clerkId': user['id']
             })
-            # print(transformed_users)
+        
+        total_filtered_count = len(filtered_users_list)
+        paginated_users = filtered_users_list[offset : offset + limit]
         
         return jsonify({
-            'users': transformed_users,
-            'totalCount': total_count  
+            'users': paginated_users,
+            'totalCount': total_filtered_count  
         })
         
     except Exception as e:
