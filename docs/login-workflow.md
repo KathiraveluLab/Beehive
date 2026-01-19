@@ -113,6 +113,7 @@ The application requires these environment variables:
 - `GOOGLE_CLIENT_ID`: OAuth client ID
 - `GOOGLE_CLIENT_SECRET`: OAuth client secret 
 - `ADMIN_EMAILS`: Comma-separated list of admin email addresses
+- `CORS_ORIGINS`: Comma-separated list of allowed CORS origins (optional - defaults to common development origins if not set)
 
 ## Error Handling
 

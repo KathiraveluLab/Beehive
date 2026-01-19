@@ -3,3 +3,4 @@ venv/
 *.pyc
 *.pyo
 .env
+client_secret.json
