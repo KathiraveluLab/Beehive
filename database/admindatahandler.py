@@ -1,5 +1,5 @@
 from datetime import datetime
-from pymongo.errors import PyMongoError
+from pymongo.errors import PyMongoError, DuplicateKeyError
 from flask import session
 
 from database import databaseConfig
@@ -8,11 +8,8 @@ from utils.logger import Logger
 logger = Logger.get_logger("admin_handler")
 
 def create_admin(name: str, email: str, google_id: str, account_created_time: datetime):
-    beehive_admin_collection = databaseConfig.get_beehive_admin_collection()
+        beehive_admin_collection = databaseConfig.get_beehive_admin_collection()
 
-    if beehive_admin_collection.find_one({"google_id": google_id}):
-        raise ValueError("Admin with this google_id already exists")
-    
     admin_data = {
         "name" : name,
         "mail_id" : email,
@@ -23,6 +20,8 @@ def create_admin(name: str, email: str, google_id: str, account_created_time: da
     try:
         result = beehive_admin_collection.insert_one(admin_data)
         return result.inserted_id
+    except DuplicateKeyError:
+        raise ValueError(f"Admin with google_id {google_id} already exists") from None
     except PyMongoError:
          logger.error(
              "Failed to create admin for google_id=%s, email=%s",
@@ -81,7 +80,7 @@ def update_admin_profile_photo(google_id: str, filename: str) -> bool:
         )
         return result.modified_count > 0
     except PyMongoError:
-        logger.error(f"Failed to update photo for google_id={google_id}", exc_info=True)
+        logger.error("Failed to update photo for google_id=%s", google_id, exc_info=True)
         return False
 
 def get_admin_by_google_id(google_id: str) -> dict | None:
