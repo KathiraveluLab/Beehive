@@ -7,14 +7,17 @@ from utils.logger import Logger
 
 logger = Logger.get_logger("admin_handler")
 
-def create_admin(name: str, email: str, google_id: str, accountcreatedtime: datetime):
+def create_admin(name: str, email: str, google_id: str, account_created_time: datetime):
     beehive_admin_collection = databaseConfig.get_beehive_admin_collection()
+
+    if beehive_admin_collection.find_one({"google_id": google_id}):
+        raise ValueError("Admin with this google_id already exists")
     
     admin_data = {
         "name" : name,
         "mail_id" : email,
         "google_id" : google_id,
-        "account_created_at" : accountcreatedtime,
+        "account_created_at" : account_created_time,
         "role" : "admin"
     }
     try:
@@ -29,49 +32,59 @@ def create_admin(name: str, email: str, google_id: str, accountcreatedtime: date
          )
          raise
 
-def check_admin_available(google_id: str):
+def is_admin_available(google_id: str) -> bool:
+    
     beehive_admin_collection = databaseConfig.get_beehive_admin_collection()
-    query = {
-        "google_id" : google_id
-    }
 
-    count = beehive_admin_collection.count_documents(query)
+    count = beehive_admin_collection.count_documents({"google_id" : google_id}, limit=1)
     return count == 0
 
-def is_admin():
+def is_admin() -> bool:
     beehive_admin_collection = databaseConfig.get_beehive_admin_collection()
     # Check admin based on google_id (for Google sign-in)
-    if 'google_id' in session:
-        query = {
-            "google_id": session['google_id']
-        }
-        admin = beehive_admin_collection.find_one(query)
+    google_id=session.get("google_id")
+    if google_id:
+        admin = beehive_admin_collection.find_one({"google_id" : google_id})
         if admin and admin.get("role") == "admin":
             return True
     
     # Check admin based on email (for regular login)
-    if 'email' in session:
-        email = session['email']
-        # Import the ALLOWED_EMAILS list if not available in this scope
-        from oauth.config import ALLOWED_EMAILS
-        if email in ALLOWED_EMAILS:
+    email=session.get("email")
+    if email:
+        # Check against DB first using 'mail_id'
+        admin = beehive_admin_collection.find_one({"mail_id": email})
+        if admin and admin.get("role") == "admin":
             return True
-        
+
+        # Fallback to config file
+        try:
+            from oauth.config import ALLOWED_EMAILS
+            
+            if email in ALLOWED_EMAILS:
+                logger.warning(
+                    "Admin access granted via ALLOWED_EMAILS fallback for %s",
+                    email,
+                )
+                return True
+        except ImportError:
+            logger.warning("Could not import ALLOWED_EMAILS from oauth.config")
+            
     return False
 
-def update_admin_profile_photo(google_id, filename):
+def update_admin_profile_photo(google_id: str, filename: str) -> bool:
     """Update the profile photo filename for an admin."""
     beehive_admin_collection = databaseConfig.get_beehive_admin_collection()
-    beehive_admin_collection.update_one(
-        {"google_id": google_id},
-        {"$set": {"profile_photo": filename}}
-    )
+    try:
+        result = beehive_admin_collection.update_one(
+            {"google_id": google_id},
+            {"$set": {"profile_photo": filename}}
+        )
+        return result.modified_count > 0
+    except PyMongoError:
+        logger.error(f"Failed to update photo for google_id={google_id}", exc_info=True)
+        return False
 
-def get_admin_by_google_id(google_id):
+def get_admin_by_google_id(google_id: str) -> dict | None:
     """Get admin details by Google ID."""
     beehive_admin_collection = databaseConfig.get_beehive_admin_collection()
-    query = {
-        "google_id": google_id
-    }
-    admin = beehive_admin_collection.find_one(query)
-    return admin
+    return beehive_admin_collection.find_one({"google_id": google_id})
