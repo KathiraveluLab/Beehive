@@ -140,24 +140,31 @@ const Gallery = () => {
           mode: 'cors'
         });
         
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
         const data = await response.json();
-        if (data.error) {
-          throw new Error(data.error);
+        
+        if (!response.ok) {
+          console.error('Error fetching uploads:', data.error || 'Unknown error');
+          toast.error('Failed to fetch uploads');
+          setImages([]);
+          return;
         }
         
-        const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
+        if (data.error) {
+          console.error('Error fetching uploads:', data.error);
+          toast.error('Failed to fetch uploads');
+          setImages([]);
+          return;
+        }
+        
+        const sortedImages: Upload[] = (data.images || []).sort((a: Upload, b: Upload) =>
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
         );
 
         setImages(sortedImages);
-        console.log(sortedImages);
       } catch (error) {
         console.error('Error fetching uploads:', error);
-          toast.error('Failed to fetch uploads');
+        toast.error('Failed to fetch uploads');
+        setImages([]);
       } finally {
         setLoading(false);
       }
@@ -602,6 +609,25 @@ const Gallery = () => {
         {loading ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
+          </div>
+        ) : images.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-64 text-center">
+            <svg
+              className="w-24 h-24 text-gray-300 dark:text-gray-600 mb-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No uploads yet</h3>
+            <p className="text-gray-500 dark:text-gray-400">Start by uploading your first image or document</p>
           </div>
         ) : viewMode === 'rolling' ? (
           renderRollingView()
