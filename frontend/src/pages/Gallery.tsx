@@ -180,15 +180,21 @@ const Gallery = () => {
       });
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        if (page === 1) {
+          toast.error('Failed to fetch uploads');
+        }
+        return;
       }
       
       const data = await response.json();
       if (data.error) {
-        throw new Error(data.error);
+        if (page === 1) {
+          toast.error('Failed to fetch uploads');
+        }
+        return;
       }
       
-      const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
+      const sortedImages: Upload[] = (data.images || []).sort((a: Upload, b: Upload) =>
         new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
       );
 
