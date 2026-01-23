@@ -9,6 +9,34 @@ from utils.sanitize import sanitize_api_query
 logger = Logger.get_logger("adminroutes")
 admin_bp = Blueprint('admin', __name__, url_prefix='/api/admin')
 
+# Helper function to fetch all users from Clerk to handle pagination limits
+def _fetch_all_clerk_users(api_key): 
+    all_users = []
+    limit = 100 # Fetch in batches of 100
+    offset = 0
+    
+    while True:
+        headers = {'Authorization': f'Bearer {api_key}'}
+        params = {
+            'limit': limit,
+            'offset': offset
+        }
+        
+        response = requests.get('https://api.clerk.com/v1/users', headers=headers, params=params)
+        
+        if not response.ok:
+            raise Exception(f"Clerk API error: {response.text}")
+            
+        batch = response.json()
+        all_users.extend(batch)
+        
+        if len(batch) < limit:
+            break
+        
+        offset += limit
+        
+    return all_users
+
 # Get all images uploaded by a user (admin access)
 @admin_bp.route('/user_uploads/<user_id>')
 @require_admin_role
@@ -16,9 +44,11 @@ def admin_user_images_show(user_id):
     try:
         page = int(request.args.get('page', 1))
         page_size = int(request.args.get('page_size', 12))
+        
         # Validate pagination parameters
         page = max(1, page)
         page_size = min(max(1, page_size), 50)
+        
         result = _get_paginated_images_by_user(user_id, page, page_size)
         return jsonify(result)
     except Exception as e:
@@ -31,50 +61,51 @@ def admin_user_images_show(user_id):
 def get_users():
     try:
         # Get query parameters
-        query = sanitize_api_query(request.args.get('query', ''))
+        query = sanitize_api_query(request.args.get('query', '')).lower()
         limit = int(request.args.get('limit', 10))
         offset = int(request.args.get('offset', 0))
         
-        # Get users from Clerk using REST API
         clerk_api_key = os.getenv('CLERK_SECRET_KEY')
         if not clerk_api_key:
             logger.error("CLERK_SECRET_KEY is not set")
             return jsonify({'error': 'Server configuration error'}), 500
-        headers = {'Authorization': f'Bearer {clerk_api_key}'}
-        params = {
-            'limit': limit,
-            'offset': offset,
-            'query': query if query else None
-        }
-        response = requests.get('https://api.clerk.com/v1/users', headers=headers, params=params)
+
+        # Fetch ALL users first to ensure complete dataset
+        users_list = _fetch_all_clerk_users(clerk_api_key)
         
-        if not response.ok:
-            raise Exception(f"Clerk API error: {response.text}")
-            
-        users_data = response.json()
-        users_list = users_data.get('data', [])  
-        total_count = users_data.get('total_count', 0)
-        
-        # Transform user data
+        # Transform and Filter
         transformed_users = []
-          
+        
         for user in users_list:
-            email = user['email_addresses'][0]['email_address'] if user['email_addresses'] else None
+            # Using public_metadata instead of unsafe_metadata for security
+            role = user['public_metadata'].get('role', 'user')
+            first_name = user.get('first_name') or ""
+            last_name = user.get('last_name') or ""
+            full_name = f"{first_name} {last_name}".strip()
+            email = user['email_addresses'][0]['email_address'] if user['email_addresses'] else ""
             
+            # Apply search query locally
+            if query:
+                if query not in full_name.lower() and query not in email.lower():
+                    continue
+
             transformed_users.append({
                 'id': user['id'],
-                'name': f"{user['first_name']} {user['last_name']}".strip(),
+                'name': full_name,
                 'email': email,
-                'role': user.get('unsafe_metadata', {}).get('role', 'user'),
+                'role': role, 
                 'lastActive': user['last_active_at'],
                 'image': user['image_url'],
                 'clerkId': user['id']
             })
-            # print(transformed_users)
+        
+        #  Apply pagination in-memory on the complete list
+        total_count = len(transformed_users)
+        paginated_users = transformed_users[offset : offset + limit]
         
         return jsonify({
-            'users': transformed_users,
-            'totalCount': total_count  
+            'users': paginated_users,
+            'totalCount': total_count
         })
         
     except Exception as e:
@@ -87,55 +118,52 @@ def get_users():
 def get_only_users():
     try:
         # Get query parameters
-        query = sanitize_api_query(request.args.get('query', ''))
+        query = sanitize_api_query(request.args.get('query', '')).lower()
         limit = int(request.args.get('limit', 10))
         offset = int(request.args.get('offset', 0))
         
-        # Get users from Clerk using REST API
         clerk_api_key = os.getenv('CLERK_SECRET_KEY')
         if not clerk_api_key:
             logger.error("CLERK_SECRET_KEY is not set")
             return jsonify({'error': 'Server configuration error'}), 500
-        headers = {'Authorization': f'Bearer {clerk_api_key}'}
+    
+        users_list = _fetch_all_clerk_users(clerk_api_key)
         
-        params = {
-            'limit': 500,
-            'query': query if query else None
-        }
-        
-        response = requests.get('https://api.clerk.com/v1/users', headers=headers, params=params)
-        
-        if not response.ok:
-            logger.error(f"Clerk API error (only-users): {response.text}")
-            return jsonify({'error': 'Failed to fetch users. Please try again.'}), 500
+        # Transform and Filter
+        transformed_users = []
+        for user in users_list:
+            role = user['public_metadata'].get('role', 'user')
             
-        users_data = response.json()
-        all_users = users_data.get('data', [])
-        
-        filtered_users_list = []
-        
-        for user in all_users:
-            role = user.get('unsafe_metadata', {}).get('role', 'user')
+            # Filter only users (role == 'user')
             if role != 'user':
                 continue
-            email = user['email_addresses'][0]['email_address'] if user['email_addresses'] else None
-            
-            filtered_users_list.append({
+                
+            first_name = user.get('first_name') or ""
+            last_name = user.get('last_name') or ""
+            full_name = f"{first_name} {last_name}".strip()
+            email = user['email_addresses'][0]['email_address'] if user['email_addresses'] else ""
+
+            # Apply search query locally
+            if query:
+                if query not in full_name.lower() and query not in email.lower():
+                    continue
+
+            transformed_users.append({
                 'id': user['id'],
-                'name': f"{user['first_name']} {user['last_name']}".strip(),
+                'name': full_name,
                 'email': email,
                 'role': role,
                 'lastActive': user['last_active_at'],
                 'image': user['image_url'],
                 'clerkId': user['id']
             })
-        
-        total_filtered_count = len(filtered_users_list)
-        paginated_users = filtered_users_list[offset : offset + limit]
+    
+        total_count = len(transformed_users)
+        paginated_users = transformed_users[offset : offset + limit]
         
         return jsonify({
             'users': paginated_users,
-            'totalCount': total_filtered_count  
+            'totalCount': total_count
         })
         
     except Exception as e:
