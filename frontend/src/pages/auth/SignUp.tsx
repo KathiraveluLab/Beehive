@@ -30,9 +30,7 @@ const SignUpPage = () => {
       // if apiFetch didn't throw → success
       setStep("otp");
     } catch (err: any) {
-      setError(err.message || "Failed to send OTP");
-    } finally {
-      setLoading(false);
+      setError(err?.response?.error || err?.message || "Failed to send OTP");
     }
   };
 
@@ -57,9 +55,17 @@ const SignUpPage = () => {
   };
 
   const completeSignup = async () => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email");
+      return;
+    }
+    if (password.length < 4) {
+      setError("Password must be at least 4 characters");
+      return;
+    }
     setLoading(true);
     setError("");
-
     try {
       const data = await apiFetch("/api/auth/complete-signup", {
         method: "POST",
@@ -171,7 +177,12 @@ const SignUpPage = () => {
                 className="input"
               />
 
-              <button onClick={completeSignup}>Create Account</button>
+              <button
+                onClick={completeSignup}
+                className="w-full bg-yellow-500 text-black py-2 rounded-md hover:bg-yellow-600 transition"
+              >
+                Create Account
+              </button>
             </>
           )}
 

@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime, timedelta, timezone
+import re
 import random
 import secrets
 import bcrypt
@@ -11,6 +12,7 @@ from database.userdatahandler import create_user, get_user_by_username
 from utils.roles import is_admin_email
 from utils.jwt_auth import create_access_token
 from database.databaseConfig import beehive
+from datetime import timezone
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -35,10 +37,12 @@ def create_email_otp(email: str) -> str:
 def request_otp():
     data = request.get_json(force=True)
     email = data.get("email")
-
     if not email:
         return jsonify({"error": "Email required"}), 400
 
+    existing_user = db.users.find_one({"email": email})
+    if existing_user:
+        return jsonify({"error": "Email already registered"}), 400
     otp = create_email_otp(email)
 
     # send the OTP via email
@@ -86,7 +90,7 @@ def verify_otp():
 
         expires_at = record["expires_at"]
 
-        if expires_at.tzinfo is None and expires_at.kind == datetime.datetime.UTC_KIND:
+        if expires_at.tzinfo is None:
             expires_at = expires_at.replace(tzinfo=timezone.utc)
 
         if expires_at < datetime.now(timezone.utc):
@@ -109,7 +113,13 @@ def complete_signup():
 
     if not email or not username or not password:
         return jsonify({"error": "Missing fields"}), 400
+    
+    email_regex = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
+    if not re.match(email_regex, email):
+        return jsonify({"error": "Invalid email format"}), 400
 
+    if len(password) < 4:
+        return jsonify({"error": "Password must be at least 4 characters"}), 400
     # Prevent duplicate username
     if db.users.find_one({"username": username}):
         return jsonify({"error": "Username already taken"}), 400
