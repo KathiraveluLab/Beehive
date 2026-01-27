@@ -37,8 +37,8 @@ const SignInPage = () => {
 
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 text-gray-900">
-      <div className="bg-white p-8 rounded-2xl shadow-lg w-full max-w-md border border-gray-100">
+    <div className="inline-block">
+<div className="bg-white p-8 rounded-xl shadow-xl max-w-md">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-gray-900">Sign In</h2>
           <p className="text-gray-500 mt-2">Welcome back! Please enter your details.</p>

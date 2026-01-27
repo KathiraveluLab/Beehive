@@ -57,80 +57,54 @@ const SignUpPage = () => {
   };
 
   const completeSignup = async () => {
-  setLoading(true);
-  setError("");
+    setLoading(true);
+    setError("");
 
-  try {
-    const data = await apiFetch("/api/auth/complete-signup", {
-      method: "POST",
-      body: JSON.stringify({
-        email,
-        username,
-        password,
-      }),
-    });
+    try {
+      const data = await apiFetch("/api/auth/complete-signup", {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          username,
+          password,
+        }),
+      });
 
-    saveToken(data.access_token);
+      saveToken(data.access_token);
 
-    // auto redirect
-    data.role === "admin"
-      ? navigate("/admin")
-      : navigate("/dashboard");
-
-  } catch (err: any) {
-    setError(err.message || "Failed to complete signup");
-  } finally {
-    setLoading(false);
-  }
-};
+      // auto redirect
+      data.role === "admin" ? navigate("/admin") : navigate("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Failed to complete signup");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const setPasswordAndSignup = async () => {
-  setLoading(true);
-  setError("");
+    setLoading(true);
+    setError("");
 
-  try {
-    const data = await apiFetch("/api/auth/set-password", {
-      method: "POST",
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const data = await apiFetch("/api/auth/set-password", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
 
-    saveToken(data.access_token);
+      saveToken(data.access_token);
 
-    data.role === "admin"
-      ? navigate("/admin")
-        : navigate("/dashboard");
-
+      data.role === "admin" ? navigate("/admin") : navigate("/dashboard");
     } catch (err: any) {
-    setError(err.message || "Failed to create account");
-  } finally {
-    setLoading(false);
-  }
-};
-
-  const googleSignIn = async () => {
-  setError("");
-
-  try {
-    const data = await apiFetch("/api/auth/google", {
-      method: "POST",
-      body: JSON.stringify({ email: "test@gmail.com", name: "Google User" }),
-    });
-
-    saveToken(data.access_token);
-
-    data.role === "admin"
-      ? navigate("/admin")
-      : navigate("/dashboard");
-
-  } catch (err: any) {
-    setError(err.message || "Google sign-in failed");
-  }
-};
+      setError(err.message || "Failed to create account");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     // Added text-gray-900 to ensure text visibility across all systems
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4 text-gray-900">
-      <div className="bg-white p-8 rounded-xl shadow-xl w-full max-w-md border border-gray-200">
+    <div className="inline-block">
+      <div className="bg-white p-8 rounded-xl shadow-xl max-w-md">
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
           Sign Up
         </h2>
@@ -152,7 +126,12 @@ const SignUpPage = () => {
                 onChange={(e) => setEmail(e.target.value)}
                 className="input"
               />
-              <button onClick={requestOtp}>Send OTP</button>
+              <button
+                onClick={requestOtp}
+                className="w-full bg-yellow-500 text-black py-2 rounded-md hover:bg-yellow-600 transition"
+              >
+                Send OTP
+              </button>
             </>
           )}
 
@@ -165,7 +144,12 @@ const SignUpPage = () => {
                 onChange={(e) => setOtp(e.target.value)}
                 className="input"
               />
-              <button onClick={verifyOtp}>Verify OTP</button>
+              <button
+                onClick={verifyOtp}
+                className="w-full bg-yellow-500 text-black py-2 rounded-md hover:bg-yellow-600 transition"
+              >
+                Verify OTP
+              </button>
             </>
           )}
 
@@ -210,22 +194,6 @@ const SignUpPage = () => {
               </button>
             </>
           )}
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-2 text-gray-500">or</span>
-            </div>
-          </div>
-
-          <button
-            onClick={googleSignIn}
-            className="w-full border border-gray-300 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors text-gray-700 font-medium"
-          >
-            Continue with Google
-          </button>
         </div>
       </div>
     </div>
