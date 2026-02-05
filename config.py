@@ -10,7 +10,7 @@ class Config:
 
     
     # Flask Configuration
-    SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'beehive-secret-key')
+    SECRET_KEY = os.getenv('FLASK_SECRET_KEY')
     UPLOAD_FOLDER = 'static/uploads'
     PDF_THUMBNAIL_FOLDER = 'static/uploads/thumbnails/'
     
@@ -28,6 +28,18 @@ class Config:
     @staticmethod
     def validate_config():
         """Validate that all required configuration is present"""
-        if not Config.JWT_SECRET or Config.JWT_SECRET == "dev-secret-change-this":
-            raise ValueError("Missing or insecure JWT_SECRET environment variable. Set JWT_SECRET in your .env for production.")
+        required_vars = {
+            'JWT_SECRET': Config.JWT_SECRET,
+            'FLASK_SECRET_KEY': Config.SECRET_KEY,
+            'MONGODB_URI': Config.MONGODB_URI,
+        }
+        
+        missing = [key for key, value in required_vars.items() if not value]
+        
+        if missing:
+            raise ValueError(
+                f"Missing required environment variables: {', '.join(missing)}. "
+                "Please set these in your .env file or environment."
+            )
+        
         return True

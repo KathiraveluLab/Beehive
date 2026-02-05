@@ -63,19 +63,28 @@ from database.userdatahandler import (
 
 from utils.jwt_auth import require_auth,require_admin_role 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
+
+from config import Config
+
+try:
+    Config.validate_config()
+except ValueError as e:
+    app_logger.error(f"Configuration validation failed: {e}")
+    sys.exit(1)
+
+app.config.from_object(Config)
+
 CORS(
     app,
     resources={
         r"/api/*": {
-            "origins": ["http://localhost:5173"],
+            "origins": Config.CORS_ORIGINS,
             "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True,
         }
     },
 )
-from config import Config
-app.config.from_object(Config)
 
 app.config.update(
     MAIL_SERVER=os.getenv("MAIL_SERVER"),
