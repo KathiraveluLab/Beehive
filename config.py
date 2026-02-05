@@ -41,5 +41,11 @@ class Config:
                 f"Missing required environment variables: {', '.join(missing)}. "
                 "Please set these in your .env file or environment."
             )
+
+        if Config.JWT_SECRET == "dev-secret-change-this":
+            raise ValueError("Insecure JWT_SECRET: please set a new secret in your .env file for production.")
+
+        if len(Config.SECRET_KEY) < 32 or Config.SECRET_KEY in {"beehive", "beehive-secret-key"}:
+            raise ValueError("Insecure FLASK_SECRET_KEY: must be at least 32 characters long and not a default value.")
         
         return True
