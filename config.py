@@ -15,7 +15,7 @@ class Config:
     PDF_THUMBNAIL_FOLDER = 'static/uploads/thumbnails/'
     
     # Database Configuration
-    MONGODB_URI = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/')
+    MONGODB_URI = os.getenv('MONGODB_URI')
     DATABASE_NAME = os.getenv('DATABASE_NAME', 'beehive')
     
     # CORS Configuration
