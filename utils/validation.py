@@ -7,7 +7,7 @@ from bson.errors import InvalidId
 from functools import wraps
 from flask import request, jsonify
 import bleach
-import re
+from flask import current_app
 from typing import Optional
 
 import dotenv
@@ -66,10 +66,10 @@ def validate_otp(value, field_name="otp", max_length=10):
     Validate OTP format (numeric, max length).
     """
     value = sanitize_string(value, field_name, max_length)
-    
-    if validate_integer(value, field_name, min_value=0 , max_value=999999) < 0:
-        raise ValidationError(f"{field_name} is not valid", field_name)
-    
+    try :    
+        value = validate_integer(value, field_name, min_value=0 , max_value=999999)
+    except ValidationError as e:
+        current_app.logger.exception(f"OTP validation error: {e.message}")
     return value
 def validate_integer(value, field_name="value", min_value=None, max_value=None, default=None):
     """
@@ -140,7 +140,6 @@ def validate_sentiment(value, field_name="sentiment"):
     """
     Validate sentiment value.
     """
-    allowed_sentiments = ['positive', 'negative', 'neutral', 'happy', 'sad', 'angry', 'fearful', 'surprised', '']
     
     if value is None:
         return ''
