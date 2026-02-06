@@ -12,7 +12,7 @@ import sys
 import traceback
 from datetime import timedelta
 from functools import wraps
-from utils.sanitize import sanitize_text
+from utils.validation import sanitize_text
 from utils.logger import logger as app_logger
 
 import bcrypt
