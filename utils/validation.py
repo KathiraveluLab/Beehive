@@ -4,13 +4,6 @@ Input validation and sanitization utilities to prevent NoSQL injection attacks.
 import re
 from functools import wraps
 from flask import request, jsonify
-from flask import current_app
-from typing import Optional
-
-import dotenv
-import os
-dotenv.load_dotenv()
-
 
 class ValidationError(Exception):
     """Custom exception for validation errors"""
@@ -63,10 +56,8 @@ def validate_otp(value, field_name="otp", max_length=10):
     Validate OTP format (numeric, max length).
     """
     value = sanitize_string(value, field_name, max_length)
-    try :    
-        value = validate_integer(value, field_name, min_value=0 , max_value=999999)
-    except ValidationError as e:
-        current_app.logger.exception(f"OTP validation error: {e.message}")
+    value = validate_integer(value, field_name, min_value=0 , max_value=999999)
+
     return value
 def validate_integer(value, field_name="value", min_value=None, max_value=None, default=None):
     """
@@ -78,12 +69,7 @@ def validate_integer(value, field_name="value", min_value=None, max_value=None, 
         raise ValidationError(f"{field_name} is required", field_name)
     
     try:
-        if isinstance(value, str):
-            value = int(value)
-        elif isinstance(value, float):
-            value = int(value)
-        elif not isinstance(value, int):
-            raise ValueError()
+        value = int(value)
     except (ValueError, TypeError):
         raise ValidationError(f"{field_name} must be a valid integer", field_name)
     
@@ -211,7 +197,7 @@ def sanitize_dict(data, schema):
     Schema format:
     {
         'field_name': {
-            'type': 'string' | 'integer' | 'boolean' | 'object_id' | 'user_id',
+            'type': 'string' | 'integer' | 'boolean',
             'required': True | False,
             'max_length': int (for strings),
             'min_value': int (for integers),
@@ -298,36 +284,3 @@ def validate_query_params(schema):
                 return jsonify({'error': e.message, 'field': e.field}), 400
         return decorated_function
     return decorator
-
-# Old sanitization functions for backwards compatibility (can be removed later)
-def sanitize_text(value: Optional[str]) -> str:
-    if not value:
-        return ""
-    return bleach.clean(
-        value,
-        tags=[],          # Remove ALL HTML tags
-        attributes={},    # Remove inbuilt methods, etc.
-        strip=True        # Strip the tags
-    ).strip()
-
-def sanitize_api_query(value: Optional[str], max_length: int = 100) -> str:
-    """
-    Sanitize query parameters for external API calls using an allow-list approach.
-    Only permits alphanumeric characters, spaces, hyphens, underscores, periods,
-    and the @ symbol (for email searches).
-    
-    This provides stronger protection against injection attacks (NoSQL, etc.)
-    compared to HTML-only sanitization.
-    """
-    if not value:
-        return ""
-    
-    # Allow-list: alphanumeric, spaces, common safe characters for search queries
-    # Pattern allows: letters, numbers, spaces, hyphens, underscores, periods, @ (for emails)
-    sanitized = re.sub(r'[^a-zA-Z0-9\s\-_.@]', '', value)
-    
-    # Collapse multiple spaces and strip
-    sanitized = re.sub(r'\s+', ' ', sanitized).strip()
-    
-    # Enforce maximum length to prevent DoS
-    return sanitized[:max_length]
