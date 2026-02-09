@@ -1,6 +1,6 @@
 from datetime import datetime
 import re
-
+from pymongo.errors import PyMongoError
 from flask import session
 
 from database import databaseConfig
@@ -16,7 +16,17 @@ def create_admin(name: str, email: str, google_id: str, accountcreatedtime: date
         "account_created_at" : accountcreatedtime,
         "role" : "admin"
     }
-    admin_inserted_id = beehive_admin_collection.insert_one(admin_data).inserted_id
+    try:
+        result = beehive_admin_collection.insert_one(admin_data)
+        return result.inserted_id
+    except PyMongoError:
+        logger.error(
+            "Failed to create admin for google_id=%s, email=%s",
+            google_id,
+            email,
+            exc_info=True
+        )
+        raise
 
 def check_admin_available(google_id: str):
     query = {

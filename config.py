@@ -6,6 +6,7 @@ load_dotenv()
 class Config:
     # Clerk Configuration
     CLERK_SECRET_KEY = os.getenv('CLERK_SECRET_KEY')
+    CLERK_ISSUER = os.getenv('CLERK_ISSUER')
     
     # Flask Configuration
     SECRET_KEY = os.getenv('FLASK_SECRET_KEY', 'beehive-secret-key')
@@ -17,16 +18,18 @@ class Config:
     DATABASE_NAME = os.getenv('DATABASE_NAME', 'beehive')
     
     # CORS Configuration
-    CORS_ORIGINS = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000"
-    ]
+    _cors_origins_env = os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000"
+    )
+    CORS_ORIGINS = [origin.strip() for origin in _cors_origins_env.split(",") if origin.strip()]
     
     @staticmethod
     def validate_config():
         """Validate that all required configuration is present"""
         if not Config.CLERK_SECRET_KEY:
             raise ValueError("Missing required environment variable: CLERK_SECRET_KEY")
+        # CLERK_ISSUER is required for JWT verification if using Clerk frontend tokens
+        if not Config.CLERK_ISSUER:
+            raise ValueError("Missing required environment variable: CLERK_ISSUER")
         return True

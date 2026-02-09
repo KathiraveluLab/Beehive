@@ -11,6 +11,7 @@ import {
   ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { apiUrl } from '../../utils/api';
 
 interface User {
   id: string;
@@ -43,7 +44,7 @@ const Users = () => {
       // Get the authentication token from Clerk
       const token = await clerk.session?.getToken();
       
-      const response = await fetch(`http://127.0.0.1:5000/api/admin/users?limit=${limit}&offset=${offset}&query=${searchTerm}`, {
+      const response = await fetch(apiUrl(`/api/admin/users?limit=${limit}&offset=${offset}&query=${searchTerm}`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

@@ -3,6 +3,8 @@ import { ClerkProvider, SignedIn, SignedOut } from '@clerk/clerk-react';
 import { Toaster } from 'react-hot-toast';
 import { ThemeProvider } from '../src/context/ThemeContext';
 
+import ScrollToTop from './components/ScrollToTop';
+
 // Layout
 import MainLayout from '../src/layouts/MainLayout';
 import AuthLayout from '../src/layouts/AuthLayout';
@@ -44,6 +46,7 @@ function App() {
     >
       <ThemeProvider>
         <Router>
+          <ScrollToTop />
           <Routes>
             {/* Public Routes */}
             <Route path="/landing" element={<Landing />} />

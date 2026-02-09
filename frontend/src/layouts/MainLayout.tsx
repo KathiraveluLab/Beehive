@@ -37,7 +37,7 @@ const MainLayout = () => {
                 </button>
               )}
               <div className="flex-shrink-0 flex items-center">
-                <Link to="/" className="text-2xl font-bold text-black">
+                <Link to="/" className="text-2xl font-bold text-black dark:text-white">
                   <img src="/favicon.png" alt="Beehive Logo" className="h-8 w-8 inline-block mr-2" />
                   Beehive
                 </Link>
@@ -127,7 +127,7 @@ const MainLayout = () => {
         <>
           {/* Overlay */}
           <div
-            className="fixed inset-0 z-40 bg-black bg-opacity-40 transition-opacity"
+            className="fixed inset-0 z-40 bg-black/40 transition-opacity"
             onClick={() => setSidebarOpen(false)}
           ></div>
           {/* Sidebar */}
