@@ -147,9 +147,10 @@ const Gallery = () => {
   const [hasMore, setHasMore] = useState(false);
   const limit = 12;
   
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
 
-  // Sync search params to URL
+  // Sync search params to URL (including page)
   useEffect(() => {
     const params: Record<string, string> = {};
     if (searchQuery) params.q = searchQuery;
@@ -158,9 +159,21 @@ const Gallery = () => {
     if (toDate) params.to = toDate;
     if (sortBy !== 'date') params.sort_by = sortBy;
     if (sortOrder !== 'desc') params.sort_order = sortOrder;
+    if (currentPage > 1) params.page = currentPage.toString();
     
     setSearchParams(params, { replace: true });
-  }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, setSearchParams]);
+  }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, currentPage, setSearchParams]);
+
+  // Sync URL params to state on mount and URL changes
+  useEffect(() => {
+    const pageParam = searchParams.get('page');
+    if (pageParam) {
+      const page = parseInt(pageParam, 10);
+      if (!isNaN(page) && page > 0) {
+        setCurrentPage(page);
+      }
+    }
+  }, [searchParams.get('page')]);
 
   // Function for authenticated API calls
   const authenticatedFetch = useCallback(async (path: string, options: RequestInit = {}) => {
@@ -189,6 +202,15 @@ const Gallery = () => {
   // Fetch uploads with search and filters
   const fetchUploads = useCallback(async (page: number = 1, append: boolean = false) => {
     if (!user?.id) return;
+    
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new AbortController for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
     
     try {
       if (page === 1) {
@@ -221,7 +243,8 @@ const Gallery = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          mode: 'cors'
+          mode: 'cors',
+          signal: abortController.signal
         });
       } else {
         // Use page-based pagination for simple list
@@ -230,7 +253,8 @@ const Gallery = () => {
           headers: {
             'Content-Type': 'application/json',
           },
-          mode: 'cors'
+          mode: 'cors',
+          signal: abortController.signal
         });
       }
       
@@ -267,7 +291,12 @@ const Gallery = () => {
       }
       
       console.log(`Loaded page ${page}, ${data.images?.length || 0} images`);
-    } catch (error) {
+    } catch (error: any) {
+      // Ignore abort errors
+      if (error.name === 'AbortError') {
+        console.log('Request cancelled');
+        return;
+      }
       console.error('Error fetching uploads:', error);
       if (page === 1) {
         toast.error('Failed to fetch uploads');
@@ -294,14 +323,14 @@ const Gallery = () => {
         clearTimeout(searchTimeoutRef.current);
       }
     };
-  }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, user?.id]);
+  }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, user?.id, fetchUploads]);
 
   // Page navigation for search results
   useEffect(() => {
     if (currentPage > 1 && (searchQuery || sentiment || fromDate || toDate || sortBy !== 'date')) {
       fetchUploads(currentPage, false);
     }
-  }, [currentPage]);
+  }, [currentPage, fetchUploads, searchQuery, sentiment, fromDate, toDate, sortBy]);
 
   // Infinite scroll for non-search mode
   useEffect(() => {
@@ -1232,17 +1261,28 @@ const Gallery = () => {
                     <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
                   </button>
 
-                  {/* Page numbers */}
-                  {Array.from({ length: Math.ceil(totalResults / limit) }, (_, i) => i + 1)
-                    .filter((pageNum) => {
-                      // Show first, last, current, and adjacent pages
-                      return (
-                        pageNum === 1 ||
-                        pageNum === Math.ceil(totalResults / limit) ||
-                        Math.abs(pageNum - currentPage) <= 1
-                      );
-                    })
-                    .map((pageNum, index, array) => {
+                  {/* Page numbers - Optimized generation */}
+                  {(() => {
+                    const totalPageCount = Math.ceil(totalResults / limit);
+                    const pages: number[] = [];
+                    
+                    // Always show first page
+                    pages.push(1);
+                    
+                    // Show pages around current page
+                    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPageCount - 1, currentPage + 1); i++) {
+                      pages.push(i);
+                    }
+                    
+                    // Always show last page
+                    if (totalPageCount > 1) {
+                      pages.push(totalPageCount);
+                    }
+                    
+                    // Remove duplicates and sort
+                    const uniquePages = Array.from(new Set(pages)).sort((a, b) => a - b);
+                    
+                    return uniquePages.map((pageNum, index, array) => {
                       // Add ellipsis if needed
                       const showEllipsis = index > 0 && pageNum - array[index - 1] > 1;
                       return (
@@ -1264,7 +1304,8 @@ const Gallery = () => {
                           </button>
                         </div>
                       );
-                    })}
+                    });
+                  })()}
 
                   <button
                     onClick={() => setCurrentPage(currentPage + 1)}

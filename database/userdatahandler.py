@@ -86,7 +86,7 @@ def search_and_filter_images(user_id, search_query=None, sentiment=None, from_da
             query['$text'] = {'$search': search_query.strip()}
         
         if sentiment and sentiment.strip():
-            query['sentiment'] = {'$regex': f'^{sentiment.strip()}$', '$options': 'i'}
+            query['sentiment'] = sentiment.strip()
         
         if from_date or to_date:
             date_query = {}
@@ -95,38 +95,38 @@ def search_and_filter_images(user_id, search_query=None, sentiment=None, from_da
                     from_dt = datetime.fromisoformat(from_date.replace('Z', '+00:00'))
                     date_query['$gte'] = from_dt
                 except ValueError:
-                    pass
+                    raise ValueError(f"Invalid 'from' date format: {from_date}. Expected ISO format.")
             
             if to_date:
                 try:
                     to_dt = datetime.fromisoformat(to_date.replace('Z', '+00:00'))
                     date_query['$lte'] = to_dt
                 except ValueError:
-                    pass
+                    raise ValueError(f"Invalid 'to' date format: {to_date}. Expected ISO format.")
             
             if date_query:
                 query['created_at'] = date_query
         
-        sort_criteria = []
         if search_query and search_query.strip() and sort_by == 'relevance':
-            sort_criteria.append(('score', {'$meta': 'textScore'}))
+            sort_field = 'score'
+            sort_direction = {'$meta': 'textScore'}
+            projection = {'score': {'$meta': 'textScore'}}
         elif sort_by == 'title':
-            sort_criteria.append(('title', 1 if sort_order == 'asc' else -1))
+            sort_field = 'title'
+            sort_direction = 1 if sort_order == 'asc' else -1
+            projection = None
         else:
-            sort_criteria.append(('created_at', 1 if sort_order == 'asc' else -1))
+            sort_field = 'created_at'
+            sort_direction = 1 if sort_order == 'asc' else -1
+            projection = None
         
         total_count = beehive_image_collection.count_documents(query)
         
-        projection = None
-        if search_query and search_query.strip() and sort_by == 'relevance':
-            projection = {'score': {'$meta': 'textScore'}}
-        
         cursor = beehive_image_collection.find(query, projection)
-        for field, order in sort_criteria:
-            if field == 'score':
-                cursor = cursor.sort([('score', order)])
-            else:
-                cursor = cursor.sort(field, order)
+        if sort_field == 'score':
+            cursor = cursor.sort([(sort_field, sort_direction)])
+        else:
+            cursor = cursor.sort(sort_field, sort_direction)
         
         images = list(cursor.skip(offset).limit(limit))
         

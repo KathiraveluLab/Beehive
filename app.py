@@ -653,7 +653,6 @@ def user_images_show():
     try:
         user_id = request.current_user["id"]
         
-        # Check if search/filter parameters are provided
         search_query = request.args.get('q', '').strip()
         sentiment = request.args.get('sentiment', '').strip()
         from_date = request.args.get('from', '').strip()
@@ -661,67 +660,43 @@ def user_images_show():
         sort_by = request.args.get('sort_by', 'date').strip()
         sort_order = request.args.get('sort_order', 'desc').strip()
         
-        # Support both pagination styles: offset/limit (for search) and page/page_size (for simple list)
-        use_search = search_query or sentiment or from_date or to_date or 'offset' in request.args
+        try:
+            limit = int(request.args.get('limit', 12))
+            limit = max(1, min(limit, 100))
+        except ValueError:
+            limit = 12
         
-        if use_search:
-            # Use search and filter with offset/limit
-            try:
-                limit = int(request.args.get('limit', 12))
-                limit = max(1, min(limit, 100))
-            except ValueError:
-                limit = 12
-            
-            try:
-                offset = int(request.args.get('offset', 0))
-                offset = max(0, offset)
-            except ValueError:
-                offset = 0
-            
-            result = search_and_filter_images(
-                user_id=user_id,
-                search_query=search_query if search_query else None,
-                sentiment=sentiment if sentiment else None,
-                from_date=from_date if from_date else None,
-                to_date=to_date if to_date else None,
-                sort_by=sort_by,
-                sort_order=sort_order,
-                limit=limit,
-                offset=offset
-            )
-            response_data = {
-                'images': result['images'],
-                'total': result['total'],
-                'limit': result['limit'],
-                'offset': result['offset'],
-                'hasMore': result['hasMore'],
-                'user_id': user_id,
-                'message': 'Success'
-            }
-        else:
-            # Use simple pagination with page/page_size
-            try:
-                page = int(request.args.get('page', 1))
-                page_size = int(request.args.get('page_size', 12))
-            except ValueError:
-                return jsonify({"error":"Invalid page or page size (must be an integer)"})
-            
-            page = max(1, page)
-            page_size = min(max(1, page_size), 50)
-            
-            result = _get_paginated_images_by_user(user_id, page, page_size)
-            
-            response_data = {
-                "images": result['images'],
-                "user_id": user_id,
-                "total_count": result['total_count'],
-                "page": result['page'],
-                "pageSize": result['pageSize'],
-                "totalPages": result['totalPages'],
-                "message": "Success",
-            }
+        try:
+            offset = int(request.args.get('offset', 0))
+            offset = max(0, offset)
+        except ValueError:
+            offset = 0
+        
+        result = search_and_filter_images(
+            user_id=user_id,
+            search_query=search_query if search_query else None,
+            sentiment=sentiment if sentiment else None,
+            from_date=from_date if from_date else None,
+            to_date=to_date if to_date else None,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            limit=limit,
+            offset=offset
+        )
+        
+        response_data = {
+            'images': result['images'],
+            'total': result['total'],
+            'limit': result['limit'],
+            'offset': result['offset'],
+            'hasMore': result['hasMore'],
+            'user_id': user_id,
+            'message': 'Success'
+        }
         
         return jsonify(response_data)
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         logging.error(f"Error fetching user uploads: {str(e)}")
         return jsonify({"error": "Failed to fetch uploads. Please try again."}), 500
@@ -861,6 +836,8 @@ from routes.adminroutes import admin_bp
 
 app.register_blueprint(admin_bp)
 
+# Initialize text index for search functionality
+initialize_text_index()
+
 if __name__ == "__main__":
-    initialize_text_index()
     app.run(debug=True)
