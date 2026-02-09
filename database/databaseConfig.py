@@ -1,6 +1,6 @@
 from dotenv import load_dotenv, find_dotenv
 import os
-from pymongo import MongoClient
+from pymongo import MongoClient, TEXT
 
 load_dotenv(find_dotenv())
 
@@ -25,3 +25,17 @@ def get_beehive_notification_collection():
 
 def get_beehive_message_collection():
     return beehive.messages
+
+def initialize_text_index():
+    try:
+        image_collection = get_beehive_image_collection()
+        existing_indexes = image_collection.index_information()
+        
+        if 'title_text_description_text' not in existing_indexes:
+            image_collection.create_index([
+                ('title', TEXT),
+                ('description', TEXT)
+            ], name='title_text_description_text')
+            print("Text index created")
+    except Exception as e:
+        print(f"Error creating text index: {str(e)}")

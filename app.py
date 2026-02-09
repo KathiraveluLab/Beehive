@@ -25,14 +25,19 @@ from database.admindatahandler import  is_admin
 from database.userdatahandler import ( 
     delete_image,
     get_image_by_id,
-    get_images_by_user, 
+    get_images_by_user,
+    search_and_filter_images,
     get_user_by_username, 
     save_image, 
     update_image,
     save_notification,
     get_all_users
 )
-from database.databaseConfig import get_beehive_notification_collection, get_beehive_message_collection
+from database.databaseConfig import (
+    get_beehive_notification_collection, 
+    get_beehive_message_collection,
+    initialize_text_index
+)
 from utils.clerk_auth import require_auth
 
 # Import blueprints
@@ -262,18 +267,62 @@ def delete_image_route(image_id):
     except Exception as e:
         return jsonify({'error': f'Error deleting image: {str(e)}'}), 500
 
-# Get all images uploaded by a user
 @app.route('/api/user/user_uploads/<user_id>')
 @require_auth
 def user_images_show(user_id):
     try:
-        images = get_images_by_user(user_id)
-        images_list = list(images) if images else []        
-        response_data = {
-            'images': images_list,
-            'user_id': user_id,
-            'message': 'Success'
-        }
+        search_query = request.args.get('q', '').strip()
+        sentiment = request.args.get('sentiment', '').strip()
+        from_date = request.args.get('from', '').strip()
+        to_date = request.args.get('to', '').strip()
+        sort_by = request.args.get('sort_by', 'date').strip()
+        sort_order = request.args.get('sort_order', 'desc').strip()
+        try:
+            limit = int(request.args.get('limit', 12))
+            limit = max(1, min(limit, 100))
+        except ValueError:
+            limit = 12
+        
+        try:
+            offset = int(request.args.get('offset', 0))
+            offset = max(0, offset)
+        except ValueError:
+            offset = 0
+        
+        if search_query or sentiment or from_date or to_date or sort_by != 'date' or offset > 0:
+            result = search_and_filter_images(
+                user_id=user_id,
+                search_query=search_query if search_query else None,
+                sentiment=sentiment if sentiment else None,
+                from_date=from_date if from_date else None,
+                to_date=to_date if to_date else None,
+                sort_by=sort_by,
+                sort_order=sort_order,
+                limit=limit,
+                offset=offset
+            )
+            response_data = {
+                'images': result['images'],
+                'total': result['total'],
+                'limit': result['limit'],
+                'offset': result['offset'],
+                'hasMore': result['hasMore'],
+                'user_id': user_id,
+                'message': 'Success'
+            }
+        else:
+            images = get_images_by_user(user_id)
+            images_list = list(images) if images else []        
+            response_data = {
+                'images': images_list,
+                'total': len(images_list),
+                'limit': len(images_list),
+                'offset': 0,
+                'hasMore': False,
+                'user_id': user_id,
+                'message': 'Success'
+            }
+        
         return jsonify(response_data)
     except Exception as e:
         return jsonify({
@@ -356,4 +405,5 @@ def get_chat_messages():
 
 
 if __name__ == '__main__':
+    initialize_text_index()
     app.run(debug=True)

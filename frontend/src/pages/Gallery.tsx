@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useUser } from '@clerk/clerk-react';
+import { useSearchParams } from 'react-router-dom';
 import {
   PencilIcon,
   TrashIcon,
@@ -11,6 +12,8 @@ import {
   AdjustmentsHorizontalIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
@@ -107,6 +110,7 @@ const EditModal = ({ image, onClose, onSave }: EditModalProps) => {
 
 const Gallery = () => {
   const { user } = useUser();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [images, setImages] = useState<Upload[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingImage, setEditingImage] = useState<Upload | null>(null);
@@ -120,17 +124,58 @@ const Gallery = () => {
   const [currentRollingIndex, setCurrentRollingIndex] = useState(0);
   const rollingContainerRef = useRef<HTMLDivElement>(null);
 
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [sentiment, setSentiment] = useState(searchParams.get('sentiment') || '');
+  const [fromDate, setFromDate] = useState(searchParams.get('from') || '');
+  const [toDate, setToDate] = useState(searchParams.get('to') || '');
+  const [sortBy, setSortBy] = useState(searchParams.get('sort_by') || 'date');
+  const [sortOrder, setSortOrder] = useState(searchParams.get('sort_order') || 'desc');
+  const [showFilters, setShowFilters] = useState(false);
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalResults, setTotalResults] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const limit = 12;
+  
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
-    const fetchUploads = async () => {
-      if (!user?.id) return;
+    const params: Record<string, string> = {};
+    if (searchQuery) params.q = searchQuery;
+    if (sentiment) params.sentiment = sentiment;
+    if (fromDate) params.from = fromDate;
+    if (toDate) params.to = toDate;
+    if (sortBy !== 'date') params.sort_by = sortBy;
+    if (sortOrder !== 'desc') params.sort_order = sortOrder;
+    
+    setSearchParams(params, { replace: true });
+  }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, setSearchParams]);
+
+  // Fetch uploads with search and filters
+  const fetchUploads = useCallback(async (page: number = 1) => {
+    if (!user?.id) return;
+    
+    try {
+      setLoading(true);
       
-      try {
-        setLoading(true);
-        
-        // Get the authentication token from Clerk
-        const token = await window.Clerk.session?.getToken();
-        
-        const response = await fetch(`http://127.0.0.1:5000/api/user/user_uploads/${user.id}`, {
+      const token = await window.Clerk.session?.getToken();
+      
+      const offset = (page - 1) * limit;
+      const params = new URLSearchParams({
+        limit: limit.toString(),
+        offset: offset.toString(),
+      });
+      
+      if (searchQuery.trim()) params.append('q', searchQuery.trim());
+      if (sentiment) params.append('sentiment', sentiment);
+      if (fromDate) params.append('from', fromDate);
+      if (toDate) params.append('to', toDate);
+      if (sortBy) params.append('sort_by', sortBy);
+      if (sortOrder) params.append('sort_order', sortOrder);
+      
+      const response = await fetch(
+        `http://127.0.0.1:5000/api/user/user_uploads/${user.id}?${params}`,
+        {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -138,33 +183,62 @@ const Gallery = () => {
           },
           credentials: 'include',
           mode: 'cors'
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
-        const data = await response.json();
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        
-        const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
+      );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      setImages(data.images || []);
+      setTotalResults(data.total || 0);
+      setHasMore(data.hasMore || false);
+      
+    } catch (error) {
+      console.error('Error fetching uploads:', error);
+      toast.error('Failed to fetch uploads');
+    } finally {
+      setLoading(false);
+    }
+  }, [user?.id, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder]);
 
-        setImages(sortedImages);
-        console.log(sortedImages);
-      } catch (error) {
-        console.error('Error fetching uploads:', error);
-          toast.error('Failed to fetch uploads');
-      } finally {
-        setLoading(false);
+  useEffect(() => {
+    setCurrentPage(1);
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchUploads(1);
+    }, 300);
+    
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
       }
     };
+  }, [fetchUploads]);
 
-    fetchUploads();
-  }, [user?.id]);
+  useEffect(() => {
+    if (currentPage > 1) {
+      fetchUploads(currentPage);
+    }
+  }, [currentPage]);
+  
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setSentiment('');
+    setFromDate('');
+    setToDate('');
+    setSortBy('date');
+    setSortOrder('desc');
+    setCurrentPage(1);
+  };
 
   const handleEdit = (image: Upload) => {
     setEditingImage(image);
@@ -521,7 +595,7 @@ const Gallery = () => {
   return (
     <div className="py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Gallery</h1>
           
           <div className="flex items-center space-x-4">
@@ -597,6 +671,150 @@ const Gallery = () => {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Search and Filter Section */}
+        <div className="mb-6 space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by title or description..."
+              className="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <XMarkIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+              </button>
+            )}
+          </div>
+
+          {/* Filter Toggle Button */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+            >
+              <FunnelIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {showFilters ? 'Hide Filters' : 'Show Filters'}
+              </span>
+              {(sentiment || fromDate || toDate) && (
+                <span className="ml-2 px-2 py-0.5 bg-yellow-400 text-black text-xs rounded-full font-medium">
+                  Active
+                </span>
+              )}
+            </button>
+
+            {/* Results count */}
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              {totalResults > 0 ? (
+                <span>
+                  Showing {images.length} of {totalResults} upload{totalResults !== 1 ? 's' : ''}
+                </span>
+              ) : (
+                !loading && <span>No uploads found</span>
+              )}
+            </div>
+          </div>
+
+          {/* Advanced Filters */}
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 space-y-4"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Sentiment Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Sentiment
+                  </label>
+                  <select
+                    value={sentiment}
+                    onChange={(e) => setSentiment(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
+                  >
+                    <option value="">All Sentiments</option>
+                    <option value="positive">Positive</option>
+                    <option value="neutral">Neutral</option>
+                    <option value="negative">Negative</option>
+                  </select>
+                </div>
+
+                {/* From Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    From Date
+                  </label>
+                  <input
+                    type="date"
+                    value={fromDate}
+                    onChange={(e) => setFromDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
+                  />
+                </div>
+
+                {/* To Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    To Date
+                  </label>
+                  <input
+                    type="date"
+                    value={toDate}
+                    onChange={(e) => setToDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
+                  />
+                </div>
+
+                {/* Sort By */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Sort By
+                  </label>
+                  <div className="flex space-x-2">
+                    <select
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
+                    >
+                      <option value="date">Date</option>
+                      <option value="title">Title</option>
+                      {searchQuery && <option value="relevance">Relevance</option>}
+                    </select>
+                    <button
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+                      title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+                    >
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Clear Filters Button */}
+              <div className="flex justify-end">
+                <button
+                  onClick={handleClearFilters}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
+                >
+                  Clear All Filters
+                </button>
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {loading ? (
@@ -741,6 +959,109 @@ const Gallery = () => {
                 </div>
               </motion.div>
             ))}
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && totalResults > limit && (
+          <div className="mt-8 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-6">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className={`relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md ${
+                  currentPage === 1
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={!hasMore}
+                className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md ${
+                  !hasMore
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                Next
+              </button>
+            </div>
+
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Showing <span className="font-medium">{(currentPage - 1) * limit + 1}</span> to{' '}
+                  <span className="font-medium">{Math.min(currentPage * limit, totalResults)}</span> of{' '}
+                  <span className="font-medium">{totalResults}</span> results
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 text-sm font-medium ${
+                      currentPage === 1
+                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                        : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <span className="sr-only">Previous</span>
+                    <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
+                  </button>
+
+                  {/* Page numbers */}
+                  {Array.from({ length: Math.ceil(totalResults / limit) }, (_, i) => i + 1)
+                    .filter((pageNum) => {
+                      // Show first, last, current, and adjacent pages
+                      return (
+                        pageNum === 1 ||
+                        pageNum === Math.ceil(totalResults / limit) ||
+                        Math.abs(pageNum - currentPage) <= 1
+                      );
+                    })
+                    .map((pageNum, index, array) => {
+                      // Add ellipsis if needed
+                      const showEllipsis = index > 0 && pageNum - array[index - 1] > 1;
+                      return (
+                        <div key={pageNum} className="inline-flex">
+                          {showEllipsis && (
+                            <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
+                              ...
+                            </span>
+                          )}
+                          <button
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium ${
+                              currentPage === pageNum
+                                ? 'z-10 bg-yellow-400 border-yellow-500 text-black'
+                                : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        </div>
+                      );
+                    })}
+
+                  <button
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={!hasMore}
+                    className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 text-sm font-medium ${
+                      !hasMore
+                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                        : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <span className="sr-only">Next</span>
+                    <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                </nav>
+              </div>
+            </div>
           </div>
         )}
 

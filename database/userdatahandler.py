@@ -72,6 +72,85 @@ def get_images_by_user(user_id):
         'created_at': image['created_at']['$date'] if isinstance(image.get('created_at'), dict) else image.get('created_at')
     } for image in images]
 
+def search_and_filter_images(user_id, search_query=None, sentiment=None, from_date=None, to_date=None, 
+                             sort_by='date', sort_order='desc', limit=12, offset=0):
+    try:
+        query = {'user_id': user_id}
+        
+        if search_query and search_query.strip():
+            query['$text'] = {'$search': search_query.strip()}
+        
+        if sentiment and sentiment.strip():
+            query['sentiment'] = {'$regex': f'^{sentiment.strip()}$', '$options': 'i'}
+        if from_date or to_date:
+            date_query = {}
+            if from_date:
+                try:
+                    from_dt = datetime.fromisoformat(from_date.replace('Z', '+00:00'))
+                    date_query['$gte'] = from_dt
+                except ValueError:
+                    pass
+            
+            if to_date:
+                try:
+                    to_dt = datetime.fromisoformat(to_date.replace('Z', '+00:00'))
+                    date_query['$lte'] = to_dt
+                except ValueError:
+                    pass
+            
+            if date_query:
+                query['created_at'] = date_query
+        
+        sort_criteria = []
+        if search_query and search_query.strip() and sort_by == 'relevance':
+            sort_criteria.append(('score', {'$meta': 'textScore'}))
+        elif sort_by == 'title':
+            sort_criteria.append(('title', 1 if sort_order == 'asc' else -1))
+        else:
+            sort_criteria.append(('created_at', 1 if sort_order == 'asc' else -1))
+        
+        total_count = beehive_image_collection.count_documents(query)
+        projection = None
+        if search_query and search_query.strip() and sort_by == 'relevance':
+            projection = {'score': {'$meta': 'textScore'}}
+        
+        cursor = beehive_image_collection.find(query, projection)
+        for field, order in sort_criteria:
+            if field == 'score':
+                cursor = cursor.sort([('score', order)])
+            else:
+                cursor = cursor.sort(field, order)
+        
+        images = list(cursor.skip(offset).limit(limit))
+        images_list = [{
+            'id': str(image['_id']),
+            'filename': image['filename'],
+            'title': image['title'],
+            'description': image['description'],
+            'audio_filename': image.get('audio_filename', ''),
+            'sentiment': image.get('sentiment', ''),
+            'created_at': image['created_at']['$date'] if isinstance(image.get('created_at'), dict) else image.get('created_at')
+        } for image in images]
+        
+        return {
+            'images': images_list,
+            'total': total_count,
+            'limit': limit,
+            'offset': offset,
+            'hasMore': (offset + limit) < total_count
+        }
+        
+    except Exception as e:
+        print(f"Error in search_and_filter_images: {str(e)}")
+        return {
+            'images': [],
+            'total': 0,
+            'limit': limit,
+            'offset': offset,
+            'hasMore': False,
+            'error': str(e)
+        }
+
 # Get images by sentiments list from MongoDB ( Route to be used with the dreams prototype for analysis page)
 # def get_images_by_sentiments(username, sentiment_list, match_all):
 #     if match_all:
