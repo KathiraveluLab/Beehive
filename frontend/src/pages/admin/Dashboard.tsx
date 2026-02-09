@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useClerk } from '@clerk/clerk-react';
 import { apiUrl } from '../../utils/api';
+import { getToken } from '../../utils/auth';
 import {
-  UsersIcon,
   PhotoIcon,
   ChartBarIcon,
   MicrophoneIcon,
@@ -60,7 +59,6 @@ const StatCard = ({
 );
 
 const Dashboard = () => {
-  const clerk = useClerk();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -74,15 +72,19 @@ const Dashboard = () => {
       setLoading(true);
       setError(null);
       
-      // Get the authentication token from Clerk
-      const token = await clerk.session?.getToken();
+      // Get the JWT token from helper
+      const token = getToken();
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       
       const response = await fetch(apiUrl('/api/admin/dashboard?limit=10'), {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers,
         credentials: 'include',
       });
 
@@ -223,4 +225,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;

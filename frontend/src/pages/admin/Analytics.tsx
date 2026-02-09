@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { useClerk } from '@clerk/clerk-react';
 import {
   CalendarIcon,
   ChartBarIcon,
@@ -16,6 +15,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { apiUrl } from "../../utils/api";
+import { getToken } from '../../utils/auth';
 
 // Mock data - replace with actual data from backend
 // const mockAnalytics = {
@@ -132,13 +132,12 @@ const Analytics = () => {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const clerk = useClerk();
 
   const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
-      const token = await clerk.session?.getToken();
+      const token = getToken();
       const response = await fetch(apiUrl('/api/admin/analytics'), {
         method: "GET",
         headers: {
@@ -156,7 +155,7 @@ const Analytics = () => {
     } finally {
       setLoading(false);
     }
-  }, [clerk.session]);
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();

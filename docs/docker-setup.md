@@ -9,23 +9,11 @@ cd Beehive
 
 ### 2. Configure Environment & Authentication
 
-**Clerk Setup:**
-- Sign up at [clerk.dev](https://clerk.dev) and create an application
-- Get your Publishable and Secret Keys
-- Navigate to **Configure** → **Sessions** → **Claims** and add:
-```json
-{
-    "role": "{{user.public_metadata.role || 'user'}}"
-}
-```
+This project uses JWT-based authentication for the backend and local-storage tokens in the frontend.
 
-**Grant Admin Access for Local Development:**
-
-**Prerequisite:** Make sure the session claim is configured in Clerk Dashboard (Configure → Sessions → Claims) with `{"role": "{{user.public_metadata.role || 'user'}}"}` as mentioned above.
-
-For detailed step-by-step instructions on how to grant admin access, see [Admin Access Guide](common/admin-access.md).
-
-**Note:** This admin access is for local development only and uses your local Docker MongoDB instance, separate from production.
+**JWT Setup:**
+- Set a strong `JWT_SECRET` in your `.env` (or Docker environment). This secret is used to sign and verify access tokens.
+- Optionally adjust token lifetime with `JWT_EXPIRE_HOURS` (default 24).
 
 **Google OAuth:**
 - Create OAuth credentials in Google Cloud Console
@@ -34,20 +22,21 @@ For detailed step-by-step instructions on how to grant admin access, see [Admin 
 
 **Root `.env`:**
 ```env
-MONGODB_CONNECTION_STRING=mongodb://mongo:27017/beehive
+MONGODB_URI=mongodb://mongo:27017/beehive
 GOOGLE_CLIENT_ID=your-client-id
 GOOGLE_CLIENT_SECRET=your-client-secret
 REDIRECT_URI=http://localhost:5000/admin/login/callback
 ADMIN_EMAILS=admin1@example.com,admin2@example.com
-CLERK_SECRET_KEY=your-clerk-secret-key
+JWT_SECRET=your_jwt_secret_here
+JWT_EXPIRE_HOURS=24
 FLASK_SECRET_KEY=your_custom_flask_secret
 # CORS Configuration (Optional - comma-separated list of allowed origins)
 CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000
 ```
 
-**`frontend/.env`:**
+**Frontend `.env`:**
 ```env
-VITE_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
+# No Clerk publishable key required for JWT-based auth. Frontend stores tokens in localStorage.
 ```
 
 ### 3. Run Docker

@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback} from 'react';
-import { useClerk } from '@clerk/clerk-react';
 import { apiUrl } from '../utils/api';
 
 interface ChatDrawerProps {
@@ -16,7 +15,7 @@ interface ChatUser {
 }
 
 const ChatDrawer: React.FC<ChatDrawerProps> = ({ userId, userRole, targetUserId, onClose }) => {
-  const clerk = useClerk();
+  // tokens are stored in localStorage under 'access_token'
   const [messages, setMessages] = useState<any[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -34,7 +33,7 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ userId, userRole, targetUserId,
 
   const fetchUserList = async () => {
     try {
-      const token = await clerk.session?.getToken();
+      const token = localStorage.getItem('access_token');
       const res = await fetch(apiUrl('/api/admin/users/only-users'), {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -62,7 +61,7 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ userId, userRole, targetUserId,
     try {
       const id = userRole === 'admin' ? adminTargetId : userId;
       if (!id) return;
-      const token = await clerk.session?.getToken();
+      const token = localStorage.getItem('access_token');
       const res = await fetch(apiUrl(`/api/chat/messages?user_id=${id}`), {
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -74,7 +73,7 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ userId, userRole, targetUserId,
     } catch (error) {
       console.error("Failed to fetch messages: ", error);
     }
-  }, [userRole, adminTargetId, userId, clerk]);
+  }, [userRole, adminTargetId, userId]);
 
   // Poll for messages
   useEffect(() => {
@@ -93,7 +92,7 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({ userId, userRole, targetUserId,
         to_role: userRole === 'admin' ? 'user' : 'admin',
         content: input.trim(),
       };
-      const token = await clerk.session?.getToken();
+      const token = localStorage.getItem('access_token');
       const res = await fetch(apiUrl('/api/chat/send'), {
         method: 'POST',
         headers: { 

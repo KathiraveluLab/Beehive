@@ -9,16 +9,16 @@ services:
     environment:
       - FLASK_ENV=development
       - FLASK_APP=app.py
-      - MONGODB_CONNECTION_STRING=mongodb://mongo:27017/beehive
+      - MONGODB_URI=mongodb://mongo:27017/beehive
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - REDIRECT_URI=${REDIRECT_URI}
-      - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
       - ADMIN_EMAILS=${ADMIN_EMAILS}
-      - CLERK_SECRET_KEY=${CLERK_SECRET_KEY}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRE_HOURS=${JWT_EXPIRE_HOURS}
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
-      - CLERK_ISSUER=${CLERK_ISSUER}
+      
     depends_on:
       - mongo
     volumes:
@@ -31,7 +31,6 @@ services:
     ports:
       - "5173:5173"
     environment:
-      - VITE_CLERK_PUBLISHABLE_KEY=${VITE_CLERK_PUBLISHABLE_KEY}
     depends_on:
       - flask-app
     volumes:

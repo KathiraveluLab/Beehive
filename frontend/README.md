@@ -4,7 +4,7 @@ This folder contains the frontend for the Beehive platform where users can uploa
 
 ## Features
 
-- User Authentication with Clerk
+ - User Authentication with JWT (local) and Google OAuth
 - Image and Voice Note Upload
 - Media Gallery with Edit and Delete Functionality
 - Admin Dashboard with Analytics
@@ -16,7 +16,7 @@ This folder contains the frontend for the Beehive platform where users can uploa
 
 - React with TypeScript
 - Vite for Build Tool
-- Clerk for Authentication
+ - JWT for Authentication
 - Tailwind CSS for Styling
 - React Router for Navigation
 - React Icons and Heroicons

@@ -1,3 +1,13 @@
+from dotenv import load_dotenv
+load_dotenv()
+import os
+
+# Validate configuration early - fail fast if config is missing or insecure
+# Skip validation in test mode to avoid breaking tests
+if not os.getenv('TESTING'):
+    from config import Config
+    Config.validate_config()
+
 import base64
 import binascii
 import datetime
@@ -39,6 +49,7 @@ from google_auth_oauthlib.flow import Flow
 from PIL import Image
 from pip._vendor import cachecontrol
 from werkzeug.utils import secure_filename
+from flask_mail import Mail, Message
 
 from database import userdatahandler
 from database.admindatahandler import is_admin
@@ -47,10 +58,12 @@ from database.databaseConfig import (
     get_beehive_notification_collection,
     initialize_text_index,
 )
+from database.databaseConfig import get_beehive_user_collection
 from database.userdatahandler import (
     delete_image,
     get_all_users,
     get_image_by_id,
+    get_image_by_audio_filename,
     get_images_by_user,
     _get_paginated_images_by_user,
     search_and_filter_images,
@@ -59,10 +72,52 @@ from database.userdatahandler import (
     save_notification,
     update_image,
 )
-from decorators import login_is_required, require_admin_role
-from utils.clerk_auth import require_auth
+from utils.pagination import parse_pagination_params
+
+from utils.jwt_auth import require_auth,require_admin_role 
+app = Flask(__name__, static_folder="static", static_url_path="/static")
+CORS(
+    app,
+    resources={
+        r"/api/*": {
+            "origins": ["http://localhost:5173"],
+            "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True,
+        },
+        r"/delete/*": {
+            "origins": ["http://localhost:5173"],
+            "methods": ["DELETE", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True,
+        },
+        r"/edit/*": {
+            "origins": ["http://localhost:5173"],
+            "methods": ["PATCH", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True,
+        },
+        r"/audio/*": {
+            "origins": ["http://localhost:5173"],
+            "methods": ["GET", "OPTIONS"],
+            "allow_headers": ["Content-Type", "Authorization"],
+            "supports_credentials": True,
+        }
+    },
+)
 from config import Config
 
+app.config.from_object(Config)
+
+app.config.update(
+    MAIL_SERVER=os.getenv("MAIL_SERVER"),
+    MAIL_PORT=int(os.getenv("MAIL_PORT") or 587),
+    MAIL_USE_TLS=os.getenv("MAIL_USE_TLS", "true").lower() == "true",
+    MAIL_USERNAME=os.getenv("MAIL_USERNAME"),
+    MAIL_PASSWORD=os.getenv("MAIL_PASSWORD"),
+)
+
+mail = Mail(app)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from oauth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
@@ -105,22 +160,7 @@ except Exception as e:
 # Fallback detector initialized lazily if the global MAGIC is unavailable
 _FALLBACK_MAGIC = None
 
-app = Flask(__name__, static_folder="static", static_url_path="/static")
-CORS(
-    app,
-    resources={
-        r"/*": {
-            "origins": Config.CORS_ORIGINS,
-            "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-            "allow_headers": ["Content-Type", "Authorization"],
-            "expose_headers": ["Content-Type", "Authorization"],
-            "supports_credentials": True,
-            "max_age": 3600,
-        }
-    },
-)  # Enable CORS for all routes with specific configuration
 app.config["PERMANENT_SESSION_LIFETIME"] = timedelta(days=30)
-# SECURITY FIX: Use environment variable for secret key
 app.secret_key = os.getenv("FLASK_SECRET_KEY")
 if (
     not app.secret_key
@@ -442,6 +482,9 @@ def analyze_media():
     image_file = request.files.get("image")
     audio_file = request.files.get("audio")
 
+    if not genai_configured:
+        return jsonify({"error": "AI analysis not configured on server. Set a valid GOOGLE_API_KEY."}), 503
+
     prompt_parts = []
 
     if image_file and image_file.mimetype == "application/pdf":
@@ -586,10 +629,36 @@ def edit_image(image_id):
         return jsonify({"error": "Failed to update image. Please try again."}), 500
 
 
-@app.route("/audio/<filename>")
+@app.route("/api/audio/<filename>")
 @require_auth
 def serve_audio(filename):
-    return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+    """Serve audio files with ownership verification to prevent IDOR attacks."""
+    try:
+        # Query database to find the image record associated with this audio file
+        image = get_image_by_audio_filename(filename)
+        
+        # If no record found, the audio file doesn't exist or isn't associated with any upload
+        if not image:
+            return jsonify({"error": "Audio file not found"}), 404
+        
+        # Get current user info from the JWT token (set by @require_auth decorator)
+        current_user_id = request.current_user.get("id")
+        current_user_role = request.current_user.get("role", "user")
+        image_owner_id = image.get("user_id")
+        
+        # Allow access if user is admin OR owns the audio file
+        is_admin = current_user_role == "admin"
+        is_owner = check_owner(current_user_id, image_owner_id)
+        
+        if not (is_admin or is_owner):
+            return jsonify({"error": "Unauthorized: You do not have permission to access this audio file"}), 403
+        
+        # User is authorized (either admin or owner), serve the file
+        return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+        
+    except Exception as e:
+        logging.error(f"Error serving audio file '{filename}': {str(e)}")
+        return jsonify({"error": "Failed to serve audio file"}), 500
 
 
 # Delete images uploaded by the user
@@ -696,6 +765,7 @@ def user_images_show():
         
         return jsonify(response_data)
     except ValueError as e:
+        logging.error(f"Invalid pagination parameters: {str(e)}")
         return jsonify({"error": str(e)}), 400
     except Exception as e:
         logging.error(f"Error fetching user uploads: {str(e)}")
@@ -830,11 +900,41 @@ def get_chat_messages():
         logging.error(f"Error fetching chat messages: {str(e)}")
         return jsonify({"error": "Failed to fetch messages. Please try again."}), 500
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    """
+    Health check endpoint for monitoring and API Gateway.
+    Returns 200 if healthy, 503 if issues detected.
+    """
+    # Fix: Capture timestamp once to ensure consistency (DRY)
+    current_time = datetime.datetime.now().isoformat()
+
+    try:
+        # Basic app health
+        health_status = {"status": "healthy", "timestamp": current_time}
+        
+        # Optional: Check MongoDB connection
+        db_collection = get_beehive_user_collection()
+        # Simple ping - will raise exception if DB unreachable
+        db_collection.database.command('ping')
+        health_status["database"] = "connected"
+        
+        return jsonify(health_status), 200
+    except Exception as e:
+        app.logger.error(f"Health check failed: {str(e)}")
+        return jsonify({
+            "status": "unhealthy",
+            "error": "Service Unavailable",
+            "timestamp": current_time  # Uses the same variable
+        }), 503
+    
 
 # Import blueprints
 from routes.adminroutes import admin_bp
 
 app.register_blueprint(admin_bp)
+from routes.auth import auth_bp
+app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
 # Initialize text index for search functionality
 initialize_text_index()

@@ -1,10 +1,17 @@
-import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { SignedIn, SignedOut, UserButton, useUser, useClerk } from '@clerk/clerk-react';
-import { SunIcon, MoonIcon, BellIcon, ChatBubbleLeftRightIcon, Bars3Icon, XMarkIcon } from '@heroicons/react/24/outline';
-import { useTheme } from '../context/ThemeContext';
-import { useState, useEffect, useRef } from 'react';
-import ChatDrawer from '../components/ChatDrawer';
-import { apiUrl } from '../utils/api';
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  SunIcon,
+  MoonIcon,
+  BellIcon,
+  ChatBubbleLeftRightIcon,
+  Bars3Icon,
+  XMarkIcon,
+} from "@heroicons/react/24/outline";
+import { useTheme } from "../context/ThemeContext";
+import { useState, useEffect, useRef } from "react";
+import ChatDrawer from "../components/ChatDrawer";
+import { apiUrl } from "../utils/api";
+import { useAuth } from "../hooks/useAuth";
 
 interface NotificationItem {
   _id: string;
@@ -17,17 +24,14 @@ interface NotificationItem {
 const AdminLayout = () => {
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
-  const { user } = useUser();
-  const clerk = useClerk();
-
+  const { user, isAdmin } = useAuth();
+  const admin = isAdmin();
   const navigate = useNavigate();
 
-  const isAdmin = user?.publicMetadata?.role === 'admin';
-
   const adminNavigation = [
-    { name: 'Dashboard', href: '/admin' },
-    { name: 'Users', href: '/admin/users' },
-    { name: 'Analytics', href: '/admin/analytics' },
+    { name: "Dashboard", href: "/admin" },
+    { name: "Users", href: "/admin/users" },
+    { name: "Analytics", href: "/admin/analytics" },
   ];
 
   // Notification state
@@ -36,7 +40,7 @@ const AdminLayout = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [chatOpen, setChatOpen] = useState(false);
-  const adminId = user?.id || 'admin';
+  const adminId = (user as any)?.id || "admin";
 
   // Pagination state
   const [page, setPage] = useState(1);
@@ -48,20 +52,25 @@ const AdminLayout = () => {
 
   // Poll for unseen notifications
   useEffect(() => {
-    if (!isAdmin) return;
+    if (!admin) return;
     const interval = setInterval(fetchUnseenNotifications, 10000);
     fetchUnseenNotifications();
     return () => clearInterval(interval);
-  }, [isAdmin]);
+  }, [admin]);
 
   // Fetch unseen notifications (for polling and badge)
   const fetchUnseenNotifications = async () => {
     try {
-      const token = await clerk.session?.getToken();
-      const res = await fetch(apiUrl(`/api/admin/notifications?page=1&limit=${NOTIFICATION_PAGE_SIZE}`), {
-        headers: { Authorization: `Bearer ${token}` },
-        credentials: 'include',
-      });
+      const token = localStorage.getItem("access_token");
+      const res = await fetch(
+        apiUrl(
+          `/api/admin/notifications?page=1&limit=${NOTIFICATION_PAGE_SIZE}`
+        ),
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          credentials: "include",
+        }
+      );
       if (!res.ok) return;
       const data = await res.json();
       setUnseenCount(data.unseen_count);
@@ -73,14 +82,17 @@ const AdminLayout = () => {
   // Fetch and mark notifications as seen when dropdown opens
   const fetchAndMarkNotifications = async () => {
     try {
-      const token = await clerk.session?.getToken();
+      const token = localStorage.getItem("access_token");
+
 
       // Fetch without marking seen
       const res = await fetch(
-        apiUrl(`/api/admin/notifications?page=1&limit=${NOTIFICATION_PAGE_SIZE}`),
+        apiUrl(
+          `/api/admin/notifications?page=1&limit=${NOTIFICATION_PAGE_SIZE}`
+        ),
         {
           headers: { Authorization: `Bearer ${token}` },
-          credentials: 'include',
+          credentials: "include",
         }
       );
       if (!res.ok) return;
@@ -98,18 +110,18 @@ const AdminLayout = () => {
 
       // Mark only these as seen
       if (unseenIds.length > 0) {
-        await fetch(apiUrl('/api/admin/notifications/mark_seen'), {
+        await fetch(apiUrl("/api/admin/notifications/mark_seen"), {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          credentials: 'include',
-          body: JSON.stringify({ ids: unseenIds })
+          credentials: "include",
+          body: JSON.stringify({ ids: unseenIds }),
         });
 
         // Decrease badge count
-        setUnseenCount(prev => Math.max(prev - unseenIds.length, 0));
+        setUnseenCount((prev) => Math.max(prev - unseenIds.length, 0));
       }
     } catch (error) {
       // console.error("Error fetching/marking notifications:", error);
@@ -120,13 +132,16 @@ const AdminLayout = () => {
   const loadMoreNotifications = async () => {
     try {
       const nextPage = page + 1;
-      const token = await clerk.session?.getToken();
+      const token = localStorage.getItem("access_token");
+
 
       const res = await fetch(
-        apiUrl(`/api/admin/notifications?page=${nextPage}&limit=${NOTIFICATION_PAGE_SIZE}`),
+        apiUrl(
+          `/api/admin/notifications?page=${nextPage}&limit=${NOTIFICATION_PAGE_SIZE}`
+        ),
         {
           headers: { Authorization: `Bearer ${token}` },
-          credentials: 'include',
+          credentials: "include",
         }
       );
       if (!res.ok) return;
@@ -137,7 +152,7 @@ const AdminLayout = () => {
         return;
       }
 
-      setNotifications(prev => [...prev, ...data.notifications]);
+      setNotifications((prev) => [...prev, ...data.notifications]);
       setPage(nextPage);
 
       if (data.notifications.length < NOTIFICATION_PAGE_SIZE) setHasMore(false);
@@ -160,17 +175,20 @@ const AdminLayout = () => {
   // Close dropdown on outside click
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setDropdownOpen(false);
       }
     }
     if (dropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     } else {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     }
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [dropdownOpen]);
 
@@ -178,10 +196,10 @@ const AdminLayout = () => {
   useEffect(() => {
     if (!sidebarOpen) return;
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setSidebarOpen(false);
+      if (e.key === "Escape") setSidebarOpen(false);
     };
-    window.addEventListener('keydown', handleEsc);
-    return () => window.removeEventListener('keydown', handleEsc);
+    window.addEventListener("keydown", handleEsc);
+    return () => window.removeEventListener("keydown", handleEsc);
   }, [sidebarOpen]);
 
   return (
@@ -191,7 +209,7 @@ const AdminLayout = () => {
           <div className="flex justify-between h-16">
             <div className="flex">
               {/* Hamburger for mobile */}
-              {isAdmin && (
+              {admin && (
                 <button
                   className="sm:hidden p-2 mr-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
                   onClick={() => setSidebarOpen(true)}
@@ -201,23 +219,34 @@ const AdminLayout = () => {
                 </button>
               )}
               <div className="flex-shrink-0 flex items-center">
-                <Link to="/" className="sm:text-2xl text-lg font-bold text-black dark:text-white">
-                  <img src="/favicon.png" alt="Beehive Logo" className="sm:h-8 sm:w-8 inline-block sm:mr-2 mr-1 h-6 w-6" />
-                  Beehive <span className="text-yellow-500 align-super sm:text-sm text-xs">Admin</span>
+                <Link
+                  to="/"
+                  className="sm:text-2xl text-lg font-bold text-black dark:text-white"
+                >
+                  <img
+                    src="/favicon.png"
+                    alt="Beehive Logo"
+                    className="sm:h-8 sm:w-8 inline-block sm:mr-2 mr-1 h-6 w-6"
+                  />
+                  Beehive{" "}
+                  <span className="text-yellow-500 align-super sm:text-sm text-xs">
+                    Admin
+                  </span>
                 </Link>
               </div>
               {/* Top nav links hidden on mobile */}
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                {isAdmin && (
+                {admin && (
                   <>
                     {adminNavigation.map((item) => (
                       <Link
                         key={item.name}
                         to={item.href}
-                        className={`${location.pathname === item.href
-                            ? 'border-yellow-400'
-                            : 'border-transparent hover:border-gray-300'
-                          } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200`}
+                        className={`${
+                          location.pathname === item.href
+                            ? "border-yellow-400"
+                            : "border-transparent hover:border-gray-300"
+                        } inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors duration-200`}
                       >
                         {item.name}
                       </Link>
@@ -231,13 +260,13 @@ const AdminLayout = () => {
                 onClick={toggleTheme}
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
               >
-                {theme === 'dark' ? (
+                {theme === "dark" ? (
                   <SunIcon className="sm:h-5 sm:w-5 h-4 w-4" />
                 ) : (
                   <MoonIcon className="h-5 w-5" />
                 )}
               </button>
-              {isAdmin && (
+              {admin && (
                 <div className="relative" ref={dropdownRef}>
                   <button
                     className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 relative"
@@ -260,24 +289,28 @@ const AdminLayout = () => {
                         </h3>
 
                         {notifications.length === 0 ? (
-                          <div className="text-gray-500 text-sm">No notifications</div>
+                          <div className="text-gray-500 text-sm">
+                            No notifications
+                          </div>
                         ) : (
                           <ul>
                             {notifications.map((notif, idx) => (
                               <li
                                 key={notif._id || idx}
-                                className={`mb-2 last:mb-0 text-sm rounded-lg p-2 ${notif.seen
+                                className={`mb-2 last:mb-0 text-sm rounded-lg p-2 ${
+                                  notif.seen
                                     ? "bg-transparent"
                                     : "bg-yellow-100 dark:bg-yellow-900"
-                                  }`}
+                                }`}
                               >
                                 <span className="font-medium">
-                                  Image uploaded by {notif.username || 'a user'}
+                                  Image uploaded by {notif.username || "a user"}
                                 </span>
                                 : {notif.title}
-
                                 <div className="text-xs text-gray-500">
-                                  {notif.timestamp ? new Date(notif.timestamp).toLocaleString() : ""}
+                                  {notif.timestamp
+                                    ? new Date(notif.timestamp).toLocaleString()
+                                    : ""}
                                 </div>
                               </li>
                             ))}
@@ -293,13 +326,12 @@ const AdminLayout = () => {
                             Load More
                           </button>
                         )}
-
                       </div>
                     </div>
                   )}
                 </div>
               )}
-              {isAdmin && (
+              {admin && (
                 <>
                   <button
                     className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
@@ -317,24 +349,31 @@ const AdminLayout = () => {
                   )}
                 </>
               )}
-              <SignedIn>
-                <UserButton afterSignOutUrl="/sign-in" />
-              </SignedIn>
-              <SignedOut>
+              {user ? (
                 <button
-                  onClick={() => navigate('/sign-in')}
-                  className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
+                  onClick={() => {
+                    localStorage.removeItem("access_token");
+                    navigate("/landing");
+                  }}
+                  className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-4 rounded-lg"
+                >
+                  Logout
+                </button>
+              ) : (
+                <button
+                  onClick={() => navigate("/sign-in")}
+                  className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-4 rounded-lg"
                 >
                   Sign In
                 </button>
-              </SignedOut>
+              )}
             </div>
           </div>
         </div>
       </nav>
 
       {/* Sidebar Drawer for mobile */}
-      {isAdmin && sidebarOpen && (
+      {admin && sidebarOpen && (
         <>
           {/* Overlay */}
           <div
@@ -344,7 +383,9 @@ const AdminLayout = () => {
           {/* Sidebar */}
           <div className="fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-2xl flex flex-col transition-transform duration-300 transform translate-x-0">
             <div className="flex items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
-              <span className="text-xl font-bold text-black dark:text-white">Menu</span>
+              <span className="text-xl font-bold text-black dark:text-white">
+                Menu
+              </span>
               <button
                 className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                 onClick={() => setSidebarOpen(false)}
@@ -360,9 +401,11 @@ const AdminLayout = () => {
                   to={item.href}
                   onClick={() => setSidebarOpen(false)}
                   className={`block px-4 py-2 rounded-lg text-base font-medium transition-colors duration-200
-                    ${location.pathname === item.href
-                      ? 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300'
-                      : 'text-gray-800 dark:text-gray-100 hover:bg-yellow-50 dark:hover:bg-gray-700'}`}
+                    ${
+                      location.pathname === item.href
+                        ? "bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300"
+                        : "text-gray-800 dark:text-gray-100 hover:bg-yellow-50 dark:hover:bg-gray-700"
+                    }`}
                 >
                   {item.name}
                 </Link>
@@ -373,21 +416,7 @@ const AdminLayout = () => {
       )}
 
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <SignedIn>
-          <Outlet />
-        </SignedIn>
-        <SignedOut>
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold mb-4">Please Sign In</h2>
-            <p className="mb-4 text-gray-600 dark:text-gray-400">You need to be signed in to access this content.</p>
-            <button
-              onClick={() => navigate('/sign-in')}
-              className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
-            >
-              Sign In
-            </button>
-          </div>
-        </SignedOut>
+        <Outlet />
       </main>
     </div>
   );

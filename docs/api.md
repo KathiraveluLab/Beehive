@@ -69,12 +69,12 @@ Side effects:
 - Mirrors user uploads listing but from admin context.
 
 #### GET `/api/admin/users`
-- **Description**: List users via Clerk REST API.
+- **Description**: List users from the local MongoDB `users` collection.
 - **Query**: `query` (search), `limit` (default 10), `offset` (default 0)
 - **Responses**:
-  - 200: `{ users: [{ id, name, email, role, lastActive, image, clerkId }], totalCount }`
+  - 200: `{ users: [{ id, username, email, role, lastActive, image }], totalCount }`
   - 500: `{ error: "Failed to fetch users" }`
-- **Notes**: Requires env `CLERK_SECRET_KEY`. Backend calls `https://api.clerk.com/v1/users`.
+ - **Notes**: No external Clerk dependency; the backend reads users from MongoDB.
 
 #### GET `/api/admin/users/only-users`
 - As above, but filters to `role === 'user'`.

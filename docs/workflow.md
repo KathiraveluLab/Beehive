@@ -1,7 +1,7 @@
 ## Workflows
 
 ### 1) Login 
-1. The Login and authentication are supported by Clerk
+1. Authentication is provided by the backend using JWTs; Google OAuth is available for admin sign-in.
 
 ### 2) User Upload Media
 1. User submits form to `POST /api/user/upload` with files, title, description, optional `audioData` and `sentiment`.
@@ -27,14 +27,14 @@
 ### 6) Admin Dashboard Data
 1. Client calls `GET /api/admin/dashboard`.
 2. Backend computes stats from `images` and fetches recent uploads.
-3. Enhances user info by calling `GET /api/admin/users` (Clerk REST under the hood).
+3. Enhances user info by calling `GET /api/admin/users` which reads user data from the local database.
 
 ### 7) Notifications
 1. Admin client calls `GET /api/admin/notifications?mark_seen=true` to fetch unseen and mark them seen.
 
 ### 8) Admin Users Listing
 1. Admin client calls `GET /api/admin/users` with optional search, limit, offset.
-2. Backend calls Clerk API with `CLERK_SECRET_KEY` and transforms the response.
+2. Backend queries the local `users` collection in MongoDB and returns matching user documents.
 
 ### 9) Chat Messages
 1. Client posts a message to `POST /api/chat/send`.
