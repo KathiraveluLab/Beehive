@@ -32,7 +32,9 @@ def admin_user_images_show(user_id):
         filters = {k: v for k, v in filters.items() if v is not None}
         result = _get_paginated_images_by_user(user_id, page, page_size, filters if filters else None)
         return jsonify(result), 200
-
+    except ValueError as e:
+        logger.error(f"Invalid pagination parameters: {str(e)}")
+        return jsonify({"error": str(e)}), 400
     except Exception:
         logger.error("Error fetching user uploads", exc_info=True)
         return jsonify({"error": "Failed to fetch user uploads"}), 500

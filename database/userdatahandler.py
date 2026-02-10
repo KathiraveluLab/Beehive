@@ -79,9 +79,9 @@ def get_currentuser_from_session():
 # Get all images from MongoDB
 def get_images_by_user(user_id, limit=None, offset=None):
     """
-    Return a list of images for a user.
-    If `limit` and `offset` are provided, apply pagination (skip/limit).
-    Keeps previous behavior when called without pagination args.
+    Return a list of images for a user, sorted by `created_at` in descending order.
+    If `offset` and/or `limit` are provided, apply pagination using skip/limit on that
+    sorted result set.
     """
     cursor = beehive_image_collection.find({'user_id': user_id}).sort('created_at', -1)
     if offset is not None:
@@ -102,7 +102,7 @@ def get_images_by_user(user_id, limit=None, offset=None):
         'description': image.get('description', ''),
         'audio_filename': image.get('audio_filename', ""),
         'sentiment': image.get('sentiment', ""),
-        'created_at': image['created_at']['$date'] if isinstance(image.get('created_at'), dict) else image.get('created_at')
+        'created_at': image.get('created_at').get('$date') if isinstance(image.get('created_at'), dict) else image.get('created_at')
     } for image in cursor]
 
 def count_images_by_user(user_id):
@@ -115,7 +115,7 @@ def count_images_by_user(user_id):
 # Get paginated images (method)
 def _get_paginated_images_by_user(user_id, page=1, page_size=12, filters=None):
     """
-    Get paginated images for a user with optional filters.
+    Get paginated images for a user with optional filters and safe data access.
     
     Args:
         user_id: The user's ID
@@ -129,6 +129,7 @@ def _get_paginated_images_by_user(user_id, page=1, page_size=12, filters=None):
             - 'to': custom end date (ISO string)
     """
     try:
+        # Calculate skip for pagination
         skip = (page - 1) * page_size
         
         # Build query
@@ -186,14 +187,15 @@ def _get_paginated_images_by_user(user_id, page=1, page_size=12, filters=None):
                       .skip(skip)
                       .limit(page_size))
         
+        # Use safe .get() access to prevent KeyError exceptions
         formatted_images = [{
             'id': str(image['_id']),
-            'filename': image['filename'],
-            'title': image['title'],
-            'description': image['description'],
+            'filename': image.get('filename', ''),
+            'title': image.get('title', ''),
+            'description': image.get('description', ''),
             'audio_filename': image.get('audio_filename', ""),
             'sentiment': image.get('sentiment', ""),
-            'created_at': image['created_at']['$date'] if isinstance(image.get('created_at'), dict) else image.get('created_at')
+            'created_at': image.get('created_at').get('$date') if isinstance(image.get('created_at'), dict) else image.get('created_at')
         } for image in images]
         
         return {
