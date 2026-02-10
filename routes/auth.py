@@ -40,7 +40,7 @@ def request_otp():
     try: 
         email = validate_email(data.get("email"))
     except ValidationError as e:
-        current_app.logger.exception("Email validation error")
+        current_app.logger.warning("Email validation error")
         return jsonify({"error": str(e)}), 400
     existing_user = db.users.find_one({"email": email})
 
@@ -80,7 +80,7 @@ def verify_otp():
             email = validate_email(data.get("email"))
             otp = validate_otp(data.get("otp"))
         except ValidationError as e:  
-            current_app.logger.exception("OTP validation error")
+            current_app.logger.warning("OTP validation error")
             return jsonify({"error": str(e)}), 400
 
         record = db.email_otps.find_one({
@@ -118,7 +118,7 @@ def complete_signup():
             return jsonify({"error": "Username cannot contain '@' symbol"}), 400
         password = sanitize_string(data.get("password"))
     except ValidationError as e:
-        current_app.logger.exception("SIGNUP VALIDATION ERROR: %s", e)
+        current_app.logger.warning("SIGNUP VALIDATION ERROR")
         return jsonify({"error": str(e)}), 400
 
     # Validate password length
@@ -168,7 +168,7 @@ def login():
             identifier = validate_email(identifier)
         password = sanitize_string(data.get("password"))
     except ValidationError as e:
-        current_app.logger.exception("LOGIN VALIDATION ERROR")
+        current_app.logger.warning("LOGIN VALIDATION ERROR")
         return jsonify({"error": str(e)}), 400
 
     user = beehive.users.find_one({
@@ -204,7 +204,7 @@ def set_password():
         email = validate_email(data.get("email"))
         password = sanitize_string(data.get("password"))
     except ValidationError as e:
-        current_app.logger.exception("SET PASSWORD VALIDATION ERROR")
+        current_app.logger.warning("SET PASSWORD VALIDATION ERROR")
         return jsonify({"error": str(e)}), 400
 
     existing_user = db.users.find_one({"email": email})

@@ -4,7 +4,7 @@ Input validation and sanitization utilities to prevent NoSQL injection attacks.
 import re
 from functools import wraps
 from flask import request, jsonify
-
+import os
 class ValidationError(Exception):
     """Custom exception for validation errors"""
     def __init__(self, message, field=None):
