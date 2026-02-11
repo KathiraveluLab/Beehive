@@ -157,7 +157,7 @@ def search_and_filter_images(user_id, search_query=None, sentiment=None, from_da
             projection = None
         
         total_count = beehive_image_collection.count_documents(query)
-        cursor = beehive_image_collection.find(query, projection).sort(sort_criteria)
+        cursor = beehive_image_collection.find(query, projection).sort([(sort_field, sort_direction)])
         images = list(cursor.skip(offset).limit(limit))
         
         images_list = [{
