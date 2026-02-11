@@ -65,7 +65,6 @@ from database.userdatahandler import (
     get_image_by_id,
     get_image_by_audio_filename,
     get_images_by_user,
-    _get_paginated_images_by_user,
     search_and_filter_images,
     get_user_by_username,
     save_image,

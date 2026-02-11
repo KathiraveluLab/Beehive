@@ -20,7 +20,6 @@ import {
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EmptyGalleryIcon } from '../components/ui/EmptyGalleryIcon';
-import Pagination from '../components/ui/Pagination';
 
 interface Upload {
   id: string;
@@ -237,44 +236,28 @@ const Gallery = () => {
         setLoadingMore(true);
       }
       
-      // Check if using search/filter functionality
-      const useSearch = searchQuery.trim() || sentiment || fromDate || toDate || sortBy !== 'date' || sortOrder !== 'desc';
+      // Always use offset/limit pagination
+      const offset = (page - 1) * limit;
+      const params = new URLSearchParams({
+        limit: limit.toString(),
+        offset: offset.toString(),
+      });
       
-      let response;
-      if (useSearch) {
-        // Use offset/limit pagination for search
-        const offset = (page - 1) * limit;
-        const params = new URLSearchParams({
-          limit: limit.toString(),
-          offset: offset.toString(),
-        });
-        
-        if (searchQuery.trim()) params.append('q', searchQuery.trim());
-        if (sentiment) params.append('sentiment', sentiment);
-        if (fromDate) params.append('from', fromDate);
-        if (toDate) params.append('to', toDate);
-        if (sortBy) params.append('sort_by', sortBy);
-        if (sortOrder) params.append('sort_order', sortOrder);
-        
-        response = await authenticatedFetch(`/api/user/user_uploads?${params}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          mode: 'cors',
-          signal: abortController.signal
-        });
-      } else {
-        // Use page-based pagination for simple list
-        response = await authenticatedFetch(`/api/user/user_uploads?page=${page}&page_size=${pageSize}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          mode: 'cors',
-          signal: abortController.signal
-        });
-      }
+      if (searchQuery.trim()) params.append('q', searchQuery.trim());
+      if (sentiment) params.append('sentiment', sentiment);
+      if (fromDate) params.append('from', fromDate);
+      if (toDate) params.append('to', toDate);
+      if (sortBy) params.append('sort_by', sortBy);
+      if (sortOrder) params.append('sort_order', sortOrder);
+      
+      const response = await authenticatedFetch(`/api/user/user_uploads?${params}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+        signal: abortController.signal
+      });
       
       if (!response.ok) {
         throw new Error('Failed to fetch uploads');
@@ -285,28 +268,17 @@ const Gallery = () => {
         throw new Error(data.error);
       }
       
-      if (useSearch) {
-        // Handle search response format
-        setImages(data.images || []);
-        setTotalResults(data.total || 0);
-        setHasMore(data.hasMore || false);
-        setTotalPages(Math.ceil((data.total || 0) / limit));
+      // Handle unified response format
+      if (append) {
+        setImages(prev => [...prev, ...(data.images || [])]);
       } else {
-        // Handle page-based response format
-        const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-
-        if (append) {
-          setImages(prev => [...prev, ...sortedImages]);
-        } else {
-          setImages(sortedImages);
-        }
-        
-        setTotalPages(data.totalPages || 1);
-        setTotalCount(data.total_count || 0);
-        setCurrentPage(data.page || 1);
+        setImages(data.images || []);
       }
+      setTotalResults(data.total || 0);
+      setHasMore(data.hasMore || false);
+      setTotalPages(Math.ceil((data.total || 0) / limit));
+      setTotalCount(data.total || 0);
+      setCurrentPage(page);
       
       console.log(`Loaded page ${page}, ${data.images?.length || 0} images`);
     } catch (error: any) {
@@ -448,7 +420,7 @@ const Gallery = () => {
       }
       // If the last item on a page (other than the first) was deleted, go to the previous page
       if (newImages.length === 0 && currentPage > 1) {
-        handlePageChange(currentPage - 1);
+        fetchUploads(currentPage - 1, false);
       } else {
         // Refetch the current page to pull a new item from the next page if available
         // and to ensure pagination metadata is correct
@@ -1231,9 +1203,6 @@ const Gallery = () => {
                 ))
               )}
             </div>
-
-    
-            <Pagination page={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
 
             {/* Loading indicator */}
             {loadingMore && (
