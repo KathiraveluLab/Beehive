@@ -185,7 +185,7 @@ def search_and_filter_images(user_id, search_query=None, sentiment=None, from_da
         }
         
     except Exception as e:
-        print(f"Error in search_and_filter_images: {str(e)}")
+        logger.error(f"Error in search_and_filter_images: {str(e)}")
         return {
             'images': [],
             'total': 0,
