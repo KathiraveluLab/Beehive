@@ -135,7 +135,7 @@ const Gallery = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [pageSize] = useState(12);
+  const [pageSize, setPageSize] = useState(12);
   const observerTarget = useRef<HTMLDivElement | null>(null);
   
   // Search and filter states
