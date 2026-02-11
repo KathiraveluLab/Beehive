@@ -67,6 +67,6 @@ def initialize_text_index():
                 ('title', TEXT),
                 ('description', TEXT)
             ], name='title_text_description_text')
-            print("Text index created")
+            logger.info("Text index created on image collection")
     except Exception as e:
-        print(f"Error creating text index: {str(e)}")
+        logger.error(f"Error creating text index: {str(e)}")
