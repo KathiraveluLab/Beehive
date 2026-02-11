@@ -136,7 +136,7 @@ def search_and_filter_images(user_id, search_query=None, sentiment=None, from_da
             if to_date:
                 try:
                     to_dt = datetime.fromisoformat(to_date.replace('Z', '+00:00'))
-                    date_query['$lte'] = to_dt
+                    date_query['$lt'] = to_dt + timedelta(days=1)
                 except ValueError:
                     raise ValueError(f"Invalid 'to' date format: {to_date}. Expected ISO format.")
             
