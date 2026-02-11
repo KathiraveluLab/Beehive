@@ -157,13 +157,7 @@ def search_and_filter_images(user_id, search_query=None, sentiment=None, from_da
             projection = None
         
         total_count = beehive_image_collection.count_documents(query)
-        
-        cursor = beehive_image_collection.find(query, projection)
-        if sort_field == 'score':
-            cursor = cursor.sort([(sort_field, sort_direction)])
-        else:
-            cursor = cursor.sort(sort_field, sort_direction)
-        
+        cursor = beehive_image_collection.find(query, projection).sort(sort_criteria)
         images = list(cursor.skip(offset).limit(limit))
         
         images_list = [{
