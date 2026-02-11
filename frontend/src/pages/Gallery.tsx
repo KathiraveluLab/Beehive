@@ -390,10 +390,6 @@ const Gallery = () => {
     setSortOrder('desc');
     setCurrentPage(1);
   };
-=======
-    fetchUploads(1, false);
-  }, [fetchUploads]);
->>>>>>> upstream/dev
 
   const handleEdit = (image: Upload) => {
     setEditingImage(image);

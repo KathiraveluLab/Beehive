@@ -225,6 +225,30 @@ def validate_file_size(file, mime_type, filename):
     return None
 
 
+def parse_int_param(param_name, default, min_val=None, max_val=None):
+    """
+    Parse and validate an integer parameter from request arguments.
+    
+    Args:
+        param_name: The name of the parameter in request.args
+        default: Default value if parameter is missing or invalid
+        min_val: Minimum allowed value (optional)
+        max_val: Maximum allowed value (optional)
+    
+    Returns:
+        Validated integer value
+    """
+    try:
+        value = int(request.args.get(param_name, default))
+        if min_val is not None:
+            value = max(min_val, value)
+        if max_val is not None:
+            value = min(max_val, value)
+        return value
+    except ValueError:
+        return default
+
+
 def _build_audio_basename(title: str) -> str:
     safe_title = secure_filename(title) or "audio"
     # Keep filenames short and predictable
@@ -729,17 +753,8 @@ def user_images_show():
         sort_by = request.args.get('sort_by', 'date').strip()
         sort_order = request.args.get('sort_order', 'desc').strip()
         
-        try:
-            limit = int(request.args.get('limit', 12))
-            limit = max(1, min(limit, 100))
-        except ValueError:
-            limit = 12
-        
-        try:
-            offset = int(request.args.get('offset', 0))
-            offset = max(0, offset)
-        except ValueError:
-            offset = 0
+        limit = parse_int_param('limit', default=12, min_val=1, max_val=100)
+        offset = parse_int_param('offset', default=0, min_val=0)
         
         result = search_and_filter_images(
             user_id=user_id,
