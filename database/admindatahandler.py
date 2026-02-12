@@ -1,5 +1,4 @@
 from datetime import datetime
-import re
 from pymongo.errors import PyMongoError
 from flask import session
 
