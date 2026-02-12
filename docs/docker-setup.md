@@ -22,7 +22,7 @@ This project uses JWT-based authentication for the backend and local-storage tok
 
 **Root `.env`:**
 ```env
-MONGODB_CONNECTION_STRING=mongodb://mongo:27017/beehive
+MONGODB_URI=mongodb://mongo:27017/beehive
 GOOGLE_CLIENT_ID=your-client-id
 GOOGLE_CLIENT_SECRET=your-client-secret
 REDIRECT_URI=http://localhost:5000/admin/login/callback

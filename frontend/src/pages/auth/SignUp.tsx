@@ -24,7 +24,7 @@ const SignUpPage = () => {
     try {
       await apiFetch("/api/auth/request-otp", {
         method: "POST",
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, purpose: "signup" }),
       });
 
       // if apiFetch didn't throw → success
@@ -100,7 +100,7 @@ const SignUpPage = () => {
     try {
       const data = await apiFetch("/api/auth/set-password", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, purpose: "signup" }),
       });
 
       saveToken(data.access_token);
@@ -112,7 +112,6 @@ const SignUpPage = () => {
       setLoading(false);
     }
   };
-
 
   return (
     // Added text-gray-900 to ensure text visibility across all systems

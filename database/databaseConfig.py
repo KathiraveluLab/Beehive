@@ -8,7 +8,7 @@ logger = Logger.get_logger("databaseConfig")
 
 load_dotenv(find_dotenv())
 
-connectionString = os.environ.get("MONGODB_CONNECTION_STRING")
+connectionString = os.environ.get("MONGODB_URI")
 
 # Fallback to local MongoDB if connection string is not properly configured
 if (
@@ -17,7 +17,7 @@ if (
     or connectionString == "mongodb+srv://username:password@cluster.mongodb.net/"
 ):
     logger.warning(
-        "MONGODB_CONNECTION_STRING not properly configured, using local MongoDB"
+        "MONGODB_URI not properly configured, using local MongoDB"
     )
     connectionString = "mongodb://localhost:27017/"
 

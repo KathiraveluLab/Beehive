@@ -1,7 +1,6 @@
-# BSON ObjectId import added
 from datetime import datetime, timedelta, timezone
 from bson.objectid import ObjectId
-# import re
+import re
 import bcrypt
 from flask import session
 from database import databaseConfig
@@ -78,41 +77,125 @@ def get_currentuser_from_session():
     return user
 
 # Get all images from MongoDB
-def get_images_by_user(user_id):
-    images = beehive_image_collection.find({'user_id': user_id})
+def get_images_by_user(user_id, limit=None, offset=None):
+    """
+    Return a list of images for a user, sorted by `created_at` in descending order.
+    If `offset` and/or `limit` are provided, apply pagination using skip/limit on that
+    sorted result set.
+    """
+    cursor = beehive_image_collection.find({'user_id': user_id}).sort('created_at', -1)
+    if offset is not None:
+        try:
+            cursor = cursor.skip(int(offset))
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Invalid offset value: {offset}. Error: {e}")
+    if limit is not None:
+        try:
+            cursor = cursor.limit(int(limit))
+        except (ValueError, TypeError) as e:
+            logger.warning(f"Invalid limit value: {limit}. Error: {e}")
+
     return [{
         'id': str(image['_id']),
-        'filename': image['filename'],
-        'title': image['title'],
-        'description': image['description'],
+        'filename': image.get('filename', ''),
+        'title': image.get('title', ''),
+        'description': image.get('description', ''),
         'audio_filename': image.get('audio_filename', ""),
         'sentiment': image.get('sentiment', ""),
-        'created_at': image['created_at']['$date'] if isinstance(image.get('created_at'), dict) else image.get('created_at')
-    } for image in images]
+        'created_at': image.get('created_at').get('$date') if isinstance(image.get('created_at'), dict) else image.get('created_at')
+    } for image in cursor]
+
+def count_images_by_user(user_id):
+    try:
+        return beehive_image_collection.count_documents({'user_id': user_id})
+    except Exception as e:
+        logger.error(f"Error counting images for user {user_id}: {e}")
+        return 0
 
 # Get paginated images (method)
-def _get_paginated_images_by_user(user_id, page=1, page_size=12):
+def _get_paginated_images_by_user(user_id, page=1, page_size=12, filters=None):
+    """
+    Get paginated images for a user with optional filters and safe data access.
     
+    Args:
+        user_id: The user's ID
+        page: Page number (1-indexed)
+        page_size: Number of items per page
+        filters: Dictionary of filters - can contain:
+            - 'q': search query (matches title or description)
+            - 'sentiment': sentiment filter
+            - 'date_filter': 'week', 'month', or 'custom'
+            - 'from': custom start date (ISO string)
+            - 'to': custom end date (ISO string)
+    """
     try:
+        # Calculate skip for pagination
         skip = (page - 1) * page_size
         
-        # total count 
-        total_count = beehive_image_collection.count_documents({'user_id': user_id})
+        # Build query
+        query = {'user_id': user_id}
+        
+        # Apply filters if provided
+        if filters:
+            # Search query filter
+            if filters.get('q'):
+                search_query = re.escape(filters['q'])
+                query['$or'] = [
+                    {'title': {'$regex': search_query, '$options': 'i'}},
+                    {'description': {'$regex': search_query, '$options': 'i'}}
+                ]
+            
+            # Sentiment filter
+            if filters.get('sentiment') and filters['sentiment'] != 'all':
+                query['sentiment'] = filters['sentiment']
+            
+            # Date filter
+            date_filter = filters.get('date_filter')
+            if date_filter and date_filter != 'all':
+                now = datetime.utcnow()
+                if date_filter == 'week':
+                    start_date = now - timedelta(days=7)
+                    query['created_at'] = {'$gte': start_date}
+                elif date_filter == 'month':
+                    start_date = now - timedelta(days=30)
+                    query['created_at'] = {'$gte': start_date}
+                elif date_filter == 'custom':
+                    date_range = {}
+                    if filters.get('from'):
+                        try:
+                            from_date = datetime.fromisoformat(filters['from'].replace('Z', '+00:00'))
+                            date_range['$gte'] = from_date
+                        except (ValueError, AttributeError):
+                            logger.warning(f"Invalid 'from' date format: {filters.get('from')}")
+                    if filters.get('to'):
+                        try:
+                            to_date = datetime.fromisoformat(filters['to'].replace('Z', '+00:00'))
+                            # Add one day to include the entire 'to' date
+                            to_date = to_date + timedelta(days=1)
+                            date_range['$lt'] = to_date
+                        except (ValueError, AttributeError):
+                            logger.warning(f"Invalid 'to' date format: {filters.get('to')}")
+                    if date_range:
+                        query['created_at'] = date_range
+        
+        # total count with filters applied
+        total_count = beehive_image_collection.count_documents(query)
         
         # Get images
-        images = list(beehive_image_collection.find({'user_id': user_id})
+        images = list(beehive_image_collection.find(query)
                       .sort('created_at', -1)
                       .skip(skip)
                       .limit(page_size))
         
+        # Use safe .get() access to prevent KeyError exceptions
         formatted_images = [{
             'id': str(image['_id']),
-            'filename': image['filename'],
-            'title': image['title'],
-            'description': image['description'],
+            'filename': image.get('filename', ''),
+            'title': image.get('title', ''),
+            'description': image.get('description', ''),
             'audio_filename': image.get('audio_filename', ""),
             'sentiment': image.get('sentiment', ""),
-            'created_at': image['created_at']['$date'] if isinstance(image.get('created_at'), dict) else image.get('created_at')
+            'created_at': image.get('created_at').get('$date') if isinstance(image.get('created_at'), dict) else image.get('created_at')
         } for image in images]
         
         return {

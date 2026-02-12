@@ -1,5 +1,13 @@
 from dotenv import load_dotenv
 load_dotenv()
+import os
+
+# Validate configuration early - fail fast if config is missing or insecure
+# Skip validation in test mode to avoid breaking tests
+if not os.getenv('TESTING'):
+    from config import Config
+    Config.validate_config()
+
 import base64
 import binascii
 import datetime
@@ -49,6 +57,7 @@ from database.databaseConfig import (
     get_beehive_message_collection,
     get_beehive_notification_collection,
 )
+from database.databaseConfig import get_beehive_user_collection
 from database.userdatahandler import (
     delete_image,
     get_all_users,
@@ -61,6 +70,7 @@ from database.userdatahandler import (
     save_notification,
     update_image,
 )
+from utils.pagination import parse_pagination_params
 
 from utils.jwt_auth import require_auth,require_admin_role 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
@@ -553,24 +563,31 @@ def generate_pdf_thumbnail(pdf_path, filename):
     thumbnails_dir = os.path.join(app.config["UPLOAD_FOLDER"], "thumbnails")
     os.makedirs(thumbnails_dir, exist_ok=True)
 
-    pdf_document = fitz.open(pdf_path)
+    try:
+        with fitz.open(pdf_path) as pdf_document:
+            if not pdf_document.page_count:
+                app_logger.warning(f"PDF '{filename}' has no pages, cannot generate thumbnail.")
+                return None
 
-    # select only the first page for the thumbnail
-    first_page = pdf_document.load_page(0)
+            # select only the first page for the thumbnail
+            first_page = pdf_document.load_page(0)
 
-    zoom = 2  # Increase for higher resolution
-    mat = fitz.Matrix(zoom, zoom)
-    pix = first_page.get_pixmap(matrix=mat)
+            zoom = 2  # Increase for higher resolution
+            mat = fitz.Matrix(zoom, zoom)
+            pix = first_page.get_pixmap(matrix=mat)
 
-    image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+            image = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
 
-    # Robust filename handling
-    name, _ = os.path.splitext(filename)
-    thumbnail_filename = f"{name}.jpg"
-    thumbnail_path = os.path.join(thumbnails_dir, thumbnail_filename)
-    image.save(thumbnail_path, "JPEG")
+            # Robust filename handling
+            name, _ = os.path.splitext(filename)
+            thumbnail_filename = f"{name}.jpg"
+            thumbnail_path = os.path.join(thumbnails_dir, thumbnail_filename)
+            image.save(thumbnail_path, "JPEG")
 
-    return thumbnail_path
+        return thumbnail_path
+    except Exception as e:
+        app_logger.error(f"Failed to generate thumbnail for PDF '{filename}': {e}")
+        return None
 
 
 
@@ -709,17 +726,21 @@ def delete_image_route(image_id):
 def user_images_show():
     try:
         user_id = request.current_user["id"]
-        try:
-            page = int(request.args.get('page', 1))
-            page_size = int(request.args.get('page_size', 12))
-        except ValueError:
-            return jsonify({"error":"Invalid page or page size (must be an integer)"})
+        page, page_size = parse_pagination_params(default_page=1, default_size=12, max_size=50)
         
-        # Validate pagination parameters
-        page = max(1, page)
-        page_size = min(max(1, page_size), 50)  # Max 50 images per page
+        # Extract filter parameters from query string
+        filters = {
+            'q': request.args.get('q'),
+            'sentiment': request.args.get('sentiment'),
+            'date_filter': request.args.get('date_filter'),
+            'from': request.args.get('from'),
+            'to': request.args.get('to')
+        }
         
-        result = _get_paginated_images_by_user(user_id, page, page_size)
+        # Remove None values
+        filters = {k: v for k, v in filters.items() if v is not None}
+        
+        result = _get_paginated_images_by_user(user_id, page, page_size, filters if filters else None)
         
         response_data = {
             "images": result['images'],
@@ -731,6 +752,9 @@ def user_images_show():
             "message": "Success",
         }
         return jsonify(response_data)
+    except ValueError as e:
+        logging.error(f"Invalid pagination parameters: {str(e)}")
+        return jsonify({"error": str(e)}), 400
     except Exception as e:
         logging.error(f"Error fetching user uploads: {str(e)}")
         return jsonify({"error": "Failed to fetch uploads. Please try again."}), 500
@@ -864,6 +888,34 @@ def get_chat_messages():
         logging.error(f"Error fetching chat messages: {str(e)}")
         return jsonify({"error": "Failed to fetch messages. Please try again."}), 500
 
+@app.route('/health', methods=['GET'])
+def health_check():
+    """
+    Health check endpoint for monitoring and API Gateway.
+    Returns 200 if healthy, 503 if issues detected.
+    """
+    # Fix: Capture timestamp once to ensure consistency (DRY)
+    current_time = datetime.datetime.now().isoformat()
+
+    try:
+        # Basic app health
+        health_status = {"status": "healthy", "timestamp": current_time}
+        
+        # Optional: Check MongoDB connection
+        db_collection = get_beehive_user_collection()
+        # Simple ping - will raise exception if DB unreachable
+        db_collection.database.command('ping')
+        health_status["database"] = "connected"
+        
+        return jsonify(health_status), 200
+    except Exception as e:
+        app.logger.error(f"Health check failed: {str(e)}")
+        return jsonify({
+            "status": "unhealthy",
+            "error": "Service Unavailable",
+            "timestamp": current_time  # Uses the same variable
+        }), 503
+    
 
 # Import blueprints
 from routes.adminroutes import admin_bp

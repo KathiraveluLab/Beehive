@@ -1,6 +1,7 @@
 # Core Flask dependencies
 Flask==3.1.1
 Flask-Cors==6.0.1
+Flask-Mail==0.9.1
 Werkzeug==3.1.4
 Jinja2==3.1.5
 MarkupSafe==3.0.2

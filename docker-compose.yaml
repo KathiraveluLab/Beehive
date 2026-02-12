@@ -9,7 +9,7 @@ services:
     environment:
       - FLASK_ENV=development
       - FLASK_APP=app.py
-      - MONGODB_CONNECTION_STRING=mongodb://mongo:27017/beehive
+      - MONGODB_URI=mongodb://mongo:27017/beehive
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
       - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
       - REDIRECT_URI=${REDIRECT_URI}

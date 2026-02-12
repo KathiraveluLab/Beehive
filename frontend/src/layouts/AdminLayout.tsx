@@ -220,7 +220,7 @@ const AdminLayout = () => {
               )}
               <div className="flex-shrink-0 flex items-center">
                 <Link
-                  to="/"
+                  to="/admin"
                   className="sm:text-2xl text-lg font-bold text-black dark:text-white"
                 >
                   <img

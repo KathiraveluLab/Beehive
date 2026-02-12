@@ -37,13 +37,24 @@ def create_email_otp(email: str) -> str:
 def request_otp():
     data = request.get_json(force=True)
     email = data.get("email")
+    purpose = data.get("purpose")   
 
     if not email:
         return jsonify({"error": "Email required"}), 400
+
     existing_user = db.users.find_one({"email": email})
 
-    if existing_user:
-        return jsonify({"error": "Email already registered"}), 400
+    if purpose == "signup":
+        if existing_user:
+            return jsonify({"error": "Email already registered"}), 400
+
+    elif purpose == "reset":
+        if not existing_user:
+            return jsonify({"message": "If account exists, OTP sent"}), 200
+
+    else:
+        return jsonify({"error": "Invalid purpose"}), 400
+
     otp = create_email_otp(email)
 
     # send the OTP via email
@@ -96,6 +107,8 @@ def verify_otp():
 
         if expires_at < datetime.now(timezone.utc):
             return jsonify({"error": "OTP expired"}), 400
+
+        db.email_otps.delete_many({"email": email})
 
         return jsonify({"message": "OTP verified"}), 200
 
@@ -196,36 +209,53 @@ def set_password():
 
     email = data.get("email")
     password = data.get("password")
+    purpose = data.get("purpose")  
 
     if not email or not password:
         return jsonify({"error": "Email and password required"}), 400
 
-    existing_user = db.users.find_one({"email": email})
-    if existing_user:
-        return jsonify({"error": "User already exists"}), 400
-
     hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-    role = "admin" if is_admin_email(email) else "user"
 
-    user_id = db.users.insert_one({
-        "email": email,
-        "username": email.split("@")[0],
-        "password": hashed,
-        "role": role,
-        "created_at": datetime.now(timezone.utc)
-    }).inserted_id
+    existing_user = db.users.find_one({"email": email})
+
+    if purpose == "signup":
+        if existing_user:
+            return jsonify({"error": "User already exists"}), 400
+
+        role = "admin" if is_admin_email(email) else "user"
+
+        user_id = db.users.insert_one({
+            "email": email,
+            "username": email.split("@")[0],
+            "password": hashed,
+            "role": role,
+            "created_at": datetime.now(timezone.utc)
+        }).inserted_id
+
+    elif purpose == "reset":
+        if not existing_user:
+            return jsonify({"error": "User not found"}), 404
+
+        db.users.update_one(
+            {"email": email},
+            {"$set": {"password": hashed}}
+        )
+
+        user_id = existing_user["_id"]
+        role = existing_user.get("role", "user")
+
+    else:
+        return jsonify({"error": "Invalid purpose"}), 400
 
     token = create_access_token(
         user_id=str(user_id),
         role=role
     )
 
-    db.email_otps.delete_many({"email": email})
-
     return jsonify({
         "access_token": token,
         "role": role
-    }), 201
+    }), 200
 
 # GOOGLE OAUTH (JWT ONLY)
 @auth_bp.route("/google", methods=["POST"])
