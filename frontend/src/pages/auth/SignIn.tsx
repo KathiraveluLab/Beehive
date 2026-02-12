@@ -98,6 +98,16 @@ const SignInPage = () => {
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
+        <div className="flex justify-end mt-2">
+          <button
+            type="button"
+            onClick={() => navigate("/forgot-password")}
+            className="text-sm text-yellow-600 font-semibold hover:underline"
+          >
+            Forgot Password?
+          </button>
+        </div>
+
         {/* Divider */}
         <div className="relative my-6">
           <div className="absolute inset-0 flex items-center">
@@ -115,7 +125,7 @@ const SignInPage = () => {
               const data = await apiFetch("/api/auth/google", {
                 method: "POST",
                 body: JSON.stringify({
-                  id_token: credentialResponse.credential
+                  id_token: credentialResponse.credential,
                 }),
               });
 
@@ -128,16 +138,6 @@ const SignInPage = () => {
           onError={() => setError("Google sign-in failed")}
           useOneTap={false}
         />
-
-        <p className="text-center text-sm text-gray-500 mt-8">
-          Don't have an account?{" "}
-          <a
-            href="/signup"
-            className="text-yellow-600 font-semibold hover:underline"
-          >
-            Contact Admin
-          </a>
-        </p>
       </div>
     </div>
   );
