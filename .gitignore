@@ -1,3 +1,14 @@
+# Node / React
+node_modules/
+**/node_modules/
+
+# Vite / React build
+dist/
+build/
+
+# npm debug logs
+npm-debug.log*
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -159,5 +170,3 @@ client_secret.json
 user_info.json
 
 .idea/
-
-frontend/package-lock.json -linguist-generated

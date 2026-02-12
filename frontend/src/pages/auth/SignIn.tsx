@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { saveToken, getUserRole } from "../../utils/auth";
 import { apiFetch } from "../../utils/apiFetch";
+import { GoogleLogin } from "@react-oauth/google";
 
 const SignInPage = () => {
   const navigate = useNavigate();
@@ -97,16 +98,46 @@ const SignInPage = () => {
             {loading ? "Signing in..." : "Sign In"}
           </button>
         </form>
-
-        <p className="text-center text-sm text-gray-500 mt-8">
-          Don't have an account?{" "}
-          <a
-            href="/signup"
-            className="text-yellow-600 font-semibold hover:underline"
+        <div className="flex justify-end mt-2">
+          <button
+            type="button"
+            onClick={() => navigate("/forgot-password")}
+            className="text-sm text-yellow-600 font-semibold hover:underline"
           >
-            Contact Admin
-          </a>
-        </p>
+            Forgot Password?
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white px-2 text-gray-500">or</span>
+          </div>
+        </div>
+
+        {/* Google Sign In */}
+        <GoogleLogin
+          onSuccess={async (credentialResponse) => {
+            try {
+              const data = await apiFetch("/api/auth/google", {
+                method: "POST",
+                body: JSON.stringify({
+                  id_token: credentialResponse.credential,
+                }),
+              });
+
+              saveToken(data.access_token);
+              navigate(data.role === "admin" ? "/admin" : "/dashboard");
+            } catch (err) {
+              setError("Google sign-in failed");
+            }
+          }}
+          onError={() => setError("Google sign-in failed")}
+          useOneTap={false}
+        />
       </div>
     </div>
   );

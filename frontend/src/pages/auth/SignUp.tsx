@@ -24,7 +24,7 @@ const SignUpPage = () => {
     try {
       await apiFetch("/api/auth/request-otp", {
         method: "POST",
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email, purpose: "signup" }),
       });
 
       // if apiFetch didn't throw → success
@@ -100,7 +100,7 @@ const SignUpPage = () => {
     try {
       const data = await apiFetch("/api/auth/set-password", {
         method: "POST",
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, purpose: "signup" }),
       });
 
       saveToken(data.access_token);
@@ -110,23 +110,6 @@ const SignUpPage = () => {
       setError(err.message || "Failed to create account");
     } finally {
       setLoading(false);
-    }
-  };
-
-  const googleSignIn = async () => {
-    setError("");
-
-    try {
-      const data = await apiFetch("/api/auth/google", {
-        method: "POST",
-        body: JSON.stringify({ email: "test@gmail.com", name: "Google User" }),
-      });
-
-      saveToken(data.access_token);
-
-      data.role === "admin" ? navigate("/admin") : navigate("/dashboard");
-    } catch (err: any) {
-      setError(err.message || "Google sign-in failed");
     }
   };
 
@@ -234,22 +217,6 @@ const SignUpPage = () => {
               </button>
             </>
           )}
-
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="bg-white px-2 text-gray-500">or</span>
-            </div>
-          </div>
-
-          <button
-            onClick={googleSignIn}
-            className="w-full border border-gray-300 py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-gray-50 transition-colors text-gray-700 font-medium"
-          >
-            Continue with Google
-          </button>
         </div>
       </div>
     </div>

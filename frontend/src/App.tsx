@@ -27,6 +27,7 @@ import NoAccess from './pages/NoAccess';
 import AboutUs from './pages/AboutUs';
 import PrivacyPolicy from './pages/Privacy';
 import TermsOfService from './pages/TermsofService';
+import ForgotPasswordPage from './pages/auth/ForgotPassword';
 
 function App() {
   return (
@@ -45,6 +46,7 @@ function App() {
           <Route element={<AuthLayout />}>
             <Route path="/sign-in/*" element={<SignInPage />} />
             <Route path="/sign-up/*" element={<SignUpPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/one-factor" element={<SignInPage />} />
           </Route>
 

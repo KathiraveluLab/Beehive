@@ -88,12 +88,21 @@ Follow these steps to set up the project:
 
     ```bash
     # Database Configuration (Required)
-    MONGODB_CONNECTION_STRING=mongodb://...
+    MONGODB_URI=mongodb://localhost:27017/
+    DATABASE_NAME=beehive
 
     # Google OAuth Configuration (Required for Google authentication)
-    GOOGLE_CLIENT_ID=your-client-id
-    GOOGLE_CLIENT_SECRET=your-client-secret
+    GOOGLE_CLIENT_ID=your_google_client_id_here
+    GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+    GOOGLE_API_KEY=your_google_api_key_here
     REDIRECT_URI=http://localhost:5000/admin/login/callback
+    
+    # Email(SMTP)
+    MAIL_SERVER=smtp.gmail.com
+    MAIL_PORT=587
+    MAIL_USE_TLS=true
+    MAIL_USERNAME=your_email@gmail.com
+    MAIL_PASSWORD=your_app_password_here
 
     # Admin Configuration (Required for admin access)
     ADMIN_EMAILS=admin1@example.com,admin2@example.com
@@ -104,6 +113,9 @@ Follow these steps to set up the project:
 
     # Flask Security (Optional - defaults to 'beehive' if not set)
     FLASK_SECRET_KEY=your_custom_flask_secret
+    
+    # OAuth (Development only)
+    OAUTHLIB_INSECURE_TRANSPORT=1
 
     # CORS Configuration (Optional - defaults to common development origins if not set)
     # Format: comma-separated list of allowed origins (e.g., http://localhost:5173,https://example.com)
