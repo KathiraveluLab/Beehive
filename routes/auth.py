@@ -1,8 +1,6 @@
-import email
 import re
 from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime, timedelta, timezone
-import random
 import secrets
 import bcrypt
 from google.oauth2 import id_token

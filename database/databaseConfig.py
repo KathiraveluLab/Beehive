@@ -1,5 +1,4 @@
 import os
-
 from dotenv import find_dotenv, load_dotenv
 from pymongo import MongoClient
 from utils.logger import Logger
