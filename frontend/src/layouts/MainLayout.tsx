@@ -10,7 +10,6 @@ import { useTheme } from "../context/ThemeContext";
 import { useState } from "react";
 import ChatDrawer from "../components/ChatDrawer";
 import { useAuth } from "../hooks/useAuth";
-import { Navigate } from "react-router-dom";
 import { isAuthenticated } from "../utils/auth";
 
 
@@ -24,6 +23,7 @@ const MainLayout = () => {
   const { user} = useAuth();
   const userId = (user as any)?.id || "";
   const navigation = [
+    {name: "Landing", href: "/landing" },
     { name: "Home", href: "/dashboard" },
     { name: "Gallery", href: "/gallery" },
     { name: "Upload", href: "/upload" },
@@ -47,7 +47,7 @@ const MainLayout = () => {
               )}
               <div className="flex-shrink-0 flex items-center">
                 <Link
-                  to="/dashboard"
+                  to="/landing"
                   className="text-2xl font-bold text-black dark:text-white"
                 >
                   <img
