@@ -90,5 +90,5 @@ class Config:
             print("   3. Generate strong secrets using: python -c 'import secrets; print(secrets.token_hex(32))'", file=sys.stderr)
             print("\n📖 See docs/setup.md for detailed setup instructions.\n", file=sys.stderr)
             sys.exit(1)
-        
+            
         return True

@@ -4,8 +4,6 @@ import re
 import bcrypt
 from flask import session
 from database import databaseConfig
-import requests
-import os
 from utils.logger import Logger
 
 logger = Logger.get_logger("userdatahandler")

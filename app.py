@@ -1,12 +1,5 @@
 from dotenv import load_dotenv
 load_dotenv()
-import os
-
-# Validate configuration early - fail fast if config is missing or insecure
-# Skip validation in test mode to avoid breaking tests
-if not os.getenv('TESTING'):
-    from config import Config
-    Config.validate_config()
 
 import base64
 import binascii
@@ -19,40 +12,26 @@ import re
 import sys
 import traceback
 from datetime import timedelta
-from functools import wraps
 from utils.sanitize import sanitize_text
 from utils.logger import logger as app_logger
 
-import bcrypt
 import fitz
-import google.auth.transport.requests
 import google.generativeai as genai
 import magic
-import requests
 from bson import ObjectId
 from bson.errors import InvalidId
 from flask import (
     Flask,
-    abort,
-    flash,
     jsonify,
-    redirect,
-    render_template,
     request,
     send_from_directory,
-    session,
-    url_for,
 )
 from flask_cors import CORS
-from google.oauth2 import id_token
 from google_auth_oauthlib.flow import Flow
 from PIL import Image
-from pip._vendor import cachecontrol
 from werkzeug.utils import secure_filename
-from flask_mail import Mail, Message
+from flask_mail import Mail
 
-from database import userdatahandler
-from database.admindatahandler import is_admin
 from database.databaseConfig import (
     get_beehive_message_collection,
     get_beehive_notification_collection,
@@ -61,7 +40,6 @@ from database.databaseConfig import (
 from database.databaseConfig import get_beehive_user_collection
 from database.userdatahandler import (
     delete_image,
-    get_all_users,
     get_image_by_id,
     get_image_by_audio_filename,
     get_images_by_user,
@@ -75,38 +53,46 @@ from utils.pagination import parse_pagination_params
 
 from utils.jwt_auth import require_auth,require_admin_role 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
+
+from config import Config
+app.config.from_object(Config)
+
+try:
+    Config.validate_config()
+except ValueError as e:
+    app_logger.error(f"Configuration validation failed: {e}")
+    sys.exit(1)
+
+
 CORS(
     app,
     resources={
         r"/api/*": {
-            "origins": ["http://localhost:5173"],
+            "origins": app.config["CORS_ORIGINS"],
             "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True,
         },
         r"/delete/*": {
-            "origins": ["http://localhost:5173"],
+            "origins": app.config["CORS_ORIGINS"],
             "methods": ["DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True,
         },
         r"/edit/*": {
-            "origins": ["http://localhost:5173"],
+            "origins": app.config["CORS_ORIGINS"],
             "methods": ["PATCH", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True,
         },
         r"/audio/*": {
-            "origins": ["http://localhost:5173"],
+            "origins": app.config["CORS_ORIGINS"],
             "methods": ["GET", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True,
         }
     },
 )
-from config import Config
-
-app.config.from_object(Config)
 
 app.config.update(
     MAIL_SERVER=os.getenv("MAIL_SERVER"),
@@ -119,7 +105,6 @@ app.config.update(
 mail = Mail(app)
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from oauth.config import ALLOWED_EMAILS, GOOGLE_CLIENT_ID
 
 ALLOWED_EXTENSIONS = {"jpg", "jpeg", "png", "gif", "webp", "heif", "pdf", "avif"}
 

@@ -1,13 +1,12 @@
-import email
 import re
 from flask import Blueprint, request, jsonify, current_app
 from datetime import datetime, timedelta, timezone
-import random
 import secrets
 import bcrypt
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
 
+from utils.validation import validate_email, validate_otp, sanitize_string, ValidationError
 from database.databaseConfig import db
 from database.userdatahandler import create_user, get_user_by_username
 from utils.roles import is_admin_email
@@ -36,12 +35,11 @@ def create_email_otp(email: str) -> str:
 @auth_bp.route("/request-otp", methods=["POST"])
 def request_otp():
     data = request.get_json(force=True)
-    email = data.get("email")
-    purpose = data.get("purpose")   
-
-    if not email:
-        return jsonify({"error": "Email required"}), 400
-
+    try: 
+        email = validate_email(data.get("email"))
+    except ValidationError as e:
+        current_app.logger.warning("Email validation error")
+        return jsonify({"error": str(e)}), 400
     existing_user = db.users.find_one({"email": email})
 
     if purpose == "signup":
@@ -85,12 +83,12 @@ from datetime import datetime, timezone
 def verify_otp():
     try:
         data = request.get_json(force=True)
-
-        email = data.get("email")
-        otp = data.get("otp")
-
-        if not email or not otp:
-            return jsonify({"error": "Email and OTP required"}), 400
+        try: 
+            email = validate_email(data.get("email"))
+            otp = validate_otp(data.get("otp"))
+        except ValidationError as e:  
+            current_app.logger.warning("OTP validation error")
+            return jsonify({"error": str(e)}), 400
 
         record = db.email_otps.find_one({
             "email": email,
@@ -121,16 +119,17 @@ def verify_otp():
 def complete_signup():
     data = request.get_json(force=True)
 
-    email = data.get("email")
-    username = data.get("username")
-    password = data.get("password")
+    try:
+        email = validate_email(data.get("email"))
+        username = sanitize_string(data.get("username"))
+        # Check for differentiating usernames and emails, prevent @ in username
+        if("@" in username):
+            return jsonify({"error": "Username cannot contain '@' symbol"}), 400
+        password = sanitize_string(data.get("password"))
+    except ValidationError as e:
+        current_app.logger.warning("SIGNUP VALIDATION ERROR")
+        return jsonify({"error": str(e)}), 400
 
-    if not email or not username or not password:
-        return jsonify({"error": "Missing fields"}), 400
-    # Validate email format
-    email_regex = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
-    if not re.match(email_regex, email):
-        return jsonify({"error": "Invalid email format"}), 400
     # Validate password length
     if len(password) < 8:
         return jsonify({"error": "Password must be at least 8 characters"}), 400
@@ -172,11 +171,14 @@ def complete_signup():
 def login():
     data = request.get_json(force=True)
 
-    identifier = data.get("username")  # username OR email
-    password = data.get("password")
-
-    if not identifier or not password:
-        return jsonify({"error": "Username/email and password required"}), 400
+    try:
+        identifier = sanitize_string(data.get("username"))
+        if identifier and "@" in identifier:
+            identifier = validate_email(identifier)
+        password = sanitize_string(data.get("password"))
+    except ValidationError as e:
+        current_app.logger.warning("LOGIN VALIDATION ERROR")
+        return jsonify({"error": str(e)}), 400
 
     user = beehive.users.find_one({
         "$or": [
@@ -207,12 +209,12 @@ def login():
 def set_password():
     data = request.get_json(force=True)
 
-    email = data.get("email")
-    password = data.get("password")
-    purpose = data.get("purpose")  
-
-    if not email or not password:
-        return jsonify({"error": "Email and password required"}), 400
+    try:
+        email = validate_email(data.get("email"))
+        password = sanitize_string(data.get("password"))
+    except ValidationError as e:
+        current_app.logger.warning("SET PASSWORD VALIDATION ERROR")
+        return jsonify({"error": str(e)}), 400
 
     hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
 
