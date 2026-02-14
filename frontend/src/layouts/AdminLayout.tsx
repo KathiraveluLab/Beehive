@@ -29,6 +29,7 @@ const AdminLayout = () => {
   const navigate = useNavigate();
 
   const adminNavigation = [
+    { name: "Landing", href: "/landing" },
     { name: "Dashboard", href: "/admin" },
     { name: "Users", href: "/admin/users" },
     { name: "Analytics", href: "/admin/analytics" },
@@ -220,7 +221,7 @@ const AdminLayout = () => {
               )}
               <div className="flex-shrink-0 flex items-center">
                 <Link
-                  to="/admin"
+                  to="/landing"
                   className="sm:text-2xl text-lg font-bold text-black dark:text-white"
                 >
                   <img
