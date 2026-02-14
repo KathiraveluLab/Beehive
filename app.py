@@ -57,38 +57,38 @@ from utils.pagination import parse_pagination_params
 
 from utils.jwt_auth import require_auth,require_admin_role 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
+from config import Config
+app.config.from_object(Config)
 CORS(
     app,
     resources={
         r"/api/*": {
-            "origins": ["http://localhost:5173"],
+            "origins": app.config["CORS_ORIGINS"],
             "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True,
         },
         r"/delete/*": {
-            "origins": ["http://localhost:5173"],
+            "origins": app.config["CORS_ORIGINS"],
             "methods": ["DELETE", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True,
         },
         r"/edit/*": {
-            "origins": ["http://localhost:5173"],
+            "origins": app.config["CORS_ORIGINS"],
             "methods": ["PATCH", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True,
         },
         r"/audio/*": {
-            "origins": ["http://localhost:5173"],
+            "origins": app.config["CORS_ORIGINS"],
             "methods": ["GET", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True,
         }
     },
 )
-from config import Config
 
-app.config.from_object(Config)
 
 app.config.update(
     MAIL_SERVER=os.getenv("MAIL_SERVER"),
