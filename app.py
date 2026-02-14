@@ -1,12 +1,5 @@
 from dotenv import load_dotenv
 load_dotenv()
-import os
-
-# Validate configuration early - fail fast if config is missing or insecure
-# Skip validation in test mode to avoid breaking tests
-if not os.getenv('TESTING'):
-    from config import Config
-    Config.validate_config()
 
 import base64
 import binascii
@@ -57,8 +50,17 @@ from utils.pagination import parse_pagination_params
 
 from utils.jwt_auth import require_auth,require_admin_role 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
+
 from config import Config
 app.config.from_object(Config)
+
+try:
+    Config.validate_config()
+except ValueError as e:
+    app_logger.error(f"Configuration validation failed: {e}")
+    sys.exit(1)
+
+
 CORS(
     app,
     resources={
@@ -88,7 +90,6 @@ CORS(
         }
     },
 )
-
 
 app.config.update(
     MAIL_SERVER=os.getenv("MAIL_SERVER"),
