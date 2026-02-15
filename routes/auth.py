@@ -36,6 +36,7 @@ def create_email_otp(email: str) -> str:
 def request_otp():
     data = request.get_json(force=True)
     try: 
+        purpose = sanitize_string(data.get("purpose"), field_name="purpose").lower()
         email = validate_email(data.get("email"))
     except ValidationError as e:
         current_app.logger.warning("Email validation error")
