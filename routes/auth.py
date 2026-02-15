@@ -39,7 +39,7 @@ def request_otp():
         purpose = sanitize_string(data.get("purpose"), field_name="purpose").lower()
         email = validate_email(data.get("email"))
     except ValidationError as e:
-        current_app.logger.warning("Email validation error")
+        current_app.logger.warning("Request OTP validation error")
         return jsonify({"error": str(e)}), 400
     existing_user = db.users.find_one({"email": email})
 
