@@ -153,6 +153,13 @@ const Gallery = () => {
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // Auto-switch from relevance to date when search query is cleared
+  useEffect(() => {
+    if (!searchQuery && sortBy === 'relevance') {
+      setSortBy('date');
+    }
+  }, [searchQuery, sortBy]);
+
   // Sync search params to URL (including page)
   useEffect(() => {
     const params: Record<string, string> = {};
@@ -167,16 +174,17 @@ const Gallery = () => {
     setSearchParams(params, { replace: true });
   }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, currentPage, setSearchParams]);
 
-  // Sync URL params to state on mount and URL changes
+  // Sync URL params to state on mount only
   useEffect(() => {
     const pageParam = searchParams.get('page');
     if (pageParam) {
       const page = parseInt(pageParam, 10);
-      if (!isNaN(page) && page > 0) {
+      if (!isNaN(page) && page > 0 && page !== currentPage) {
         setCurrentPage(page);
       }
     }
-  }, [searchParams.get('page')]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Function for authenticated API calls using JWT from localStorage
   const authenticatedFetch = useCallback(async (path: string, options: RequestInit = {}) => {
@@ -296,7 +304,7 @@ const Gallery = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [user?.id, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, authenticatedFetch, pageSize]);
+  }, [user?.id, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, authenticatedFetch]);
 
   //Initial fetch and search trigger with debouncing
   useEffect(() => {
@@ -310,20 +318,26 @@ const Gallery = () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
+      // Cancel pending requests on unmount or effect re-run
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
     };
-  }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, user?.id, fetchUploads]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, user?.id]);
 
   // Page navigation for search results
   useEffect(() => {
-    if (currentPage > 1 && (searchQuery || sentiment || fromDate || toDate || sortBy !== 'date')) {
+    if (currentPage > 1 && (searchQuery || sentiment || fromDate || toDate || sortBy !== 'date' || sortOrder !== 'desc')) {
       fetchUploads(currentPage, false);
     }
-  }, [currentPage, fetchUploads, searchQuery, sentiment, fromDate, toDate, sortBy]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder]);
 
   // Infinite scroll for non-search mode
   useEffect(() => {
     if (viewMode === 'rolling') return;
-    if (searchQuery || sentiment || fromDate || toDate || sortBy !== 'date') return; // Disable for search mode
+    if (searchQuery || sentiment || fromDate || toDate || sortBy !== 'date' || sortOrder !== 'desc') return; // Disable for search mode
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -351,7 +365,8 @@ const Gallery = () => {
         observer.unobserve(currentTarget);
       }
     };
-  }, [currentPage, totalPages, loadingMore, loading, fetchUploads, viewMode, searchQuery, sentiment, fromDate, toDate, sortBy]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, totalPages, loadingMore, loading, viewMode, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder]);
   
   const handleClearFilters = () => {
     setSearchQuery('');
@@ -795,7 +810,7 @@ const Gallery = () => {
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Gallery</h1>
             {(totalResults > 0 || totalCount > 0) && (
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Showing {images.length} of {totalResults || totalCount} images
+                Showing {images.length} of {(searchQuery || sentiment || fromDate || toDate) ? totalResults : (totalResults || totalCount)} images
               </p>
             )}
           </div>
@@ -977,8 +992,8 @@ const Gallery = () => {
                   </label>
                   <input
                     type="date"
-                    value={fromDate}
-                    onChange={(e) => setFromDate(e.target.value)}
+                    value={fromDate ? fromDate.split('T')[0] : ''}
+                    onChange={(e) => setFromDate(e.target.value ? `${e.target.value}T00:00:00Z` : '')}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
                   />
                 </div>
@@ -990,8 +1005,8 @@ const Gallery = () => {
                   </label>
                   <input
                     type="date"
-                    value={toDate}
-                    onChange={(e) => setToDate(e.target.value)}
+                    value={toDate ? toDate.split('T')[0] : ''}
+                    onChange={(e) => setToDate(e.target.value ? `${e.target.value}T23:59:59Z` : '')}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
                   />
                 </div>
@@ -1004,7 +1019,14 @@ const Gallery = () => {
                   <div className="flex space-x-2">
                     <select
                       value={sortBy}
-                      onChange={(e) => setSortBy(e.target.value)}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setSortBy(newValue);
+                        // Auto-switch from relevance to date if search query is cleared
+                        if (newValue === 'relevance' && !searchQuery) {
+                          setSortBy('date');
+                        }
+                      }}
                       className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
                     >
                       <option value="date">Date</option>
@@ -1211,6 +1233,9 @@ const Gallery = () => {
               </div>
             )}
 
+            {/* Infinite scroll observer target */}
+            <div ref={observerTarget} className="h-1" />
+
             {/* End of page indicator */}
             {currentPage >= totalPages && images.length > 0 && (
               <div className="flex justify-center py-8">
@@ -1223,7 +1248,7 @@ const Gallery = () => {
         )}
 
         {/* Pagination Controls */}
-        {!loading && totalResults > limit && (
+        {!loading && totalResults > limit && (searchQuery || sentiment || fromDate || toDate || sortBy !== 'date' || sortOrder !== 'desc') && (
           <div className="mt-8 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-6">
             <div className="flex-1 flex justify-between sm:hidden">
               <button

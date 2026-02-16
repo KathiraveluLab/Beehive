@@ -67,5 +67,7 @@ def initialize_text_index():
                 ('description', TEXT)
             ], name='title_text_description_text')
             logger.info("Text index created on image collection")
+        else:
+            logger.debug("Text index already exists on image collection")
     except Exception as e:
         logger.error(f"Error creating text index: {str(e)}")

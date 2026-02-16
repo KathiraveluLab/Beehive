@@ -744,6 +744,25 @@ def user_images_show():
         sort_by = request.args.get('sort_by', 'date').strip()
         sort_order = request.args.get('sort_order', 'desc').strip()
         
+        # Validate sentiment parameter
+        if sentiment:
+            allowed_sentiments = {'positive', 'neutral', 'negative'}
+            if sentiment not in allowed_sentiments:
+                app_logger.error(f"Invalid sentiment parameter: {sentiment}")
+                return jsonify({
+                    "error": "Invalid sentiment value. Allowed values are: positive, neutral, negative."
+                }), 400
+        
+        # Validate sort parameters
+        allowed_sort_by = {'date', 'title', 'relevance'}
+        allowed_sort_order = {'asc', 'desc'}
+        if sort_by not in allowed_sort_by:
+            app_logger.error(f"Invalid sort_by parameter: {sort_by}")
+            return jsonify({"error": "Invalid sort_by parameter. Allowed values are: date, title, relevance."}), 400
+        if sort_order not in allowed_sort_order:
+            app_logger.error(f"Invalid sort_order parameter: {sort_order}")
+            return jsonify({"error": "Invalid sort_order parameter. Allowed values are: asc, desc."}), 400
+        
         limit = parse_int_param('limit', default=12, min_val=1, max_val=100)
         offset = parse_int_param('offset', default=0, min_val=0)
         

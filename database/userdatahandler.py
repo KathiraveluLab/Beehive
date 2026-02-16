@@ -126,36 +126,52 @@ def search_and_filter_images(user_id, search_query=None, sentiment=None, from_da
             date_query = {}
             if from_date:
                 try:
+                    # Handle both ISO format with timezone and simple date format
                     from_dt = datetime.fromisoformat(from_date.replace('Z', '+00:00'))
+                    # Ensure timezone awareness
+                    if from_dt.tzinfo is None:
+                        from_dt = from_dt.replace(tzinfo=timezone.utc)
                     date_query['$gte'] = from_dt
                 except ValueError:
                     raise ValueError(f"Invalid 'from' date format: {from_date}. Expected ISO format.")
             
             if to_date:
                 try:
+                    # Handle both ISO format with timezone and simple date format
                     to_dt = datetime.fromisoformat(to_date.replace('Z', '+00:00'))
-                    date_query['$lt'] = to_dt + timedelta(days=1)
+                    # Ensure timezone awareness
+                    if to_dt.tzinfo is None:
+                        to_dt = to_dt.replace(tzinfo=timezone.utc)
+                    # Use the date as-is since frontend now sends with time
+                    date_query['$lte'] = to_dt
                 except ValueError:
                     raise ValueError(f"Invalid 'to' date format: {to_date}. Expected ISO format.")
             
             if date_query:
                 query['created_at'] = date_query
         
+        # Determine sort field, direction, and projection
+        # Always include projection when search_query is present for efficiency
+        projection = {'score': {'$meta': 'textScore'}} if search_query and search_query.strip() else None
+        
         if search_query and search_query.strip() and sort_by == 'relevance':
             sort_field = 'score'
-            sort_direction = {'$meta': 'textScore'}
-            projection = {'score': {'$meta': 'textScore'}}
+            sort_direction = -1  # Sort by text score descending
         elif sort_by == 'title':
             sort_field = 'title'
             sort_direction = 1 if sort_order == 'asc' else -1
-            projection = None
         else:
             sort_field = 'created_at'
             sort_direction = 1 if sort_order == 'asc' else -1
-            projection = None
         
         total_count = beehive_image_collection.count_documents(query)
-        cursor = beehive_image_collection.find(query, projection).sort([(sort_field, sort_direction)])
+        
+        # Build cursor with proper sort syntax
+        if search_query and search_query.strip() and sort_by == 'relevance':
+            # For text score sorting, use $meta in projection and sort by the projected field
+            cursor = beehive_image_collection.find(query, projection).sort([('score', {'$meta': 'textScore'})])
+        else:
+            cursor = beehive_image_collection.find(query, projection).sort([(sort_field, sort_direction)])
         images = list(cursor.skip(offset).limit(limit))
         
         images_list = [{
