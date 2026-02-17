@@ -111,6 +111,31 @@ def count_images_by_user(user_id):
         return 0
 
 
+def _parse_iso_date(date_string, field_name):
+    """
+    Helper function to parse ISO date string with timezone handling.
+    
+    Args:
+        date_string: ISO format date string
+        field_name: Name of the field for error messages
+    
+    Returns:
+        datetime object with timezone awareness
+    
+    Raises:
+        ValueError: If date format is invalid
+    """
+    try:
+        # Handle both ISO format with timezone and simple date format
+        parsed_date = datetime.fromisoformat(date_string.replace('Z', '+00:00'))
+        # Ensure timezone awareness
+        if parsed_date.tzinfo is None:
+            parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+        return parsed_date
+    except ValueError:
+        raise ValueError(f"Invalid '{field_name}' date format: {date_string}. Expected ISO format.")
+
+
 def search_and_filter_images(user_id, search_query=None, sentiment=None, from_date=None, to_date=None, 
                              sort_by='date', sort_order='desc', limit=12, offset=0):
     try:
@@ -125,27 +150,13 @@ def search_and_filter_images(user_id, search_query=None, sentiment=None, from_da
         if from_date or to_date:
             date_query = {}
             if from_date:
-                try:
-                    # Handle both ISO format with timezone and simple date format
-                    from_dt = datetime.fromisoformat(from_date.replace('Z', '+00:00'))
-                    # Ensure timezone awareness
-                    if from_dt.tzinfo is None:
-                        from_dt = from_dt.replace(tzinfo=timezone.utc)
-                    date_query['$gte'] = from_dt
-                except ValueError:
-                    raise ValueError(f"Invalid 'from' date format: {from_date}. Expected ISO format.")
+                from_dt = _parse_iso_date(from_date, 'from')
+                date_query['$gte'] = from_dt
             
             if to_date:
-                try:
-                    # Handle both ISO format with timezone and simple date format
-                    to_dt = datetime.fromisoformat(to_date.replace('Z', '+00:00'))
-                    # Ensure timezone awareness
-                    if to_dt.tzinfo is None:
-                        to_dt = to_dt.replace(tzinfo=timezone.utc)
-                    # Use the date as-is since frontend now sends with time
-                    date_query['$lte'] = to_dt
-                except ValueError:
-                    raise ValueError(f"Invalid 'to' date format: {to_date}. Expected ISO format.")
+                to_dt = _parse_iso_date(to_date, 'to')
+                # Use the date as-is since frontend now sends with time
+                date_query['$lte'] = to_dt
             
             if date_query:
                 query['created_at'] = date_query

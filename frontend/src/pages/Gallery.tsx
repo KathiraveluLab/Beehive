@@ -148,7 +148,6 @@ const Gallery = () => {
   
   const [totalResults, setTotalResults] = useState(0);
   const [hasMore, setHasMore] = useState(false);
-  const limit = 12;
   
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -159,6 +158,28 @@ const Gallery = () => {
       setSortBy('date');
     }
   }, [searchQuery, sortBy]);
+
+  // Helper function to generate page numbers for pagination
+  const generatePageNumbers = (currentPage: number, totalResults: number, pageSize: number) => {
+    const totalPageCount = Math.ceil(totalResults / pageSize);
+    const pages: number[] = [];
+    
+    // Always show first page
+    pages.push(1);
+    
+    // Show pages around current page
+    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPageCount - 1, currentPage + 1); i++) {
+      pages.push(i);
+    }
+    
+    // Always show last page
+    if (totalPageCount > 1) {
+      pages.push(totalPageCount);
+    }
+    
+    // Remove duplicates and sort
+    return Array.from(new Set(pages)).sort((a, b) => a - b);
+  };
 
   // Sync search params to URL (including page)
   useEffect(() => {
@@ -174,7 +195,7 @@ const Gallery = () => {
     setSearchParams(params, { replace: true });
   }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, currentPage, setSearchParams]);
 
-  // Sync URL params to state on mount only
+  // Sync URL params to state (for browser back/forward navigation)
   useEffect(() => {
     const pageParam = searchParams.get('page');
     if (pageParam) {
@@ -182,9 +203,11 @@ const Gallery = () => {
       if (!isNaN(page) && page > 0 && page !== currentPage) {
         setCurrentPage(page);
       }
+    } else if (currentPage !== 1) {
+      // Reset to page 1 if no page param in URL
+      setCurrentPage(1);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams, currentPage]);
 
   // Function for authenticated API calls using JWT from localStorage
   const authenticatedFetch = useCallback(async (path: string, options: RequestInit = {}) => {
@@ -245,9 +268,9 @@ const Gallery = () => {
       }
       
       // Always use offset/limit pagination
-      const offset = (page - 1) * limit;
+      const offset = (page - 1) * pageSize;
       const params = new URLSearchParams({
-        limit: limit.toString(),
+        limit: pageSize.toString(),
         offset: offset.toString(),
       });
       
@@ -284,7 +307,7 @@ const Gallery = () => {
       }
       setTotalResults(data.total || 0);
       setHasMore(data.hasMore || false);
-      setTotalPages(Math.ceil((data.total || 0) / limit));
+      setTotalPages(Math.ceil((data.total || 0) / pageSize));
       setTotalCount(data.total || 0);
       setCurrentPage(page);
       
@@ -304,7 +327,7 @@ const Gallery = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [user?.id, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, authenticatedFetch]);
+  }, [user?.id, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, authenticatedFetch, pageSize]);
 
   //Initial fetch and search trigger with debouncing
   useEffect(() => {
@@ -324,7 +347,7 @@ const Gallery = () => {
       }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, user?.id]);
+  }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, user?.id, pageSize]);
 
   // Page navigation for search results
   useEffect(() => {
@@ -808,9 +831,9 @@ const Gallery = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Gallery</h1>
-            {(totalResults > 0 || totalCount > 0) && (
+            {totalResults > 0 && (
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Showing {images.length} of {(searchQuery || sentiment || fromDate || toDate) ? totalResults : (totalResults || totalCount)} images
+                Showing {images.length} of {totalResults} images
               </p>
             )}
           </div>
@@ -1248,7 +1271,7 @@ const Gallery = () => {
         )}
 
         {/* Pagination Controls */}
-        {!loading && totalResults > limit && (searchQuery || sentiment || fromDate || toDate || sortBy !== 'date' || sortOrder !== 'desc') && (
+        {!loading && totalResults > pageSize && (searchQuery || sentiment || fromDate || toDate || sortBy !== 'date' || sortOrder !== 'desc') && (
           <div className="mt-8 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-6">
             <div className="flex-1 flex justify-between sm:hidden">
               <button
@@ -1278,8 +1301,8 @@ const Gallery = () => {
             <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-gray-700 dark:text-gray-300">
-                  Showing <span className="font-medium">{(currentPage - 1) * limit + 1}</span> to{' '}
-                  <span className="font-medium">{Math.min(currentPage * limit, totalResults)}</span> of{' '}
+                  Showing <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> to{' '}
+                  <span className="font-medium">{Math.min(currentPage * pageSize, totalResults)}</span> of{' '}
                   <span className="font-medium">{totalResults}</span> results
                 </p>
               </div>
@@ -1299,50 +1322,29 @@ const Gallery = () => {
                   </button>
 
                   {/* Page numbers - Optimized generation */}
-                  {(() => {
-                    const totalPageCount = Math.ceil(totalResults / limit);
-                    const pages: number[] = [];
-                    
-                    // Always show first page
-                    pages.push(1);
-                    
-                    // Show pages around current page
-                    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPageCount - 1, currentPage + 1); i++) {
-                      pages.push(i);
-                    }
-                    
-                    // Always show last page
-                    if (totalPageCount > 1) {
-                      pages.push(totalPageCount);
-                    }
-                    
-                    // Remove duplicates and sort
-                    const uniquePages = Array.from(new Set(pages)).sort((a, b) => a - b);
-                    
-                    return uniquePages.map((pageNum, index, array) => {
-                      // Add ellipsis if needed
-                      const showEllipsis = index > 0 && pageNum - array[index - 1] > 1;
-                      return (
-                        <div key={pageNum} className="inline-flex">
-                          {showEllipsis && (
-                            <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
-                              ...
-                            </span>
-                          )}
-                          <button
-                            onClick={() => setCurrentPage(pageNum)}
-                            className={`relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium ${
-                              currentPage === pageNum
-                                ? 'z-10 bg-yellow-400 border-yellow-500 text-black'
-                                : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
-                            }`}
-                          >
-                            {pageNum}
-                          </button>
-                        </div>
-                      );
-                    });
-                  })()}
+                  {generatePageNumbers(currentPage, totalResults, pageSize).map((pageNum, index, array) => {
+                    // Add ellipsis if needed
+                    const showEllipsis = index > 0 && pageNum - array[index - 1] > 1;
+                    return (
+                      <div key={pageNum} className="inline-flex">
+                        {showEllipsis && (
+                          <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            ...
+                          </span>
+                        )}
+                        <button
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium ${
+                            currentPage === pageNum
+                              ? 'z-10 bg-yellow-400 border-yellow-500 text-black'
+                              : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      </div>
+                    );
+                  })}
 
                   <button
                     onClick={() => setCurrentPage(currentPage + 1)}
