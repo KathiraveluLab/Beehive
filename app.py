@@ -35,13 +35,16 @@ from flask_mail import Mail
 from database.databaseConfig import (
     get_beehive_message_collection,
     get_beehive_notification_collection,
+    initialize_text_index,
 )
 from database.databaseConfig import get_beehive_user_collection
 from database.userdatahandler import (
     delete_image,
     get_image_by_id,
     get_image_by_audio_filename,
-    _get_paginated_images_by_user,
+    get_images_by_user,
+    search_and_filter_images,
+    get_user_by_username,
     save_image,
     save_notification,
     update_image,
@@ -204,6 +207,30 @@ def validate_file_size(file, mime_type, filename):
             413,
         )
     return None
+
+
+def parse_int_param(param_name, default, min_val=None, max_val=None):
+    """
+    Parse and validate an integer parameter from request arguments.
+    
+    Args:
+        param_name: The name of the parameter in request.args
+        default: Default value if parameter is missing or invalid
+        min_val: Minimum allowed value (optional)
+        max_val: Maximum allowed value (optional)
+    
+    Returns:
+        Validated integer value
+    """
+    try:
+        value = int(request.args.get(param_name, default))
+        if min_val is not None:
+            value = max(min_val, value)
+        if max_val is not None:
+            value = min(max_val, value)
+        return value
+    except ValueError:
+        return default
 
 
 def _build_audio_basename(title: str) -> str:
@@ -703,37 +730,67 @@ def delete_image_route(image_id):
         return jsonify({"error": "Failed to delete image. Please try again."}), 500
 
 
-# Get all images uploaded by a user
+# Get all images uploaded by a user with search and filter support
 @app.route("/api/user/user_uploads")
 @require_auth
 def user_images_show():
     try:
         user_id = request.current_user["id"]
-        page, page_size = parse_pagination_params(default_page=1, default_size=12, max_size=50)
         
-        # Extract filter parameters from query string
-        filters = {
-            'q': request.args.get('q'),
-            'sentiment': request.args.get('sentiment'),
-            'date_filter': request.args.get('date_filter'),
-            'from': request.args.get('from'),
-            'to': request.args.get('to')
-        }
+        search_query = request.args.get('q', '').strip()
+        sentiment = request.args.get('sentiment', '').strip()
+        from_date = request.args.get('from', '').strip()
+        to_date = request.args.get('to', '').strip()
+        sort_by = request.args.get('sort_by', 'date').strip()
+        sort_order = request.args.get('sort_order', 'desc').strip()
         
-        # Remove None values
-        filters = {k: v for k, v in filters.items() if v is not None}
+        # Validate sentiment parameter
+        if sentiment:
+            allowed_sentiments = {'positive', 'neutral', 'negative'}
+            if sentiment not in allowed_sentiments:
+                app_logger.error(f"Invalid sentiment parameter: {sentiment}")
+                return jsonify({
+                    "error": "Invalid sentiment value. Allowed values are: positive, neutral, negative."
+                }), 400
         
-        result = _get_paginated_images_by_user(user_id, page, page_size, filters if filters else None)
+        # Validate sort parameters
+        allowed_sort_by = {'date', 'title', 'relevance'}
+        allowed_sort_order = {'asc', 'desc'}
+        if sort_by not in allowed_sort_by:
+            app_logger.error(f"Invalid sort_by parameter: {sort_by}")
+            return jsonify({"error": "Invalid sort_by parameter. Allowed values are: date, title, relevance."}), 400
+        if sort_order not in allowed_sort_order:
+            app_logger.error(f"Invalid sort_order parameter: {sort_order}")
+            return jsonify({"error": "Invalid sort_order parameter. Allowed values are: asc, desc."}), 400
+        if sort_by == 'relevance' and not search_query:
+            app_logger.error("Attempted to sort by relevance without a search query.")
+            return jsonify({"error": "Sorting by relevance requires a search query ('q' parameter)."}), 400
+        
+        limit = parse_int_param('limit', default=12, min_val=1, max_val=100)
+        offset = parse_int_param('offset', default=0, min_val=0)
+        
+        result = search_and_filter_images(
+            user_id=user_id,
+            search_query=search_query if search_query else None,
+            sentiment=sentiment if sentiment else None,
+            from_date=from_date if from_date else None,
+            to_date=to_date if to_date else None,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            limit=limit,
+            offset=offset
+        )
         
         response_data = {
-            "images": result['images'],
-            "user_id": user_id,
-            "total_count": result['total_count'],
-            "page": result['page'],
-            "pageSize": result['pageSize'],
-            "totalPages": result['totalPages'],
-            "message": "Success",
+            'images': result['images'],
+            'total': result['total'],
+            'limit': result['limit'],
+            'offset': result['offset'],
+            'hasMore': result['hasMore'],
+            'user_id': user_id,
+            'message': 'Success'
         }
+        
         return jsonify(response_data)
     except ValueError as e:
         logging.error(f"Invalid pagination parameters: {str(e)}")
@@ -906,6 +963,9 @@ from routes.adminroutes import admin_bp
 app.register_blueprint(admin_bp)
 from routes.auth import auth_bp
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
+
+# Initialize text index for search functionality
+initialize_text_index()
 
 if __name__ == "__main__":
     app.run(debug=True)

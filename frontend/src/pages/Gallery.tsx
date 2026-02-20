@@ -1,4 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useUser } from '@clerk/clerk-react';
+import { useSearchParams } from 'react-router-dom';
 import { apiUrl } from '../utils/api';
 import { getToken } from '../utils/auth';
 import {
@@ -12,11 +14,12 @@ import {
   AdjustmentsHorizontalIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EmptyGalleryIcon } from '../components/ui/EmptyGalleryIcon';
-import Pagination from '../components/ui/Pagination';
 
 interface Upload {
   id: string;
@@ -109,6 +112,8 @@ const EditModal = ({ image, onClose, onSave }: EditModalProps) => {
 };
 
 const Gallery = () => {
+  const { user } = useUser();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [images, setImages] = useState<Upload[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -129,14 +134,80 @@ const Gallery = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(12);
+  const observerTarget = useRef<HTMLDivElement | null>(null);
   
+  // Search and filter states
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [sentiment, setSentiment] = useState(searchParams.get('sentiment') || '');
+  const [fromDate, setFromDate] = useState(searchParams.get('from') || '');
+  const [toDate, setToDate] = useState(searchParams.get('to') || '');
+  const [sortBy, setSortBy] = useState(searchParams.get('sort_by') || 'date');
+  const [sortOrder, setSortOrder] = useState(searchParams.get('sort_order') || 'desc');
+  const [showFilters, setShowFilters] = useState(false);
   
-  const [searchQuery, setSearchQuery] = useState('');
-  const [sentimentFilter, setSentimentFilter] = useState<string>('all');
-  const [dateFilter, setDateFilter] = useState<string>('all');
-  const [customDateFrom, setCustomDateFrom] = useState('');
-  const [customDateTo, setCustomDateTo] = useState('');
+  const [totalResults, setTotalResults] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Auto-switch from relevance to date when search query is cleared
+  useEffect(() => {
+    if (!searchQuery && sortBy === 'relevance') {
+      setSortBy('date');
+    }
+  }, [searchQuery, sortBy]);
+
+  // Helper function to generate page numbers for pagination
+  const generatePageNumbers = (currentPage: number, totalResults: number, pageSize: number) => {
+    const totalPageCount = Math.ceil(totalResults / pageSize);
+    const pages: number[] = [];
+    
+    // Always show first page
+    pages.push(1);
+    
+    // Show pages around current page
+    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPageCount - 1, currentPage + 1); i++) {
+      pages.push(i);
+    }
+    
+    // Always show last page
+    if (totalPageCount > 1) {
+      pages.push(totalPageCount);
+    }
+    
+    // Remove duplicates and sort
+    return Array.from(new Set(pages)).sort((a, b) => a - b);
+  };
+
+  // Sync search params to URL (including page)
+  useEffect(() => {
+    const params: Record<string, string> = {};
+    if (searchQuery) params.q = searchQuery;
+    if (sentiment) params.sentiment = sentiment;
+    if (fromDate) params.from = fromDate;
+    if (toDate) params.to = toDate;
+    if (sortBy !== 'date') params.sort_by = sortBy;
+    if (sortOrder !== 'desc') params.sort_order = sortOrder;
+    if (currentPage > 1) params.page = currentPage.toString();
+    
+    setSearchParams(params, { replace: true });
+  }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, currentPage, setSearchParams]);
+
+  // Sync URL params to state (for browser back/forward navigation)
+  useEffect(() => {
+    const pageParam = searchParams.get('page');
+    if (pageParam) {
+      const page = parseInt(pageParam, 10);
+      if (!isNaN(page) && page > 0 && page !== currentPage) {
+        setCurrentPage(page);
+      }
+    } else if (currentPage !== 1) {
+      // Reset to page 1 if no page param in URL
+      setCurrentPage(1);
+    }
+  }, [searchParams, currentPage]);
 
   // Function for authenticated API calls using JWT from localStorage
   const authenticatedFetch = useCallback(async (path: string, options: RequestInit = {}) => {
@@ -176,8 +247,19 @@ const Gallery = () => {
     setAudioLoading(false);
   }, []);
 
-  // Fetch uploads with pagination support
+  // Fetch uploads with search and filters
   const fetchUploads = useCallback(async (page: number = 1, append: boolean = false) => {
+    if (!user?.id) return;
+    
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new AbortController for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    
     try {
       if (page === 1) {
         setLoading(true);
@@ -185,42 +267,54 @@ const Gallery = () => {
         setLoadingMore(true);
       }
       
-      const params = new URLSearchParams();
-      params.set('page', String(page));
-      params.set('page_size', String(pageSize));
-      if (searchQuery) params.set('q', searchQuery);
-      if (sentimentFilter) params.set('sentiment', sentimentFilter);
-      if (dateFilter) params.set('date_filter', dateFilter);
-      if (customDateFrom) params.set('from', customDateFrom);
-      if (customDateTo) params.set('to', customDateTo);
-
-      const response = await authenticatedFetch(`/api/user/user_uploads?${params.toString()}`);
+      // Always use offset/limit pagination
+      const offset = (page - 1) * pageSize;
+      const params = new URLSearchParams({
+        limit: pageSize.toString(),
+        offset: offset.toString(),
+      });
+      
+      if (searchQuery.trim()) params.append('q', searchQuery.trim());
+      if (sentiment) params.append('sentiment', sentiment);
+      if (fromDate) params.append('from', fromDate);
+      if (toDate) params.append('to', toDate);
+      if (sortBy) params.append('sort_by', sortBy);
+      if (sortOrder) params.append('sort_order', sortOrder);
+      
+      const response = await authenticatedFetch(`/api/user/user_uploads?${params}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+        signal: abortController.signal
+      });
+      
       if (!response.ok) {
         throw new Error('Failed to fetch uploads');
       }
-      const data: {
-        images: Upload[];
-        totalPages: number;
-        total_count: number;
-        page: number;
-      } = await response.json();
-            
-      const sortedImages: Upload[] = (data.images || []).sort((a: Upload, b: Upload) =>
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-
-      if (append) {
-        setImages(prev => [...prev, ...sortedImages]);
-      } else {
-        setImages(sortedImages);
+      
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
       }
-
-      setTotalPages(data.totalPages || 1);
-      setTotalCount(data.total_count || 0);
-      setCurrentPage(data.page || 1);
-
-      console.log(`Loaded page ${page}/${data.totalPages}, ${sortedImages.length} images`);
-    } catch (error) {
+      
+      // Handle unified response format
+      if (append) {
+        setImages(prev => [...prev, ...(data.images || [])]);
+      } else {
+        setImages(data.images || []);
+      }
+      setTotalResults(data.total || 0);
+      setHasMore(data.hasMore || false);
+      setTotalPages(Math.ceil((data.total || 0) / pageSize));
+      setTotalCount(data.total || 0);
+      setCurrentPage(page);
+    } catch (error: any) {
+      // Ignore abort errors
+      if (error.name === 'AbortError') {
+        return;
+      }
       console.error('Error fetching uploads:', error);
       if (page === 1) {
         toast.error('Failed to fetch uploads');
@@ -230,18 +324,75 @@ const Gallery = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [getToken, pageSize, searchQuery, sentimentFilter, dateFilter, customDateFrom, customDateTo]);
+  }, [user?.id, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, authenticatedFetch, pageSize]);
 
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-    fetchUploads(page, false);
-  };
-
-  // Initial fetch
+  //Initial fetch and search trigger with debouncing
   useEffect(() => {
     setCurrentPage(1);
-    fetchUploads(1, false);
-  }, [fetchUploads]);
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchUploads(1, false);
+    }, 300);
+    
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      // Cancel pending requests on unmount or effect re-run
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, [fetchUploads, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, user?.id, pageSize]);
+
+  // Page navigation for search results
+  useEffect(() => {
+    if (currentPage > 1 && (searchQuery || sentiment || fromDate || toDate || sortBy !== 'date' || sortOrder !== 'desc')) {
+      fetchUploads(currentPage, false);
+    }
+  }, [fetchUploads, currentPage, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder]);
+
+  // Infinite scroll for non-search mode
+  useEffect(() => {
+    if (viewMode === 'rolling') return;
+    if (searchQuery || sentiment || fromDate || toDate || sortBy !== 'date' || sortOrder !== 'desc') return; // Disable for search mode
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && !loadingMore && !loading && currentPage < totalPages) {
+          const nextPage = currentPage + 1;
+          fetchUploads(nextPage, true);
+        }
+      },
+      {
+        root: null,
+        rootMargin: '1200px',
+        threshold: 0,
+      }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [fetchUploads, currentPage, totalPages, loadingMore, loading, viewMode, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder]);
+  
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setSentiment('');
+    setFromDate('');
+    setToDate('');
+    setSortBy('date');
+    setSortOrder('desc');
+    setCurrentPage(1);
+  };
 
   const handleEdit = (image: Upload) => {
     setEditingImage(image);
@@ -300,7 +451,7 @@ const Gallery = () => {
       }
       // If the last item on a page (other than the first) was deleted, go to the previous page
       if (newImages.length === 0 && currentPage > 1) {
-        handlePageChange(currentPage - 1);
+        fetchUploads(currentPage - 1, false);
       } else {
         // Refetch the current page to pull a new item from the next page if available
         // and to ensure pagination metadata is correct
@@ -673,9 +824,9 @@ const Gallery = () => {
         <div className="flex justify-between items-center mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Gallery</h1>
-            {totalCount > 0 && (
+            {totalResults > 0 && (
               <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                Showing {images.length} of {totalCount} images
+                Showing {images.length} of {totalResults} images
               </p>
             )}
           </div>
@@ -771,78 +922,155 @@ const Gallery = () => {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6 transition-colors duration-200">
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="lg:col-span-2">
-                <label className="block mb-2 font-medium">
-                  Search
-                </label>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search by title or description..."
-                  className="w-full px-4 py-2 bg-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200"
-                />
-              </div>
+        {/* Search and Filter Section */}
+        <div className="mb-6 space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by title or description..."
+              className="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <XMarkIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+              </button>
+            )}
+          </div>
 
-              <div>
-                <label className="block mb-2 font-medium">
-                  Sentiment
-                </label>
-                <select
-                  value={sentimentFilter}
-                  onChange={(e) => setSentimentFilter(e.target.value)}
-                  className="w-full px-4 py-2 bg-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200"
-                >
-                  <option value="all">All</option>
-                  <option value="positive">Positive</option>
-                  <option value="neutral">Neutral</option>
-                  <option value="negative">Negative</option>
-                  <option value="custom">Custom</option>
-                </select>
-              </div>
+          {/* Filter Toggle Button */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+            >
+              <FunnelIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {showFilters ? 'Hide Filters' : 'Show Filters'}
+              </span>
+              {(sentiment || fromDate || toDate) && (
+                <span className="ml-2 px-2 py-0.5 bg-yellow-400 text-black text-xs rounded-full font-medium">
+                  Active
+                </span>
+              )}
+            </button>
 
-              <div>
-                <label className="block mb-2 font-medium">
-                  Date Range
-                </label>
-                <select
-                  value={dateFilter}
-                  onChange={(e) => {
-                    setDateFilter(e.target.value);
-                    if (e.target.value !== 'custom') {
-                      setCustomDateFrom('');
-                      setCustomDateTo('');
-                    }
-                  }}
-                  className="w-full px-4 py-2 bg-white border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200 mb-2"
-                >
-                  <option value="all">All Time</option>
-                  <option value="lastWeek">Last Week</option>
-                  <option value="lastMonth">Last Month</option>
-                  <option value="custom">Custom Range</option>
-                </select>
-                {dateFilter === 'custom' && (
-                  <div className="space-y-2 mt-2">
-                    <input
-                      type="date"
-                      value={customDateFrom}
-                      onChange={(e) => setCustomDateFrom(e.target.value)}
-                      className="w-full px-4 py-2 bg-white text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200"
-                    />
-                    <input
-                      type="date"
-                      value={customDateTo}
-                      onChange={(e) => setCustomDateTo(e.target.value)}
-                      className="w-full px-4 py-2 bg-white text-sm border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-yellow-400 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200"
-                    />
-                  </div>
-                )}
-              </div>
+            {/* Results count */}
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              {totalResults > 0 ? (
+                <span>
+                  Showing {images.length} of {totalResults} upload{totalResults !== 1 ? 's' : ''}
+                </span>
+              ) : (
+                !loading && <span>No uploads found</span>
+              )}
             </div>
           </div>
+
+          {/* Advanced Filters */}
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 space-y-4"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Sentiment Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Sentiment
+                  </label>
+                  <select
+                    value={sentiment}
+                    onChange={(e) => setSentiment(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
+                  >
+                    <option value="">All Sentiments</option>
+                    <option value="positive">Positive</option>
+                    <option value="neutral">Neutral</option>
+                    <option value="negative">Negative</option>
+                  </select>
+                </div>
+
+                {/* From Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    From Date
+                  </label>
+                  <input
+                    type="date"
+                    value={fromDate ? fromDate.split('T')[0] : ''}
+                    onChange={(e) => setFromDate(e.target.value ? `${e.target.value}T00:00:00Z` : '')}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
+                  />
+                </div>
+
+                {/* To Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    To Date
+                  </label>
+                  <input
+                    type="date"
+                    value={toDate ? toDate.split('T')[0] : ''}
+                    onChange={(e) => setToDate(e.target.value ? `${e.target.value}T23:59:59Z` : '')}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
+                  />
+                </div>
+
+                {/* Sort By */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Sort By
+                  </label>
+                  <div className="flex space-x-2">
+                    <select
+                      value={sortBy}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setSortBy(newValue);
+                        // Auto-switch from relevance to date if search query is cleared
+                        if (newValue === 'relevance' && !searchQuery) {
+                          setSortBy('date');
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
+                    >
+                      <option value="date">Date</option>
+                      <option value="title">Title</option>
+                      {searchQuery && <option value="relevance">Relevance</option>}
+                    </select>
+                    <button
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+                      title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+                    >
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Clear Filters Button */}
+              <div className="flex justify-end">
+                <button
+                  onClick={handleClearFilters}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
+                >
+                  Clear All Filters
+                </button>
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {loading && currentPage === 1 ? (
@@ -1014,15 +1242,15 @@ const Gallery = () => {
               )}
             </div>
 
-    
-            <Pagination page={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
-
             {/* Loading indicator */}
             {loadingMore && (
               <div className="flex justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
               </div>
             )}
+
+            {/* Infinite scroll observer target */}
+            <div ref={observerTarget} className="h-1" />
 
             {/* End of page indicator */}
             {currentPage >= totalPages && images.length > 0 && (
@@ -1033,6 +1261,100 @@ const Gallery = () => {
               </div>
             )}
           </>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && totalResults > pageSize && (searchQuery || sentiment || fromDate || toDate || sortBy !== 'date' || sortOrder !== 'desc') && (
+          <div className="mt-8 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-6">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className={`relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md ${
+                  currentPage === 1
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={!hasMore}
+                className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md ${
+                  !hasMore
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                Next
+              </button>
+            </div>
+
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Showing <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> to{' '}
+                  <span className="font-medium">{Math.min(currentPage * pageSize, totalResults)}</span> of{' '}
+                  <span className="font-medium">{totalResults}</span> results
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 text-sm font-medium ${
+                      currentPage === 1
+                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                        : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <span className="sr-only">Previous</span>
+                    <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
+                  </button>
+
+                  {/* Page numbers - Optimized generation */}
+                  {generatePageNumbers(currentPage, totalResults, pageSize).map((pageNum, index, array) => {
+                    // Add ellipsis if needed
+                    const showEllipsis = index > 0 && pageNum - array[index - 1] > 1;
+                    return (
+                      <div key={pageNum} className="inline-flex">
+                        {showEllipsis && (
+                          <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            ...
+                          </span>
+                        )}
+                        <button
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium ${
+                            currentPage === pageNum
+                              ? 'z-10 bg-yellow-400 border-yellow-500 text-black'
+                              : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  <button
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={!hasMore}
+                    className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 text-sm font-medium ${
+                      !hasMore
+                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                        : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <span className="sr-only">Next</span>
+                    <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                </nav>
+              </div>
+            </div>
+          </div>
         )}
 
         {editingImage && (

@@ -110,6 +110,111 @@ def count_images_by_user(user_id):
         logger.error(f"Error counting images for user {user_id}: {e}")
         return 0
 
+
+def _parse_iso_date(date_string, field_name):
+    """
+    Helper function to parse ISO date string with timezone handling.
+    
+    Args:
+        date_string: ISO format date string
+        field_name: Name of the field for error messages
+    
+    Returns:
+        datetime object with timezone awareness
+    
+    Raises:
+        ValueError: If date format is invalid
+    """
+    try:
+        # Handle both ISO format with timezone and simple date format
+        parsed_date = datetime.fromisoformat(date_string.replace('Z', '+00:00'))
+        # Ensure timezone awareness
+        if parsed_date.tzinfo is None:
+            parsed_date = parsed_date.replace(tzinfo=timezone.utc)
+        return parsed_date
+    except ValueError:
+        raise ValueError(f"Invalid '{field_name}' date format: {date_string}. Expected ISO format.")
+
+
+def search_and_filter_images(user_id, search_query=None, sentiment=None, from_date=None, to_date=None, 
+                             sort_by='date', sort_order='desc', limit=12, offset=0):
+    try:
+        query = {'user_id': user_id}
+        
+        if search_query and search_query.strip():
+            query['$text'] = {'$search': search_query.strip()}
+        
+        if sentiment and sentiment.strip():
+            query['sentiment'] = sentiment.strip()
+        
+        if from_date or to_date:
+            date_query = {}
+            if from_date:
+                from_dt = _parse_iso_date(from_date, 'from')
+                date_query['$gte'] = from_dt
+            
+            if to_date:
+                to_dt = _parse_iso_date(to_date, 'to')
+                # Use the date as-is since frontend now sends with time
+                date_query['$lte'] = to_dt
+            
+            if date_query:
+                query['created_at'] = date_query
+        
+        # Determine sort field, direction, and projection
+        # Always include projection when search_query is present for efficiency
+        projection = {'score': {'$meta': 'textScore'}} if search_query and search_query.strip() else None
+        
+        if search_query and search_query.strip() and sort_by == 'relevance':
+            sort_field = 'score'
+            sort_direction = -1  # Sort by text score descending
+        elif sort_by == 'title':
+            sort_field = 'title'
+            sort_direction = 1 if sort_order == 'asc' else -1
+        else:
+            sort_field = 'created_at'
+            sort_direction = 1 if sort_order == 'asc' else -1
+        
+        total_count = beehive_image_collection.count_documents(query)
+        
+        # Build cursor with proper sort syntax
+        if search_query and search_query.strip() and sort_by == 'relevance':
+            # For text score sorting, use $meta in projection and sort by the projected field
+            cursor = beehive_image_collection.find(query, projection).sort([('score', {'$meta': 'textScore'})])
+        else:
+            cursor = beehive_image_collection.find(query, projection).sort([(sort_field, sort_direction)])
+        images = list(cursor.skip(offset).limit(limit))
+        
+        images_list = [{
+            'id': str(image['_id']),
+            'filename': image['filename'],
+            'title': image['title'],
+            'description': image['description'],
+            'audio_filename': image.get('audio_filename', ''),
+            'sentiment': image.get('sentiment', ''),
+            'created_at': image['created_at']['$date'] if isinstance(image.get('created_at'), dict) else image.get('created_at')
+        } for image in images]
+        
+        return {
+            'images': images_list,
+            'total': total_count,
+            'limit': limit,
+            'offset': offset,
+            'hasMore': (offset + limit) < total_count
+        }
+        
+    except Exception as e:
+        logger.error(f"Error in search_and_filter_images: {str(e)}")
+        return {
+            'images': [],
+            'total': 0,
+            'limit': limit,
+            'offset': offset,
+            'hasMore': False,
+            'error': 'An unexpected error occurred while searching for images.'
+        }
+
+
 # Get paginated images (method)
 def _get_paginated_images_by_user(user_id, page=1, page_size=12, filters=None):
     """

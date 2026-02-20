@@ -1,6 +1,6 @@
 import os
 from dotenv import find_dotenv, load_dotenv
-from pymongo import MongoClient
+from pymongo import MongoClient, TEXT
 from utils.logger import Logger
 
 logger = Logger.get_logger("databaseConfig")
@@ -54,3 +54,20 @@ def get_beehive_notification_collection():
 
 def get_beehive_message_collection():
     return beehive.messages
+
+
+def initialize_text_index():
+    try:
+        image_collection = get_beehive_image_collection()
+        existing_indexes = image_collection.index_information()
+        
+        if 'title_text_description_text' not in existing_indexes:
+            image_collection.create_index([
+                ('title', TEXT),
+                ('description', TEXT)
+            ], name='title_text_description_text')
+            logger.info("Text index created on image collection")
+        else:
+            logger.debug("Text index already exists on image collection")
+    except Exception as e:
+        logger.error(f"Error creating text index: {str(e)}")
