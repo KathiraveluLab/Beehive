@@ -310,12 +310,9 @@ const Gallery = () => {
       setTotalPages(Math.ceil((data.total || 0) / pageSize));
       setTotalCount(data.total || 0);
       setCurrentPage(page);
-      
-      console.log(`Loaded page ${page}, ${data.images?.length || 0} images`);
     } catch (error: any) {
       // Ignore abort errors
       if (error.name === 'AbortError') {
-        console.log('Request cancelled');
         return;
       }
       console.error('Error fetching uploads:', error);
@@ -346,16 +343,14 @@ const Gallery = () => {
         abortControllerRef.current.abort();
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, user?.id, pageSize]);
+  }, [fetchUploads, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, user?.id, pageSize]);
 
   // Page navigation for search results
   useEffect(() => {
     if (currentPage > 1 && (searchQuery || sentiment || fromDate || toDate || sortBy !== 'date' || sortOrder !== 'desc')) {
       fetchUploads(currentPage, false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder]);
+  }, [fetchUploads, currentPage, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder]);
 
   // Infinite scroll for non-search mode
   useEffect(() => {
@@ -367,7 +362,6 @@ const Gallery = () => {
         const target = entries[0];
         if (target.isIntersecting && !loadingMore && !loading && currentPage < totalPages) {
           const nextPage = currentPage + 1;
-          console.log(`Loading page ${nextPage}...`);
           fetchUploads(nextPage, true);
         }
       },
@@ -388,8 +382,7 @@ const Gallery = () => {
         observer.unobserve(currentTarget);
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage, totalPages, loadingMore, loading, viewMode, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder]);
+  }, [fetchUploads, currentPage, totalPages, loadingMore, loading, viewMode, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder]);
   
   const handleClearFilters = () => {
     setSearchQuery('');

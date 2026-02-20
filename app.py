@@ -762,6 +762,9 @@ def user_images_show():
         if sort_order not in allowed_sort_order:
             app_logger.error(f"Invalid sort_order parameter: {sort_order}")
             return jsonify({"error": "Invalid sort_order parameter. Allowed values are: asc, desc."}), 400
+        if sort_by == 'relevance' and not search_query:
+            app_logger.error("Attempted to sort by relevance without a search query.")
+            return jsonify({"error": "Sorting by relevance requires a search query ('q' parameter)."}), 400
         
         limit = parse_int_param('limit', default=12, min_val=1, max_val=100)
         offset = parse_int_param('offset', default=0, min_val=0)

@@ -211,7 +211,7 @@ def search_and_filter_images(user_id, search_query=None, sentiment=None, from_da
             'limit': limit,
             'offset': offset,
             'hasMore': False,
-            'error': str(e)
+            'error': 'An unexpected error occurred while searching for images.'
         }
 
 
