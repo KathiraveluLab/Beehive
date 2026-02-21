@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { useUser } from '@clerk/clerk-react';
 import { useSearchParams } from 'react-router-dom';
 import { apiUrl } from '../utils/api';
 import { getToken } from '../utils/auth';
@@ -112,7 +111,6 @@ const EditModal = ({ image, onClose, onSave }: EditModalProps) => {
 };
 
 const Gallery = () => {
-  const { user } = useUser();
   const [searchParams, setSearchParams] = useSearchParams();
   const [images, setImages] = useState<Upload[]>([]);
   const [loading, setLoading] = useState(true);
@@ -249,7 +247,6 @@ const Gallery = () => {
 
   // Fetch uploads with search and filters
   const fetchUploads = useCallback(async (page: number = 1, append: boolean = false) => {
-    if (!user?.id) return;
     
     // Cancel previous request
     if (abortControllerRef.current) {
@@ -324,7 +321,7 @@ const Gallery = () => {
       setLoading(false);
       setLoadingMore(false);
     }
-  }, [user?.id, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, authenticatedFetch, pageSize]);
+  }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, authenticatedFetch, pageSize]);
 
   //Initial fetch and search trigger with debouncing
   useEffect(() => {
@@ -343,7 +340,7 @@ const Gallery = () => {
         abortControllerRef.current.abort();
       }
     };
-  }, [fetchUploads, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, user?.id, pageSize]);
+  }, [fetchUploads, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, pageSize]);
 
   // Page navigation for search results
   useEffect(() => {
