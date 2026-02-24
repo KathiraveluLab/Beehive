@@ -71,6 +71,8 @@ def test_set_password_missing_password(client):
         "purpose": "reset",
     })
     assert resp.status_code == 400
+    data = resp.get_json()
+    assert data["error"] == "field is required"
 
 
 def test_set_password_short_password(client):
