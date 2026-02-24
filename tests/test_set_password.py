@@ -165,4 +165,4 @@ def test_set_password_signup_duplicate_email(mock_db, client):
     })
     assert resp.status_code == 400
     data = resp.get_json()
-    assert "already exists" in data["error"].lower()
+    assert data["error"] == "User already exists"
