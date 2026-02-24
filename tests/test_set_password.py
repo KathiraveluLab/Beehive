@@ -50,7 +50,7 @@ def test_set_password_invalid_purpose(client):
     })
     assert resp.status_code == 400
     data = resp.get_json()
-    assert "purpose" in data["error"].lower() or "invalid" in data["error"].lower()
+    assert data["error"] == "Invalid purpose. Must be 'signup' or 'reset'."
 
 
 def test_set_password_missing_email(client):
