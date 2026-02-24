@@ -1,14 +1,15 @@
 from flask import request
 
+
 def parse_pagination_params(default_page=1, default_size=12, max_size=50):
     """
     Parse pagination parameters from request args.
     Raises ValueError if parameters are not valid integers.
     This allows route handlers to return proper 400 Bad Request responses.
     """
-    page_str = request.args.get('page')
-    page_size_str = request.args.get('page_size')
-    
+    page_str = request.args.get("page")
+    page_size_str = request.args.get("page_size")
+
     # Parse page parameter
     if page_str is not None:
         try:
@@ -17,7 +18,7 @@ def parse_pagination_params(default_page=1, default_size=12, max_size=50):
             raise ValueError(f"Invalid page parameter: {page_str}")
     else:
         page = default_page
-    
+
     # Parse page_size parameter
     if page_size_str is not None:
         try:

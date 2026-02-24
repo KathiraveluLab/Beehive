@@ -1,17 +1,18 @@
-from locust import HttpUser, task, between
-import random
 import os
+import random
+
+from locust import HttpUser, between, task
+
 
 class AdminUser(HttpUser):
-    wait_time = between(1, 3)  
-
+    wait_time = between(1, 3)
 
     def on_start(self):
         # For load testing, set ADMIN_TEST_TOKEN to a valid JWT access token
         self.token = os.getenv("ADMIN_TEST_TOKEN")
         self.headers = {
             "Authorization": f"Bearer {self.token}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
 
     @task
@@ -32,13 +33,11 @@ class AdminUser(HttpUser):
         with self.client.get(
             "/api/admin/notifications",
             params={"mark_seen": mark_seen},
-            catch_response=True
+            catch_response=True,
         ) as response:
             if response.status_code == 200:
                 response.success()
             else:
-                response.failure(f"Notifications failed with status {response.status_code}")
-
-    
-
-
+                response.failure(
+                    f"Notifications failed with status {response.status_code}"
+                )

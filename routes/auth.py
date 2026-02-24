@@ -1,19 +1,25 @@
 import re
-from flask import Blueprint, request, jsonify, current_app
-from datetime import datetime, timedelta, timezone
 import secrets
-import bcrypt
-from google.oauth2 import id_token
-from google.auth.transport import requests as google_requests
+from datetime import datetime, timedelta, timezone
 
-from utils.validation import validate_email, validate_otp, sanitize_string, ValidationError
-from database.databaseConfig import db
+import bcrypt
+from flask import Blueprint, current_app, jsonify, request
+from google.auth.transport import requests as google_requests
+from google.oauth2 import id_token
+
+from database.databaseConfig import beehive, db
 from database.userdatahandler import create_user, get_user_by_username
-from utils.roles import is_admin_email
 from utils.jwt_auth import create_access_token
-from database.databaseConfig import beehive
+from utils.roles import is_admin_email
+from utils.validation import (
+    ValidationError,
+    sanitize_string,
+    validate_email,
+    validate_otp,
+)
 
 auth_bp = Blueprint("auth", __name__)
+
 
 # Create EMAIL OTP
 def create_email_otp(email: str) -> str:
@@ -22,20 +28,16 @@ def create_email_otp(email: str) -> str:
     # Remove old OTPs
     db.email_otps.delete_many({"email": email})
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=5)
-    db.email_otps.insert_one({
-        "email": email,
-        "otp": otp,
-        "expires_at": expires_at
-        })
+    db.email_otps.insert_one({"email": email, "otp": otp, "expires_at": expires_at})
 
     return otp
 
 
-# REQUEST OTP 
+# REQUEST OTP
 @auth_bp.route("/request-otp", methods=["POST"])
 def request_otp():
     data = request.get_json(force=True)
-    try: 
+    try:
         purpose = sanitize_string(data.get("purpose"), field_name="purpose").lower()
         email = validate_email(data.get("email"))
     except ValidationError as e:
@@ -62,11 +64,14 @@ def request_otp():
         mail_server = current_app.config.get("MAIL_SERVER")
         if mail_username and mail_server:
             from flask_mail import Message
+
             from app import mail
 
             subject = "Your Beehive OTP"
             body = f"Your Beehive verification code is: {otp}\nIt will expire in 5 minutes."
-            msg = Message(subject=subject, recipients=[email], body=body, sender=mail_username)
+            msg = Message(
+                subject=subject, recipients=[email], body=body, sender=mail_username
+            )
             mail.send(msg)
             return jsonify({"message": "OTP sent"}), 200
         else:
@@ -80,21 +85,19 @@ def request_otp():
 
 from datetime import datetime, timezone
 
+
 @auth_bp.route("/verify-otp", methods=["POST"], strict_slashes=False)
 def verify_otp():
     try:
         data = request.get_json(force=True)
-        try: 
+        try:
             email = validate_email(data.get("email"))
             otp = validate_otp(data.get("otp"))
-        except ValidationError as e:  
+        except ValidationError as e:
             current_app.logger.warning("OTP validation error")
             return jsonify({"error": str(e)}), 400
 
-        record = db.email_otps.find_one({
-            "email": email,
-            "otp": str(otp)
-        })
+        record = db.email_otps.find_one({"email": email, "otp": str(otp)})
 
         if not record:
             return jsonify({"error": "Invalid OTP"}), 400
@@ -107,12 +110,17 @@ def verify_otp():
         if expires_at < datetime.now(timezone.utc):
             return jsonify({"error": "OTP expired"}), 400
 
-        db.email_otps.delete_many({"email": email})
+        # Mark email as verified instead of deleting
+        # This flag is checked by complete-signup to prevent OTP bypass
+        db.email_otps.update_one(
+            {"email": email},
+            {"$set": {"verified": True, "verified_at": datetime.now(timezone.utc)}},
+        )
 
         return jsonify({"message": "OTP verified"}), 200
 
     except Exception as e:
-        print("VERIFY OTP ERROR:", e)
+        current_app.logger.exception("OTP verification error: %s", e)
         return jsonify({"error": "Server error"}), 500
 
 
@@ -124,7 +132,7 @@ def complete_signup():
         email = validate_email(data.get("email"))
         username = sanitize_string(data.get("username"))
         # Check for differentiating usernames and emails, prevent @ in username
-        if("@" in username):
+        if "@" in username:
             return jsonify({"error": "Username cannot contain '@' symbol"}), 400
         password = sanitize_string(data.get("password"))
     except ValidationError as e:
@@ -134,6 +142,31 @@ def complete_signup():
     # Validate password length
     if len(password) < 8:
         return jsonify({"error": "Password must be at least 8 characters"}), 400
+
+    # Verify that OTP was actually completed for this email
+    otp_record = db.email_otps.find_one({"email": email, "verified": True})
+    if not otp_record:
+        return (
+            jsonify(
+                {"error": "Email not verified. Please complete OTP verification first."}
+            ),
+            403,
+        )
+
+    # Check if OTP verification session has expired (10 min window)
+    verified_at = otp_record.get("verified_at")
+    if verified_at:
+        if verified_at.tzinfo is None:
+            verified_at = verified_at.replace(tzinfo=timezone.utc)
+        if (datetime.now(timezone.utc) - verified_at).total_seconds() > 600:
+            db.email_otps.delete_many({"email": email})
+            return (
+                jsonify(
+                    {"error": "Verification session expired. Please restart signup."}
+                ),
+                403,
+            )
+
     # Prevent duplicate email
     if db.users.find_one({"email": email}):
         return jsonify({"error": "Email already registered"}), 400
@@ -143,30 +176,25 @@ def complete_signup():
 
     role = "admin" if is_admin_email(email) else "user"
 
-    hashed_password = bcrypt.hashpw(
-        password.encode(), bcrypt.gensalt()
+    hashed_password = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
+
+    result = db.users.insert_one(
+        {
+            "email": email,
+            "username": username,
+            "password": hashed_password,
+            "role": role,
+            "created_at": datetime.now(timezone.utc),
+        }
     )
 
-    result = db.users.insert_one({
-        "email": email,
-        "username": username,
-        "password": hashed_password,
-        "role": role,
-        "created_at": datetime.now(timezone.utc)
-    })
-
-    token = create_access_token(
-        user_id=str(result.inserted_id),
-        role=role
-    )
+    token = create_access_token(user_id=str(result.inserted_id), role=role)
 
     # Cleanup OTPs
     db.email_otps.delete_many({"email": email})
 
-    return jsonify({
-        "access_token": token,
-        "role": role
-    }), 201
+    return jsonify({"access_token": token, "role": role}), 201
+
 
 @auth_bp.route("/login", methods=["POST"])
 def login():
@@ -181,12 +209,9 @@ def login():
         current_app.logger.warning("LOGIN VALIDATION ERROR")
         return jsonify({"error": str(e)}), 400
 
-    user = beehive.users.find_one({
-        "$or": [
-            {"username": identifier},
-            {"email": identifier}
-        ]
-    })
+    user = beehive.users.find_one(
+        {"$or": [{"username": identifier}, {"email": identifier}]}
+    )
 
     if not user:
         return jsonify({"error": "User not found"}), 401
@@ -198,10 +223,7 @@ def login():
     if not bcrypt.checkpw(password.encode(), stored_password):
         return jsonify({"error": "Invalid credentials"}), 401
 
-    token = create_access_token(
-        user_id=str(user["_id"]),
-        role=user.get("role", "user")
-    )
+    token = create_access_token(user_id=str(user["_id"]), role=user.get("role", "user"))
 
     return jsonify({"access_token": token}), 200
 
@@ -213,6 +235,7 @@ def set_password():
     try:
         email = validate_email(data.get("email"))
         password = sanitize_string(data.get("password"))
+        purpose = sanitize_string(data.get("purpose"), field_name="purpose").lower()
     except ValidationError as e:
         current_app.logger.warning("SET PASSWORD VALIDATION ERROR")
         return jsonify({"error": str(e)}), 400
@@ -227,22 +250,21 @@ def set_password():
 
         role = "admin" if is_admin_email(email) else "user"
 
-        user_id = db.users.insert_one({
-            "email": email,
-            "username": email.split("@")[0],
-            "password": hashed,
-            "role": role,
-            "created_at": datetime.now(timezone.utc)
-        }).inserted_id
+        user_id = db.users.insert_one(
+            {
+                "email": email,
+                "username": email.split("@")[0],
+                "password": hashed,
+                "role": role,
+                "created_at": datetime.now(timezone.utc),
+            }
+        ).inserted_id
 
     elif purpose == "reset":
         if not existing_user:
             return jsonify({"error": "User not found"}), 404
 
-        db.users.update_one(
-            {"email": email},
-            {"$set": {"password": hashed}}
-        )
+        db.users.update_one({"email": email}, {"$set": {"password": hashed}})
 
         user_id = existing_user["_id"]
         role = existing_user.get("role", "user")
@@ -250,15 +272,10 @@ def set_password():
     else:
         return jsonify({"error": "Invalid purpose"}), 400
 
-    token = create_access_token(
-        user_id=str(user_id),
-        role=role
-    )
+    token = create_access_token(user_id=str(user_id), role=role)
 
-    return jsonify({
-        "access_token": token,
-        "role": role
-    }), 200
+    return jsonify({"access_token": token, "role": role}), 200
+
 
 # GOOGLE OAUTH (JWT ONLY)
 @auth_bp.route("/google", methods=["POST"])
@@ -286,7 +303,6 @@ def google_auth():
         if not idinfo.get("email_verified"):
             return jsonify({"error": "Email not verified"}), 403
 
-
     except ValueError as e:
         current_app.logger.exception("Invalid Google ID token: %s", e)
         return jsonify({"error": "Invalid id_token"}), 401
@@ -298,15 +314,17 @@ def google_auth():
         role = "admin" if is_admin_email(email) else "user"
 
         # Create a minimal Google-backed user (no local password)
-        result = db.users.insert_one({
-            "email": email,
-            "username": name or email.split("@")[0],
-            "password": None,
-            "role": role,
-            "provider": "google",
-            "google_id": sub,
-            "created_at": datetime.now(timezone.utc)
-        })
+        result = db.users.insert_one(
+            {
+                "email": email,
+                "username": name or email.split("@")[0],
+                "password": None,
+                "role": role,
+                "provider": "google",
+                "google_id": sub,
+                "created_at": datetime.now(timezone.utc),
+            }
+        )
         user_id = str(result.inserted_id)
     else:
         user_id = str(user["_id"])
@@ -314,7 +332,4 @@ def google_auth():
 
     token = create_access_token(user_id=user_id, role=role)
 
-    return jsonify({
-        "access_token": token,
-        "role": role
-    }), 200
+    return jsonify({"access_token": token, "role": role}), 200

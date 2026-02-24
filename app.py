@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+
 load_dotenv()
 
 import base64
@@ -12,49 +13,45 @@ import re
 import sys
 import traceback
 from datetime import timedelta
-from utils.sanitize import sanitize_text
-from utils.logger import logger as app_logger
 
 import fitz
 import google.generativeai as genai
 import magic
 from bson import ObjectId
 from bson.errors import InvalidId
-from flask import (
-    Flask,
-    jsonify,
-    request,
-    send_from_directory,
-)
+from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
+from flask_mail import Mail
 from google_auth_oauthlib.flow import Flow
 from PIL import Image
 from werkzeug.utils import secure_filename
-from flask_mail import Mail
 
 from database.databaseConfig import (
     get_beehive_message_collection,
     get_beehive_notification_collection,
+    get_beehive_user_collection,
     initialize_text_index,
 )
-from database.databaseConfig import get_beehive_user_collection
 from database.userdatahandler import (
     delete_image,
-    get_image_by_id,
     get_image_by_audio_filename,
+    get_image_by_id,
     get_images_by_user,
-    search_and_filter_images,
     get_user_by_username,
     save_image,
     save_notification,
+    search_and_filter_images,
     update_image,
 )
+from utils.jwt_auth import require_admin_role, require_auth
+from utils.logger import logger as app_logger
 from utils.pagination import parse_pagination_params
+from utils.sanitize import sanitize_text
 
-from utils.jwt_auth import require_auth,require_admin_role 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
 
 from config import Config
+
 app.config.from_object(Config)
 
 try:
@@ -90,7 +87,7 @@ CORS(
             "methods": ["GET", "OPTIONS"],
             "allow_headers": ["Content-Type", "Authorization"],
             "supports_credentials": True,
-        }
+        },
     },
 )
 
@@ -125,11 +122,13 @@ ALLOWED_AUDIO_MIME_TYPES = {
     "audio/ogg",
     "audio/opus",
     "video/webm",  # Some browsers label audio-only webm as video/webm
-    "video/ogg",   # Defensive allow for ogg containers
+    "video/ogg",  # Defensive allow for ogg containers
     "application/ogg",  # libmagic may report this for ogg
 }
-MAX_AUDIO_FILE_SIZE = 6 * 1024 * 1024  # We can set the size required to Beehive 
-AUDIO_DATA_URL_RE = re.compile(r"^data:(?P<mime>[-\w.+/]+);base64,(?P<data>[A-Za-z0-9+/=\r\n]+)$")
+MAX_AUDIO_FILE_SIZE = 6 * 1024 * 1024  # We can set the size required to Beehive
+AUDIO_DATA_URL_RE = re.compile(
+    r"^data:(?P<mime>[-\w.+/]+);base64,(?P<data>[A-Za-z0-9+/=\r\n]+)$"
+)
 
 # Initialized global MIME detector
 try:
@@ -173,14 +172,15 @@ flow = Flow.from_client_secrets_file(
 
 
 MIME_SIZE_LIMITS = {
-    "image/jpeg": 10*1024*1024 ,
-    "image/png": 10 *1024*1024,
+    "image/jpeg": 10 * 1024 * 1024,
+    "image/png": 10 * 1024 * 1024,
     "image/webp": 10 * 1024 * 1024,
     "image/gif": 8 * 1024 * 1024,
     "image/heif": 15 * 1024 * 1024,
     "image/heic": 15 * 1024 * 1024,
     "application/pdf": 25 * 1024 * 1024,
 }
+
 
 def validate_file_size(file, mime_type, filename):
     """
@@ -200,10 +200,12 @@ def validate_file_size(file, mime_type, filename):
 
     if size > max_allowed:
         return (
-            jsonify({
-                "error": f"File '{filename}' exceeds max size limit "
-                         f"({max_allowed // (1024 * 1024)}MB)"
-            }),
+            jsonify(
+                {
+                    "error": f"File '{filename}' exceeds max size limit "
+                    f"({max_allowed // (1024 * 1024)}MB)"
+                }
+            ),
             413,
         )
     return None
@@ -212,13 +214,13 @@ def validate_file_size(file, mime_type, filename):
 def parse_int_param(param_name, default, min_val=None, max_val=None):
     """
     Parse and validate an integer parameter from request arguments.
-    
+
     Args:
         param_name: The name of the parameter in request.args
         default: Default value if parameter is missing or invalid
         min_val: Minimum allowed value (optional)
         max_val: Maximum allowed value (optional)
-    
+
     Returns:
         Validated integer value
     """
@@ -320,6 +322,7 @@ def _validate_audio_file_upload(audio_file):
 
     return None
 
+
 AUDIO_MIME_TO_EXTENSION = {
     "audio/webm": ".webm",
     "video/webm": ".webm",
@@ -330,6 +333,7 @@ AUDIO_MIME_TO_EXTENSION = {
     "audio/x-wav": ".wav",
     "audio/wav": ".wav",
 }
+
 
 # Upload images
 @app.route("/api/user/upload", methods=["POST"])
@@ -369,7 +373,14 @@ def upload_images():
                         "MIME detection unavailable: libmagic missing or misconfigured. Install system libmagic and python-magic. Error: %s",
                         e,
                     )
-                    return jsonify({"error": "Server MIME detection unavailable; contact administrator."}), 500
+                    return (
+                        jsonify(
+                            {
+                                "error": "Server MIME detection unavailable; contact administrator."
+                            }
+                        ),
+                        500,
+                    )
             mime_detector = _FALLBACK_MAGIC
 
         for file in files:
@@ -377,13 +388,16 @@ def upload_images():
                 # Validate extension
                 original_filename = secure_filename(file.filename)
                 unique_filename = f"{ObjectId()}_{original_filename}"
-                file_ext = os.path.splitext(original_filename)[1].lstrip('.').lower()
+                file_ext = os.path.splitext(original_filename)[1].lstrip(".").lower()
                 if file_ext not in ALLOWED_EXTENSIONS:
-                    return jsonify(
-                        {
-                            "error": f"File type not allowed. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
-                        }
-                    ), 400
+                    return (
+                        jsonify(
+                            {
+                                "error": f"File type not allowed. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
+                            }
+                        ),
+                        400,
+                    )
 
                 file.stream.seek(0)
                 file_header = file.stream.read(2048)
@@ -391,12 +405,15 @@ def upload_images():
                 file_mime_type = mime_detector.from_buffer(file_header)
 
                 if file_mime_type not in ALLOWED_MIME_TYPES:
-                    return jsonify(
-                        {
-                            "error": f'File content validation failed. Detected type "{file_mime_type}" is not allowed.'
-                        }
-                    ), 400
-                    
+                    return (
+                        jsonify(
+                            {
+                                "error": f'File content validation failed. Detected type "{file_mime_type}" is not allowed.'
+                            }
+                        ),
+                        400,
+                    )
+
                 size_error = validate_file_size(file, file_mime_type, original_filename)
                 if size_error:
                     return size_error
@@ -412,8 +429,12 @@ def upload_images():
                         # audio_mime_or_error holds the response tuple in this case
                         return audio_mime_or_error
 
-                    audio_mime = audio_mime_or_error  # safe: decode returns mime on success
-                    audio_ext = audio_ext = AUDIO_MIME_TO_EXTENSION.get(audio_mime, ".wav")
+                    audio_mime = (
+                        audio_mime_or_error  # safe: decode returns mime on success
+                    )
+                    audio_ext = audio_ext = AUDIO_MIME_TO_EXTENSION.get(
+                        audio_mime, ".wav"
+                    )
 
                     audio_filename = f"{safe_audio_basename}_{ObjectId()}{audio_ext}"
                     audio_path = os.path.join(
@@ -428,7 +449,9 @@ def upload_images():
                     if audio_error:
                         return audio_error
 
-                    audio_ext = pathlib.Path(audio_file.filename).suffix.lower() or ".wav"
+                    audio_ext = (
+                        pathlib.Path(audio_file.filename).suffix.lower() or ".wav"
+                    )
                     audio_filename = f"{safe_audio_basename}_{ObjectId()}{audio_ext}"
                     audio_path = os.path.join(
                         app.config["UPLOAD_FOLDER"], audio_filename
@@ -491,7 +514,14 @@ def analyze_media():
     audio_file = request.files.get("audio")
 
     if not genai_configured:
-        return jsonify({"error": "AI analysis not configured on server. Set a valid GOOGLE_API_KEY."}), 503
+        return (
+            jsonify(
+                {
+                    "error": "AI analysis not configured on server. Set a valid GOOGLE_API_KEY."
+                }
+            ),
+            503,
+        )
 
     prompt_parts = []
 
@@ -550,19 +580,24 @@ def analyze_media():
                 # Ensure required keys exist
                 if not all(k in parsed for k in ("title", "description", "sentiment")):
                     logging.error(f"User {user_id}: AI JSON missing keys: {parsed}")
-                    return jsonify(
-                        {"error": "AI response JSON missing required keys"}
-                    ), 500
+                    return (
+                        jsonify({"error": "AI response JSON missing required keys"}),
+                        500,
+                    )
                 return jsonify(parsed), 200
             except Exception as e:
-                logging.error(f"User {user_id}: Error parsing AI JSON: {e}\nRaw response: {raw_text}")
+                logging.error(
+                    f"User {user_id}: Error parsing AI JSON: {e}\nRaw response: {raw_text}"
+                )
                 return jsonify({"error": "Failed to parse AI response JSON"}), 500
         else:
             logging.error(f"User {user_id}: No JSON found in AI response: {raw_text}")
             return jsonify({"error": "No JSON object found in AI response"}), 500
 
     except Exception as e:
-        logging.error(f"User {user_id}: analyze_media error: {e}\n{traceback.format_exc()}")
+        logging.error(
+            f"User {user_id}: analyze_media error: {e}\n{traceback.format_exc()}"
+        )
         return jsonify({"error": "Failed to analyze media. Please try again."}), 500
 
 
@@ -576,7 +611,9 @@ def generate_pdf_thumbnail(pdf_path, filename):
     try:
         with fitz.open(pdf_path) as pdf_document:
             if not pdf_document.page_count:
-                app_logger.warning(f"PDF '{filename}' has no pages, cannot generate thumbnail.")
+                app_logger.warning(
+                    f"PDF '{filename}' has no pages, cannot generate thumbnail."
+                )
                 return None
 
             # select only the first page for the thumbnail
@@ -600,10 +637,10 @@ def generate_pdf_thumbnail(pdf_path, filename):
         return None
 
 
-
 def check_owner(current_id, resource_id):
     """Compares two IDs for equality by converting them to strings to handle type differences."""
     return str(current_id) == str(resource_id)
+
 
 # Edit images uploaded by the user
 @app.route("/edit/<image_id>", methods=["PATCH"])
@@ -651,26 +688,33 @@ def serve_audio(filename):
     try:
         # Query database to find the image record associated with this audio file
         image = get_image_by_audio_filename(filename)
-        
+
         # If no record found, the audio file doesn't exist or isn't associated with any upload
         if not image:
             return jsonify({"error": "Audio file not found"}), 404
-        
+
         # Get current user info from the JWT token (set by @require_auth decorator)
         current_user_id = request.current_user.get("id")
         current_user_role = request.current_user.get("role", "user")
         image_owner_id = image.get("user_id")
-        
+
         # Allow access if user is admin OR owns the audio file
         is_admin = current_user_role == "admin"
         is_owner = check_owner(current_user_id, image_owner_id)
-        
+
         if not (is_admin or is_owner):
-            return jsonify({"error": "Unauthorized: You do not have permission to access this audio file"}), 403
-        
+            return (
+                jsonify(
+                    {
+                        "error": "Unauthorized: You do not have permission to access this audio file"
+                    }
+                ),
+                403,
+            )
+
         # User is authorized (either admin or owner), serve the file
         return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
-        
+
     except Exception as e:
         logging.error(f"Error serving audio file '{filename}': {str(e)}")
         return jsonify({"error": "Failed to serve audio file"}), 500
@@ -684,7 +728,7 @@ def delete_image_route(image_id):
         try:
             image_id = ObjectId(image_id)
         except Exception as e:
-            logging.error(f"Invalid Image ID fromat for image_id '{image_id}':{e}")            
+            logging.error(f"Invalid Image ID fromat for image_id '{image_id}':{e}")
             logging.error(f"Invalid image ID format for image_id '{image_id}': {e}")
             return jsonify({"error": "Invalid image ID format."}), 400
 
@@ -736,39 +780,65 @@ def delete_image_route(image_id):
 def user_images_show():
     try:
         user_id = request.current_user["id"]
-        
-        search_query = request.args.get('q', '').strip()
-        sentiment = request.args.get('sentiment', '').strip()
-        from_date = request.args.get('from', '').strip()
-        to_date = request.args.get('to', '').strip()
-        sort_by = request.args.get('sort_by', 'date').strip()
-        sort_order = request.args.get('sort_order', 'desc').strip()
-        
+
+        search_query = request.args.get("q", "").strip()
+        sentiment = request.args.get("sentiment", "").strip()
+        from_date = request.args.get("from", "").strip()
+        to_date = request.args.get("to", "").strip()
+        sort_by = request.args.get("sort_by", "date").strip()
+        sort_order = request.args.get("sort_order", "desc").strip()
+
         # Validate sentiment parameter
         if sentiment:
-            allowed_sentiments = {'positive', 'neutral', 'negative'}
+            allowed_sentiments = {"positive", "neutral", "negative"}
             if sentiment not in allowed_sentiments:
                 app_logger.error(f"Invalid sentiment parameter: {sentiment}")
-                return jsonify({
-                    "error": "Invalid sentiment value. Allowed values are: positive, neutral, negative."
-                }), 400
-        
+                return (
+                    jsonify(
+                        {
+                            "error": "Invalid sentiment value. Allowed values are: positive, neutral, negative."
+                        }
+                    ),
+                    400,
+                )
+
         # Validate sort parameters
-        allowed_sort_by = {'date', 'title', 'relevance'}
-        allowed_sort_order = {'asc', 'desc'}
+        allowed_sort_by = {"date", "title", "relevance"}
+        allowed_sort_order = {"asc", "desc"}
         if sort_by not in allowed_sort_by:
             app_logger.error(f"Invalid sort_by parameter: {sort_by}")
-            return jsonify({"error": "Invalid sort_by parameter. Allowed values are: date, title, relevance."}), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid sort_by parameter. Allowed values are: date, title, relevance."
+                    }
+                ),
+                400,
+            )
         if sort_order not in allowed_sort_order:
             app_logger.error(f"Invalid sort_order parameter: {sort_order}")
-            return jsonify({"error": "Invalid sort_order parameter. Allowed values are: asc, desc."}), 400
-        if sort_by == 'relevance' and not search_query:
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid sort_order parameter. Allowed values are: asc, desc."
+                    }
+                ),
+                400,
+            )
+        if sort_by == "relevance" and not search_query:
             app_logger.error("Attempted to sort by relevance without a search query.")
-            return jsonify({"error": "Sorting by relevance requires a search query ('q' parameter)."}), 400
-        
-        limit = parse_int_param('limit', default=12, min_val=1, max_val=100)
-        offset = parse_int_param('offset', default=0, min_val=0)
-        
+            return (
+                jsonify(
+                    {
+                        "error": "Sorting by relevance requires a search query ('q' parameter)."
+                    }
+                ),
+                400,
+            )
+
+        limit = parse_int_param("limit", default=12, min_val=1, max_val=100)
+        offset = parse_int_param("offset", default=0, min_val=0)
+
         result = search_and_filter_images(
             user_id=user_id,
             search_query=search_query if search_query else None,
@@ -778,19 +848,19 @@ def user_images_show():
             sort_by=sort_by,
             sort_order=sort_order,
             limit=limit,
-            offset=offset
+            offset=offset,
         )
-        
+
         response_data = {
-            'images': result['images'],
-            'total': result['total'],
-            'limit': result['limit'],
-            'offset': result['offset'],
-            'hasMore': result['hasMore'],
-            'user_id': user_id,
-            'message': 'Success'
+            "images": result["images"],
+            "total": result["total"],
+            "limit": result["limit"],
+            "offset": result["offset"],
+            "hasMore": result["hasMore"],
+            "user_id": user_id,
+            "message": "Success",
         }
-        
+
         return jsonify(response_data)
     except ValueError as e:
         logging.error(f"Invalid pagination parameters: {str(e)}")
@@ -810,9 +880,14 @@ def get_admin_notifications():
             page = int(request.args.get("page", 1))
             per_page = int(request.args.get("limit", 5))
         except ValueError:
-            return jsonify(
-                {"error": "Invalid 'page' or 'limit' parameter. Must be an integer."}
-            ), 400
+            return (
+                jsonify(
+                    {
+                        "error": "Invalid 'page' or 'limit' parameter. Must be an integer."
+                    }
+                ),
+                400,
+            )
         skip = (page - 1) * per_page
 
         # Count unseen notifications
@@ -830,13 +905,23 @@ def get_admin_notifications():
             if "timestamp" in n:
                 n["timestamp"] = n["timestamp"].isoformat()
 
-        return jsonify(
-            {"notifications": notifications, "unseen_count": unseen_count, "page": page}
-        ), 200
+        return (
+            jsonify(
+                {
+                    "notifications": notifications,
+                    "unseen_count": unseen_count,
+                    "page": page,
+                }
+            ),
+            200,
+        )
 
     except Exception as e:
         logging.error(f"Error fetching admin notifications: {str(e)}")
-        return jsonify({"error": "Failed to fetch notifications. Please try again."}), 500
+        return (
+            jsonify({"error": "Failed to fetch notifications. Please try again."}),
+            500,
+        )
 
 
 @app.route("/api/admin/notifications/mark_seen", methods=["POST"])
@@ -863,7 +948,10 @@ def mark_selected_notifications_seen():
 
     except Exception as e:
         logging.error(f"Error marking notifications as seen: {str(e)}")
-        return jsonify({"error": "Failed to update notifications. Please try again."}), 500
+        return (
+            jsonify({"error": "Failed to update notifications. Please try again."}),
+            500,
+        )
 
 
 @app.route("/api/chat/send", methods=["POST"])
@@ -928,7 +1016,8 @@ def get_chat_messages():
         logging.error(f"Error fetching chat messages: {str(e)}")
         return jsonify({"error": "Failed to fetch messages. Please try again."}), 500
 
-@app.route('/health', methods=['GET'])
+
+@app.route("/health", methods=["GET"])
 def health_check():
     """
     Health check endpoint for monitoring and API Gateway.
@@ -940,28 +1029,34 @@ def health_check():
     try:
         # Basic app health
         health_status = {"status": "healthy", "timestamp": current_time}
-        
+
         # Optional: Check MongoDB connection
         db_collection = get_beehive_user_collection()
         # Simple ping - will raise exception if DB unreachable
-        db_collection.database.command('ping')
+        db_collection.database.command("ping")
         health_status["database"] = "connected"
-        
+
         return jsonify(health_status), 200
     except Exception as e:
         app.logger.error(f"Health check failed: {str(e)}")
-        return jsonify({
-            "status": "unhealthy",
-            "error": "Service Unavailable",
-            "timestamp": current_time  # Uses the same variable
-        }), 503
-    
+        return (
+            jsonify(
+                {
+                    "status": "unhealthy",
+                    "error": "Service Unavailable",
+                    "timestamp": current_time,  # Uses the same variable
+                }
+            ),
+            503,
+        )
+
 
 # Import blueprints
 from routes.adminroutes import admin_bp
 
 app.register_blueprint(admin_bp)
 from routes.auth import auth_bp
+
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
 # Initialize text index for search functionality

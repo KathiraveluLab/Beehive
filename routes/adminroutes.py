@@ -1,13 +1,14 @@
-from flask import Blueprint, request, jsonify
-from utils.jwt_auth import require_admin_role
+from flask import Blueprint, jsonify, request
+
 from database.userdatahandler import (
     _get_paginated_images_by_user,
     get_recent_uploads,
+    get_upload_analytics,
     get_upload_stats,
-    get_upload_analytics
 )
-from utils.pagination import parse_pagination_params
+from utils.jwt_auth import require_admin_role
 from utils.logger import Logger
+from utils.pagination import parse_pagination_params
 from utils.sanitize import sanitize_api_query
 
 logger = Logger.get_logger("adminroutes")
@@ -16,21 +17,26 @@ admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
 
 from database.databaseConfig import beehive
 
+
 # Admin: Get user uploads
 @admin_bp.route("/user_uploads/<user_id>")
 @require_admin_role
 def admin_user_images_show(user_id):
     try:
-        page, page_size = parse_pagination_params(default_page=1, default_size=12, max_size=50)
+        page, page_size = parse_pagination_params(
+            default_page=1, default_size=12, max_size=50
+        )
         filters = {
-            'q': request.args.get('q'),
-            'sentiment': request.args.get('sentiment'),
-            'date_filter': request.args.get('date_filter'),
-            'from': request.args.get('from'),
-            'to': request.args.get('to')
+            "q": request.args.get("q"),
+            "sentiment": request.args.get("sentiment"),
+            "date_filter": request.args.get("date_filter"),
+            "from": request.args.get("from"),
+            "to": request.args.get("to"),
         }
         filters = {k: v for k, v in filters.items() if v is not None}
-        result = _get_paginated_images_by_user(user_id, page, page_size, filters if filters else None)
+        result = _get_paginated_images_by_user(
+            user_id, page, page_size, filters if filters else None
+        )
         return jsonify(result), 200
     except ValueError as e:
         logger.error(f"Invalid pagination parameters: {str(e)}")
@@ -38,6 +44,7 @@ def admin_user_images_show(user_id):
     except Exception:
         logger.error("Error fetching user uploads", exc_info=True)
         return jsonify({"error": "Failed to fetch user uploads"}), 500
+
 
 # Admin: Dashboard
 @admin_bp.route("/dashboard", methods=["GET"])
@@ -49,14 +56,12 @@ def get_dashboard_data():
         stats = get_upload_stats()
         recent_uploads = get_recent_uploads(limit)
 
-        return jsonify({
-            "stats": stats,
-            "recentUploads": recent_uploads
-        }), 200
+        return jsonify({"stats": stats, "recentUploads": recent_uploads}), 200
 
     except Exception:
         logger.error("Error fetching dashboard data", exc_info=True)
         return jsonify({"error": "Failed to fetch dashboard data"}), 500
+
 
 # Admin: Analytics (Uploads only)
 @admin_bp.route("/analytics", methods=["GET"])
@@ -70,15 +75,15 @@ def get_all_analytics():
         if not upload_data:
             return jsonify({"error": "Failed to retrieve analytics data"}), 500
 
-        return jsonify({
-            "uploads": upload_data
-        }), 200
+        return jsonify({"uploads": upload_data}), 200
 
     except Exception:
         logger.error("Error fetching analytics", exc_info=True)
         return jsonify({"error": "Failed to fetch analytics data"}), 500
 
+
 # Admin: List users (paginated, searchable)
+
 
 @admin_bp.route("/users", methods=["GET"])
 @require_admin_role
@@ -101,16 +106,18 @@ def list_users():
 
         users = []
         for u in cursor:
-            users.append({
-                "id": str(u.get("_id")),
-                "user_id": str(u.get("_id")),
-                "name": u.get("username") or u.get("email") or "Unknown User",
-                "role": u.get("role", "user"),
-                "lastActive": u.get("last_active") or u.get("last_seen") or None,
-                "status": u.get("status", "active"),
-                "image": u.get("avatar_url", ""),
-                "clerkId": u.get("clerk_id", ""),
-            })
+            users.append(
+                {
+                    "id": str(u.get("_id")),
+                    "user_id": str(u.get("_id")),
+                    "name": u.get("username") or u.get("email") or "Unknown User",
+                    "role": u.get("role", "user"),
+                    "lastActive": u.get("last_active") or u.get("last_seen") or None,
+                    "status": u.get("status", "active"),
+                    "image": u.get("avatar_url", ""),
+                    "clerkId": u.get("clerk_id", ""),
+                }
+            )
 
         return jsonify({"users": users, "totalCount": total_count}), 200
     except Exception:
@@ -126,10 +133,12 @@ def list_only_users():
         cursor = users_col.find({}, {"_id": 1, "username": 1, "email": 1}).limit(100)
         users = []
         for u in cursor:
-            users.append({
-                "id": str(u.get("_id")),
-                "name": u.get("username") or u.get("email") or "",
-            })
+            users.append(
+                {
+                    "id": str(u.get("_id")),
+                    "name": u.get("username") or u.get("email") or "",
+                }
+            )
         return jsonify({"users": users}), 200
     except Exception:
         logger.error("Error listing only-users", exc_info=True)

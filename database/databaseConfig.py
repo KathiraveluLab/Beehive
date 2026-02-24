@@ -1,6 +1,8 @@
 import os
+
 from dotenv import find_dotenv, load_dotenv
-from pymongo import MongoClient, TEXT
+from pymongo import TEXT, MongoClient
+
 from utils.logger import Logger
 
 logger = Logger.get_logger("databaseConfig")
@@ -15,9 +17,7 @@ if (
     or "username:password" in connectionString
     or connectionString == "mongodb+srv://username:password@cluster.mongodb.net/"
 ):
-    logger.warning(
-        "MONGODB_URI not properly configured, using local MongoDB"
-    )
+    logger.warning("MONGODB_URI not properly configured, using local MongoDB")
     connectionString = "mongodb://localhost:27017/"
 
 try:
@@ -35,6 +35,7 @@ except Exception as e:
 
 beehive = dbclient.beehive
 db = beehive
+
 
 def get_beehive_user_collection():
     return beehive.users
@@ -60,12 +61,12 @@ def initialize_text_index():
     try:
         image_collection = get_beehive_image_collection()
         existing_indexes = image_collection.index_information()
-        
-        if 'title_text_description_text' not in existing_indexes:
-            image_collection.create_index([
-                ('title', TEXT),
-                ('description', TEXT)
-            ], name='title_text_description_text')
+
+        if "title_text_description_text" not in existing_indexes:
+            image_collection.create_index(
+                [("title", TEXT), ("description", TEXT)],
+                name="title_text_description_text",
+            )
             logger.info("Text index created on image collection")
         else:
             logger.debug("Text index already exists on image collection")
