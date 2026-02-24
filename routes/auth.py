@@ -113,7 +113,7 @@ def verify_otp():
         # Mark email as verified instead of deleting
         # This flag is checked by complete-signup to prevent OTP bypass
         db.email_otps.update_one(
-            {"email": email},
+            {"_id": record["_id"]},
             {"$set": {"verified": True, "verified_at": datetime.now(timezone.utc)}},
         )
 
