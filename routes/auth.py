@@ -155,17 +155,22 @@ def complete_signup():
 
     # Check if OTP verification session has expired (10 min window)
     verified_at = otp_record.get("verified_at")
-    if verified_at:
-        if verified_at.tzinfo is None:
-            verified_at = verified_at.replace(tzinfo=timezone.utc)
-        if (datetime.now(timezone.utc) - verified_at).total_seconds() > 600:
-            db.email_otps.delete_many({"email": email})
-            return (
-                jsonify(
-                    {"error": "Verification session expired. Please restart signup."}
-                ),
-                403,
-            )
+    if not verified_at:
+        # This state should not be possible if verify_otp is working correctly.
+        # Treat it as a server error to be safe.
+        current_app.logger.error(f"Corrupt OTP record for {email}: 'verified' is true but 'verified_at' is missing.")
+        return jsonify({"error": "Internal server error during verification."}), 500
+
+    if verified_at.tzinfo is None:
+        verified_at = verified_at.replace(tzinfo=timezone.utc)
+    if (datetime.now(timezone.utc) - verified_at).total_seconds() > 600:
+        db.email_otps.delete_many({"email": email})
+        return (
+            jsonify(
+                {"error": "Verification session expired. Please restart signup."}
+            ),
+            403,
+        )
 
     # Prevent duplicate email
     if db.users.find_one({"email": email}):
