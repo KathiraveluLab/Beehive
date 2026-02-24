@@ -38,7 +38,7 @@ def test_set_password_missing_purpose(client):
     })
     assert resp.status_code == 400
     data = resp.get_json()
-    assert "error" in data
+    assert data["error"] == "purpose is required"
 
 
 def test_set_password_invalid_purpose(client):
