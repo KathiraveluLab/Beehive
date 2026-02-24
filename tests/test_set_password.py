@@ -133,7 +133,7 @@ def test_set_password_reset_user_not_found(mock_db, client):
 @patch("routes.auth.is_admin_email", return_value=False)
 @patch("routes.auth.db")
 @patch("routes.auth.create_access_token", return_value="mock-jwt-token")
-def test_set_password_signup_success(mock_token, mock_db, mock_admin, client):
+def test_set_password_signup_success(mock_admin, mock_db, mock_token, client):
     """Successful signup via set-password returns a new access token."""
     mock_db.users.find_one.return_value = None  # no existing user
     mock_db.users.insert_one.return_value = MagicMock(inserted_id="new-id-123")
