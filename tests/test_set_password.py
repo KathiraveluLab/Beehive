@@ -126,7 +126,7 @@ def test_set_password_reset_user_not_found(mock_db, client):
     })
     assert resp.status_code == 404
     data = resp.get_json()
-    assert "not found" in data["error"].lower()
+    assert data["error"] == "User not found"
 
 
 # ---------------------------------------------------------------------------
