@@ -84,7 +84,7 @@ def test_set_password_short_password(client):
     })
     assert resp.status_code == 400
     data = resp.get_json()
-    assert "8 characters" in data["error"]
+    assert data["error"] == "Password must be at least 8 characters"
 
 
 # ---------------------------------------------------------------------------
