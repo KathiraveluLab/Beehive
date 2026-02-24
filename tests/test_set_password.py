@@ -60,6 +60,8 @@ def test_set_password_missing_email(client):
         "purpose": "reset",
     })
     assert resp.status_code == 400
+    data = resp.get_json()
+    assert data["error"] == "email is required"
 
 
 def test_set_password_missing_password(client):
