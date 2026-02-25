@@ -25,7 +25,6 @@ def require_auth(f):
             
         try:
             public_key = os.getenv('CLERK_JWT_PUBLIC_KEY')
-            
             try:
                 if public_key:
                     decoded = jwt.decode(token, public_key)
