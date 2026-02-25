@@ -2,8 +2,10 @@ import os
 import requests
 import base64
 import json
+from datetime import datetime
 from functools import wraps
 from flask import request, jsonify
+from authlib.jose import jwt, JoseError
 
 def require_auth(f):
     """Simple decorator to check if user is authenticated"""
@@ -22,42 +24,39 @@ def require_auth(f):
             token = auth_header
             
         try:
-            print("Token to decode:", token[:50] + "..." if len(token) > 50 else token)
-            
-            # Simple JWT decode without external library
-            parts = token.split('.')
-            if len(parts) != 3:
-                return jsonify({'error': 'Invalid token format'}), 401
-            
-            # Decode the payload (second part)
-            payload = parts[1]
-            # Add padding if needed
-            payload += '=' * (4 - len(payload) % 4)
+            public_key = os.getenv('CLERK_JWT_PUBLIC_KEY')
             
             try:
-                decoded_bytes = base64.urlsafe_b64decode(payload)
-                decoded = json.loads(decoded_bytes.decode('utf-8'))
-                print("Decoded token:", decoded)
+                if public_key:
+                    decoded = jwt.decode(token, public_key)
+                    decoded.validate()
+                else:
+                    parts = token.split('.')
+                    if len(parts) != 3:
+                        return jsonify({'error': 'Invalid token format'}), 401
+                    
+                    payload = parts[1]
+                    payload += '=' * (4 - len(payload) % 4)
+                    decoded = json.loads(base64.urlsafe_b64decode(payload).decode('utf-8'))
+                    
+                    if 'exp' in decoded:
+                        if datetime.fromtimestamp(decoded['exp']) < datetime.now():
+                            return jsonify({'error': 'Token has expired'}), 401
                 
-                # Extract user ID from the token
                 user_id = decoded.get('sub') or decoded.get('userid')
-                print("Extracted user_id:", user_id)
                 
                 if not user_id:
-                    print("No user ID found in token")
                     return jsonify({'error': 'No user ID in token'}), 401
                 
-                # Token is valid, user is authenticated
                 request.current_user = {
                     'id': user_id,
-                    'userid': user_id  # Your session claim
+                    'userid': user_id
                 }
-                print("Authentication successful for user:", user_id)
-                
                 return f(*args, **kwargs)
                 
+            except JoseError as je:
+                return jsonify({'error': f'Token verification failed: {str(je)}'}), 401
             except Exception as decode_error:
-                print("Token decode error:", str(decode_error))
                 return jsonify({'error': 'Invalid token format'}), 401
             
         except Exception as e:
