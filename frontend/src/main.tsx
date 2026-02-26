@@ -1,16 +1,13 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { ClerkProvider } from '@clerk/clerk-react'
+import { GoogleOAuthProvider } from "@react-oauth/google";
 import './index.css'
 import App from './App.tsx'
 
-const PUBLISHABLE_KEY = "pk_test_cmljaC1ibHVlZ2lsbC02MC5jbGVyay5hY2NvdW50cy5kZXYk"
-
 createRoot(document.getElementById('root')!).render(
-  
   <StrictMode>
-    {/* <ClerkProvider publishableKey={PUBLISHABLE_KEY}> */}
-      <App />
-    {/* </ClerkProvider> */}
+    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+    <App />
+    </GoogleOAuthProvider>
   </StrictMode>,
 )

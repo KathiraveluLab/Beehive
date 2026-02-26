@@ -1,0 +1,53 @@
+version: "3.8"
+
+services:
+  flask-app:
+    build: .
+    container_name: beehive-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=app.py
+      - MONGODB_URI=mongodb://mongo:27017/beehive
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - REDIRECT_URI=${REDIRECT_URI}
+      - ADMIN_EMAILS=${ADMIN_EMAILS}
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRE_HOURS=${JWT_EXPIRE_HOURS}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - FLASK_SECRET_KEY=${FLASK_SECRET_KEY}
+      
+    depends_on:
+      - mongo
+    volumes:
+      - .:/app:rw
+      - ./client_secret.json:/app/client_secret.json:ro
+
+  frontend:
+    build: ./frontend
+    container_name: beehive-frontend
+    ports:
+      - "5173:5173"
+    environment:
+    depends_on:
+      - flask-app
+    volumes:
+      - ./frontend:/app:rw
+      - /app/node_modules
+
+  mongo:
+    image: mongo:latest
+    container_name: mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_DATABASE=beehive
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
+  

@@ -9,20 +9,12 @@
 }
 
 @layer components {
-  .btn-primary {
-    @apply bg-primary hover:bg-primary-dark text-black font-semibold py-2 px-4 rounded-lg transition-colors;
-  }
-  
-  .btn-secondary {
-    @apply bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold py-2 px-4 rounded-lg transition-colors;
-  }
-
   .card {
     @apply bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 transition-colors duration-200;
   }
 
   .input {
-    @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200;
+    @apply w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-gray-700 focus:border-transparent dark:bg-gray-700 dark:text-white transition-colors duration-200;
   }
 }
 
@@ -36,8 +28,29 @@ body {
   min-width: 320px;
   min-height: 100vh;
 }
-a {
-  @apply text-primary hover:text-primary-dark transition-colors;
-  text-decoration: none;
+
+/* Light & Dark themed scrollbar for notifications box */
+.notification-scroll::-webkit-scrollbar {
+  width: 6px;
 }
 
+.notification-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.notification-scroll::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.3); /* light mode */
+  border-radius: 10px;
+}
+
+.dark .notification-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3); /* dark mode */
+}
+
+.notification-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.dark .notification-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}

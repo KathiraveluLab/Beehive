@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
-import { useUser } from '@clerk/clerk-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { apiUrl } from '../utils/api';
+import { getToken } from '../utils/auth';
 import {
   PencilIcon,
   TrashIcon,
@@ -11,9 +13,12 @@ import {
   AdjustmentsHorizontalIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
-import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+import { EmptyGalleryIcon } from '../components/ui/EmptyGalleryIcon';
 
 interface Upload {
   id: string;
@@ -43,11 +48,11 @@ const EditModal = ({ image, onClose, onSave }: EditModalProps) => {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-white dark:bg-gray-800 rounded-lg max-w-lg w-full transition-colors duration-200">
         <form onSubmit={handleSubmit} className="p-6">
           <h2 className="text-2xl font-bold mb-4">Edit Image</h2>
-          
+
           <div className="space-y-4">
             <div>
               <label className="block mb-2 font-medium">Title</label>
@@ -106,65 +111,285 @@ const EditModal = ({ image, onClose, onSave }: EditModalProps) => {
 };
 
 const Gallery = () => {
-  const { user } = useUser();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [images, setImages] = useState<Upload[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [editingImage, setEditingImage] = useState<Upload | null>(null);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentAudio, setCurrentAudio] = useState<string | null>(null);
+  const [currentAudioUrl, setCurrentAudioUrl] = useState<string | null>(null);
+  const [audioLoading, setAudioLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'rolling'>('grid');
   const [gridSize, setGridSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [showLayoutOptions, setShowLayoutOptions] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioAbortController = useRef<AbortController | null>(null);
   const [currentRollingIndex, setCurrentRollingIndex] = useState(0);
-  const rollingContainerRef = useRef<HTMLDivElement>(null);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [pageSize, setPageSize] = useState(12);
+  const observerTarget = useRef<HTMLDivElement | null>(null);
+  
+  // Search and filter states
+  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [sentiment, setSentiment] = useState(searchParams.get('sentiment') || '');
+  const [fromDate, setFromDate] = useState(searchParams.get('from') || '');
+  const [toDate, setToDate] = useState(searchParams.get('to') || '');
+  const [sortBy, setSortBy] = useState(searchParams.get('sort_by') || 'date');
+  const [sortOrder, setSortOrder] = useState(searchParams.get('sort_order') || 'desc');
+  const [showFilters, setShowFilters] = useState(false);
+  
+  const [totalResults, setTotalResults] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Auto-switch from relevance to date when search query is cleared
   useEffect(() => {
-    const fetchUploads = async () => {
-      if (!user?.id) return;
-      
-      try {
-        setLoading(true);
-        
-        // Get the authentication token from Clerk
-        const token = await window.Clerk.session?.getToken();
-        
-        const response = await fetch(`http://127.0.0.1:5000/api/user/user_uploads/${user.id}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          credentials: 'include',
-          mode: 'cors'
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        
-        const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
+    if (!searchQuery && sortBy === 'relevance') {
+      setSortBy('date');
+    }
+  }, [searchQuery, sortBy]);
 
-        setImages(sortedImages);
-        console.log(sortedImages);
-      } catch (error) {
-        console.error('Error fetching uploads:', error);
-          toast.error('Failed to fetch uploads');
-      } finally {
-        setLoading(false);
+  // Helper function to generate page numbers for pagination
+  const generatePageNumbers = (currentPage: number, totalResults: number, pageSize: number) => {
+    const totalPageCount = Math.ceil(totalResults / pageSize);
+    const pages: number[] = [];
+    
+    // Always show first page
+    pages.push(1);
+    
+    // Show pages around current page
+    for (let i = Math.max(2, currentPage - 1); i <= Math.min(totalPageCount - 1, currentPage + 1); i++) {
+      pages.push(i);
+    }
+    
+    // Always show last page
+    if (totalPageCount > 1) {
+      pages.push(totalPageCount);
+    }
+    
+    // Remove duplicates and sort
+    return Array.from(new Set(pages)).sort((a, b) => a - b);
+  };
+
+  // Sync search params to URL (including page)
+  useEffect(() => {
+    const params: Record<string, string> = {};
+    if (searchQuery) params.q = searchQuery;
+    if (sentiment) params.sentiment = sentiment;
+    if (fromDate) params.from = fromDate;
+    if (toDate) params.to = toDate;
+    if (sortBy !== 'date') params.sort_by = sortBy;
+    if (sortOrder !== 'desc') params.sort_order = sortOrder;
+    if (currentPage > 1) params.page = currentPage.toString();
+    
+    setSearchParams(params, { replace: true });
+  }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, currentPage, setSearchParams]);
+
+  // Sync URL params to state (for browser back/forward navigation)
+  useEffect(() => {
+    const pageParam = searchParams.get('page');
+    if (pageParam) {
+      const page = parseInt(pageParam, 10);
+      if (!isNaN(page) && page > 0 && page !== currentPage) {
+        setCurrentPage(page);
+      }
+    } else if (currentPage !== 1) {
+      // Reset to page 1 if no page param in URL
+      setCurrentPage(1);
+    }
+  }, [searchParams, currentPage]);
+
+  // Function for authenticated API calls using JWT from localStorage
+  const authenticatedFetch = useCallback(async (path: string, options: RequestInit = {}) => {
+    const token = getToken() || '';
+    const headers = {
+      ...options.headers,
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+    };
+    return fetch(apiUrl(path), {
+      ...options,
+      headers,
+      credentials: 'include'
+    });
+  }, []);
+
+  // Clean up audio playback and revoke object URLs
+  const cleanupAudio = useCallback(() => {
+    if (audioAbortController.current) {
+      audioAbortController.current.abort();
+      audioAbortController.current = null;
+    }
+    
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current.src = '';
+    }
+
+    setCurrentAudioUrl((prevUrl) => {
+      if (prevUrl) {
+        URL.revokeObjectURL(prevUrl);
+      }
+      return null;
+    });
+    
+    setCurrentAudio(null);
+    setAudioLoading(false);
+  }, []);
+
+  // Fetch uploads with search and filters
+  const fetchUploads = useCallback(async (page: number = 1, append: boolean = false) => {
+    
+    // Cancel previous request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Create new AbortController for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+    
+    try {
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+      
+      // Always use offset/limit pagination
+      const offset = (page - 1) * pageSize;
+      const params = new URLSearchParams({
+        limit: pageSize.toString(),
+        offset: offset.toString(),
+      });
+      
+      if (searchQuery.trim()) params.append('q', searchQuery.trim());
+      if (sentiment) params.append('sentiment', sentiment);
+      if (fromDate) params.append('from', fromDate);
+      if (toDate) params.append('to', toDate);
+      if (sortBy) params.append('sort_by', sortBy);
+      if (sortOrder) params.append('sort_order', sortOrder);
+      
+      const response = await authenticatedFetch(`/api/user/user_uploads?${params}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'cors',
+        signal: abortController.signal
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch uploads');
+      }
+      
+      const data = await response.json();
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      // Handle unified response format
+      if (append) {
+        setImages(prev => [...prev, ...(data.images || [])]);
+      } else {
+        setImages(data.images || []);
+      }
+      setTotalResults(data.total || 0);
+      setHasMore(data.hasMore || false);
+      setTotalPages(Math.ceil((data.total || 0) / pageSize));
+      setTotalCount(data.total || 0);
+      setCurrentPage(page);
+    } catch (error: any) {
+      // Ignore abort errors
+      if (error.name === 'AbortError') {
+        return;
+      }
+      console.error('Error fetching uploads:', error);
+      if (page === 1) {
+        toast.error('Failed to fetch uploads');
+        setImages([]);
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, authenticatedFetch, pageSize]);
+
+  //Initial fetch and search trigger with debouncing
+  useEffect(() => {
+    setCurrentPage(1);
+    
+    searchTimeoutRef.current = setTimeout(() => {
+      fetchUploads(1, false);
+    }, 300);
+    
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+      // Cancel pending requests on unmount or effect re-run
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
       }
     };
+  }, [fetchUploads, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder, pageSize]);
 
-    fetchUploads();
-  }, [user?.id]);
+  // Page navigation for search results
+  useEffect(() => {
+    if (currentPage > 1 && (searchQuery || sentiment || fromDate || toDate || sortBy !== 'date' || sortOrder !== 'desc')) {
+      fetchUploads(currentPage, false);
+    }
+  }, [fetchUploads, currentPage, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder]);
+
+  // Infinite scroll for non-search mode
+  useEffect(() => {
+    if (viewMode === 'rolling') return;
+    if (searchQuery || sentiment || fromDate || toDate || sortBy !== 'date' || sortOrder !== 'desc') return; // Disable for search mode
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (target.isIntersecting && !loadingMore && !loading && currentPage < totalPages) {
+          const nextPage = currentPage + 1;
+          fetchUploads(nextPage, true);
+        }
+      },
+      {
+        root: null,
+        rootMargin: '1200px',
+        threshold: 0,
+      }
+    );
+
+    const currentTarget = observerTarget.current;
+    if (currentTarget) {
+      observer.observe(currentTarget);
+    }
+
+    return () => {
+      if (currentTarget) {
+        observer.unobserve(currentTarget);
+      }
+    };
+  }, [fetchUploads, currentPage, totalPages, loadingMore, loading, viewMode, searchQuery, sentiment, fromDate, toDate, sortBy, sortOrder]);
+  
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setSentiment('');
+    setFromDate('');
+    setToDate('');
+    setSortBy('date');
+    setSortOrder('desc');
+    setCurrentPage(1);
+  };
 
   const handleEdit = (image: Upload) => {
     setEditingImage(image);
@@ -177,16 +402,9 @@ const Gallery = () => {
       formData.append('description', description);
       formData.append('sentiment', sentiment);
 
-      // Get the authentication token from Clerk
-      const token = await window.Clerk.session?.getToken();
-
-      const response = await fetch(`http://127.0.0.1:5000/edit/${id}`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+      const response = await authenticatedFetch(`/edit/${id}`, {
+        method: 'PATCH',
         body: formData,
-        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -194,7 +412,7 @@ const Gallery = () => {
         throw new Error(data.error || 'Failed to update image');
       }
 
-      setImages(images.map(img => 
+      setImages(images.map(img =>
         img.id === id ? { ...img, title, description, sentiment } : img
       ));
 
@@ -211,27 +429,38 @@ const Gallery = () => {
     }
 
     try {
-      // Get the authentication token from Clerk
-      const token = await window.Clerk.session?.getToken();
+      // Optimistically update UI for immediate feedback
+      const newImages = images.filter(img => img.id !== id);
+      setImages(newImages);
+      setTotalCount(prevCount => prevCount - 1);
 
-      const response = await fetch(`http://127.0.0.1:5000/delete/${id}`, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include',
-      });
-
+      // Perform the deletion
+      const response = await authenticatedFetch(`/delete/${id}`, { method: 'DELETE' });
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || 'Failed to delete image');
+        let errorMsg = 'Failed to delete image';
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.error || errorMsg;
+        } catch (e) {
+          // Response was not JSON, stick with the default message.
+        }
+        throw new Error(errorMsg);
+      }
+      // If the last item on a page (other than the first) was deleted, go to the previous page
+      if (newImages.length === 0 && currentPage > 1) {
+        fetchUploads(currentPage - 1, false);
+      } else {
+        // Refetch the current page to pull a new item from the next page if available
+        // and to ensure pagination metadata is correct
+        fetchUploads(currentPage, false);
       }
 
-      setImages(images.filter(img => img.id !== id));
       toast.success('Image deleted successfully!');
     } catch (error) {
       console.error('Error deleting image:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to delete image');
+      // On error, refetch to restore correct state
+      fetchUploads(currentPage, false);
     }
   };
 
@@ -246,33 +475,100 @@ const Gallery = () => {
   };
 
   const handleDownload = (filename: string) => {
-    const url = `http://127.0.0.1:5000/static/uploads/${filename}`;
+    const url = apiUrl(`/static/uploads/${filename}`);
     window.open(url, '_blank');
     toast.success('File opened in new window!');
   };
 
-  const handleAudioClick = (audioFilename: string) => {
+  const handleAudioClick = async (audioFilename: string) => {
     if (currentAudio === audioFilename) {
-      // If clicking the same audio, stop it
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+      cleanupAudio();
+      return;
+    }
+
+    if (audioAbortController.current) {
+      audioAbortController.current.abort();
+    }
+
+    const controller = new AbortController();
+    audioAbortController.current = controller;
+
+    setCurrentAudio(audioFilename);
+    setAudioLoading(true);
+
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+    }
+
+    try {
+      const response = await authenticatedFetch(`/api/audio/${audioFilename}`, {
+        method: 'GET',
+        signal: controller.signal,
+      });
+
+      if (controller.signal.aborted) {
+        return;
       }
-      setCurrentAudio(null);
-    } else {
-      // If clicking a different audio, stop current and play new
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
+
+      if (!response.ok) {
+        let errorMsg = `Audio load failed (${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.error || errorMsg;
+        } catch {
+          errorMsg = 'Failed to load audio file';
+        }
+        toast.error(errorMsg);
+        cleanupAudio();
+        return;
       }
-      setCurrentAudio(audioFilename);
+
+      const blob = await response.blob();
+
+      if (controller.signal.aborted) {
+        return;
+      }
+
+      const objectUrl = URL.createObjectURL(blob);
+      setCurrentAudioUrl((prevUrl) => {
+        if (prevUrl) {
+          URL.revokeObjectURL(prevUrl);
+        }
+        return objectUrl;
+      });
+      setAudioLoading(false);
+
+      if (audioRef.current) {
+        audioRef.current.src = objectUrl;
+        audioRef.current.play().catch((error) => {
+          if (!controller.signal.aborted) {
+            console.error('Error playing audio:', error);
+            toast.error('Error playing audio');
+            cleanupAudio();
+          }
+        });
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        return;
+      }
+      console.error('Error fetching audio:', error);
+      toast.error('Unable to load audio');
+      cleanupAudio();
     }
   };
+
+  useEffect(() => {
+    return () => {
+      cleanupAudio();
+    };
+  }, [cleanupAudio]);
 
   const renderFilePreview = () => {
     if (!selectedFile) return null;
 
-    const fileUrl = `http://127.0.0.1:5000/static/uploads/${selectedFile}`;
+    const fileUrl = apiUrl(`/static/uploads/${selectedFile}`);
     const isPDF = selectedFile.toLowerCase().endsWith('.pdf');
 
     if (isPDF) {
@@ -297,15 +593,15 @@ const Gallery = () => {
   const getThumbnailUrl = (filename: string) => {
     if (filename.toLowerCase().endsWith('.pdf')) {
       // For PDFs, use the thumbnail
-      return `http://127.0.0.1:5000/static/uploads/thumbnails/${filename.replace('.pdf', '.jpg')}`;
+      return apiUrl(`/static/uploads/thumbnails/${filename.replace('.pdf', '.jpg')}`);
     }
     // For images, use the original file
-    return `http://127.0.0.1:5000/static/uploads/${filename}`;
+    return apiUrl(`/static/uploads/${filename}`);
   };
 
   const getSentimentColor = (sentiment?: string) => {
     if (!sentiment) return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-    
+
     switch (sentiment.toLowerCase()) {
       case 'positive':
         return 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100';
@@ -331,26 +627,26 @@ const Gallery = () => {
     }
   };
 
-  const getCardSize = () => {
-    switch (gridSize) {
-      case 'small':
-        return 'h-40';
-      case 'medium':
-        return 'h-48';
-      case 'large':
-        return 'h-64';
-      default:
-        return 'h-48';
-    }
-  };
+  // NOTE: Filtering should be handled server-side for paginated data.
+  // Filters are passed as query params in `fetchUploads`.
+  const filteredImages = images;
 
   const handleRollingNavigation = (direction: 'prev' | 'next') => {
     if (direction === 'prev') {
-      setCurrentRollingIndex(prevIndex => (prevIndex === 0 ? images.length - 1 : prevIndex - 1));
+      setCurrentRollingIndex(prevIndex => (prevIndex === 0 ? filteredImages.length - 1 : prevIndex - 1));
     } else {
-      setCurrentRollingIndex(prevIndex => (prevIndex === images.length - 1 ? 0 : prevIndex + 1));
+      setCurrentRollingIndex(prevIndex => (prevIndex === filteredImages.length - 1 ? 0 : prevIndex + 1));
     }
   };
+
+  useEffect(() => {
+    setCurrentRollingIndex(prevIndex => {
+      if (prevIndex >= filteredImages.length && filteredImages.length > 0) {
+        return 0;
+      }
+      return prevIndex;
+    });
+  }, [filteredImages.length]);
 
   const renderRollingView = () => {
     return (
@@ -381,134 +677,135 @@ const Gallery = () => {
           </motion.button>
         </div>
 
-        {/* Image Counter */}
         <div className="absolute top-4 right-4 z-10">
           <div className="px-4 py-2 rounded-full bg-black/50 backdrop-blur-sm text-white text-sm font-medium">
-            {currentRollingIndex + 1} / {images.length}
+            {filteredImages.length > 0 ? currentRollingIndex + 1 : 0} / {filteredImages.length}
           </div>
         </div>
+        {filteredImages.length === 0 ? (
+          <div className="flex items-center justify-center h-[75vh]">
+            <p className="text-gray-500 dark:text-gray-400 text-lg">No images match your filters</p>
+          </div>
+        ) : (
+          <div className="relative h-[75vh] w-full">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentRollingIndex}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 1.05 }}
+                transition={{ duration: 0.4, ease: "easeOut" }}
+                className="absolute inset-0 flex items-center justify-center"
+              >
+                <div className="relative w-full h-full max-w-5xl mx-auto">
+                  <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl">
+                    <img
+                      src={getThumbnailUrl(filteredImages[currentRollingIndex].filename)}
+                      alt={filteredImages[currentRollingIndex].title}
+                      className="w-full h-full object-contain bg-gray-100 dark:bg-gray-800"
+                    />
 
-        {/* Main Image Display */}
-        <div className="relative h-[75vh] w-full">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={currentRollingIndex}
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 1.05 }}
-              transition={{ duration: 0.4, ease: "easeOut" }}
-              className="absolute inset-0 flex items-center justify-center"
-            >
-              <div className="relative w-full h-full max-w-5xl mx-auto">
-                <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-2xl">
-                  <img
-                    src={getThumbnailUrl(images[currentRollingIndex].filename)}
-                    alt={images[currentRollingIndex].title}
-                    className="w-full h-full object-contain bg-gray-100 dark:bg-gray-800"
-                  />
-                  
-                  {/* Enhanced Overlay */}
-                  <motion.div 
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-8"
-                  >
-                    <div className="max-w-3xl mx-auto">
-                      <motion.h3 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3 }}
-                        className="text-3xl font-bold text-white mb-3"
-                      >
-                        {images[currentRollingIndex].title}
-                      </motion.h3>
-                      <motion.p 
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4 }}
-                        className="text-gray-200 text-lg mb-6"
-                      >
-                        {images[currentRollingIndex].description}
-                      </motion.p>
-                      
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          {images[currentRollingIndex].sentiment && (
-                            <motion.span
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: 0.5 }}
-                              className={`px-4 py-2 rounded-full text-sm font-medium ${getSentimentColor(images[currentRollingIndex].sentiment)}`}
+                    {/* Enhanced Overlay */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.2 }}
+                      className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent p-8"
+                    >
+                      <div className="max-w-3xl mx-auto">
+                        <motion.h3
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3 }}
+                          className="text-3xl font-bold text-white mb-3"
+                        >
+                          {filteredImages[currentRollingIndex].title}
+                        </motion.h3>
+                        <motion.p
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.4 }}
+                          className="text-gray-200 text-lg mb-6"
+                        >
+                          {filteredImages[currentRollingIndex].description}
+                        </motion.p>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center space-x-4">
+                            {filteredImages[currentRollingIndex].sentiment && (
+                              <motion.span
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.5 }}
+                                className={`px-4 py-2 rounded-full text-sm font-medium ${getSentimentColor(filteredImages[currentRollingIndex].sentiment)}`}
+                              >
+                                {filteredImages[currentRollingIndex].sentiment}
+                              </motion.span>
+                            )}
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: 0.6 }}
+                              className="text-sm text-gray-300"
                             >
-                              {images[currentRollingIndex].sentiment}
-                            </motion.span>
-                          )}
-                          <motion.div
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.6 }}
-                            className="text-sm text-gray-300"
-                          >
-                            Uploaded: {new Date(images[currentRollingIndex].created_at).toLocaleDateString()}
-                          </motion.div>
-                        </div>
-                        
-                        <div className="flex items-center space-x-3">
-                          <motion.button
-                            onClick={() => handleEdit(images[currentRollingIndex])}
-                            className="p-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200 group"
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            <PencilIcon className="h-5 w-5" />
-                            <span className="absolute bottom-full mb-2 px-2 py-1 bg-black/80 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                              Edit
-                            </span>
-                          </motion.button>
-                          <motion.button
-                            onClick={() => handleDelete(images[currentRollingIndex].id)}
-                            className="p-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200 group"
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            <TrashIcon className="h-5 w-5" />
-                            <span className="absolute bottom-full mb-2 px-2 py-1 bg-black/80 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                              Delete
-                            </span>
-                          </motion.button>
-                          <motion.button
-                            onClick={() => handleDownload(images[currentRollingIndex].filename)}
-                            className="p-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200 group"
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            <ArrowDownTrayIcon className="h-5 w-5" />
-                            <span className="absolute bottom-full mb-2 px-2 py-1 bg-black/80 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                              Download
-                            </span>
-                          </motion.button>
+                              Uploaded: {new Date(filteredImages[currentRollingIndex].created_at).toLocaleDateString()}
+                            </motion.div>
+                          </div>
+
+                          <div className="flex items-center space-x-3">
+                            <motion.button
+                              onClick={() => handleEdit(filteredImages[currentRollingIndex])}
+                              className="p-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200 group"
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <PencilIcon className="h-5 w-5" />
+                              <span className="absolute bottom-full mb-2 px-2 py-1 bg-black/80 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                                Edit
+                              </span>
+                            </motion.button>
+                            <motion.button
+                              onClick={() => handleDelete(filteredImages[currentRollingIndex].id)}
+                              className="p-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200 group"
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <TrashIcon className="h-5 w-5" />
+                              <span className="absolute bottom-full mb-2 px-2 py-1 bg-black/80 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                                Delete
+                              </span>
+                            </motion.button>
+                            <motion.button
+                              onClick={() => handleDownload(filteredImages[currentRollingIndex].filename)}
+                              className="p-2.5 rounded-full bg-white/20 hover:bg-white/30 text-white transition-all duration-200 group"
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <ArrowDownTrayIcon className="h-5 w-5" />
+                              <span className="absolute bottom-full mb-2 px-2 py-1 bg-black/80 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
+                                Download
+                              </span>
+                            </motion.button>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
+                    </motion.div>
+                  </div>
                 </div>
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        )}
 
-        {/* Enhanced Dot Navigation */}
         <div className="mt-6 mb-6 flex justify-center space-x-3">
-          {images.map((_, index) => (
+          {filteredImages.map((_, index) => (
             <motion.button
               key={index}
               onClick={() => setCurrentRollingIndex(index)}
-              className={`w-3 h-3 rounded-full transition-all duration-200 ${
-                index === currentRollingIndex
-                  ? 'bg-yellow-400 scale-125'
-                  : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
-              }`}
+              className={`w-3 h-3 rounded-full transition-all duration-200 ${index === currentRollingIndex
+                ? 'bg-yellow-400 scale-125'
+                : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
+                }`}
               whileHover={{ scale: 1.2 }}
               whileTap={{ scale: 0.9 }}
             />
@@ -522,8 +819,15 @@ const Gallery = () => {
     <div className="py-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Gallery</h1>
-          
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">My Gallery</h1>
+            {totalResults > 0 && (
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Showing {images.length} of {totalResults} images
+              </p>
+            )}
+          </div>
+
           <div className="flex items-center space-x-4">
             <div className="relative">
               <button
@@ -533,7 +837,7 @@ const Gallery = () => {
               >
                 <AdjustmentsHorizontalIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
               </button>
-              
+
               {showLayoutOptions && (
                 <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg py-2 z-10">
                   <div className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
@@ -547,11 +851,10 @@ const Gallery = () => {
                           setGridSize(size as 'small' | 'medium' | 'large');
                           setShowLayoutOptions(false);
                         }}
-                        className={`w-full text-left px-2 py-1 rounded-md text-sm ${
-                          gridSize === size
-                            ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100'
-                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }`}
+                        className={`w-full text-left px-2 py-1 rounded-md text-sm ${gridSize === size
+                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-800 dark:text-yellow-100'
+                          : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                          }`}
                       >
                         {size.charAt(0).toUpperCase() + size.slice(1)}
                       </button>
@@ -561,186 +864,493 @@ const Gallery = () => {
               )}
             </div>
 
-            <div className="flex rounded-lg bg-white dark:bg-gray-800 shadow-sm p-1">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-md transition-colors duration-200 ${
-                  viewMode === 'grid'
-                    ? 'bg-yellow-400 text-black'
-                    : 'text-gray-600 hover:text-yellow-400 dark:text-gray-400'
-                }`}
-                title="Grid View"
-              >
-                <Squares2X2Icon className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-md transition-colors duration-200 ${
-                  viewMode === 'list'
-                    ? 'bg-yellow-400 text-black'
-                    : 'text-gray-600 hover:text-yellow-400 dark:text-gray-400'
-                }`}
-                title="List View"
-              >
-                <ListBulletIcon className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('rolling')}
-                className={`p-2 rounded-md transition-colors duration-200 ${
-                  viewMode === 'rolling'
-                    ? 'bg-yellow-400 text-black'
-                    : 'text-gray-600 hover:text-yellow-400 dark:text-gray-400'
-                }`}
-                title="Rolling View"
-              >
-                <ChevronRightIcon className="h-5 w-5" />
-              </button>
+            <div className="flex items-center space-x-3">
+              <div className="flex rounded-lg bg-white dark:bg-gray-800 shadow-sm p-1">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-md transition-colors duration-200 ${
+                    viewMode === 'grid'
+                      ? 'bg-yellow-400 text-black'
+                      : 'text-gray-600 hover:text-yellow-400 dark:text-gray-400'
+                  }`}
+                  title="Grid View"
+                >
+                  <Squares2X2Icon className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-md transition-colors duration-200 ${
+                    viewMode === 'list'
+                      ? 'bg-yellow-400 text-black'
+                      : 'text-gray-600 hover:text-yellow-400 dark:text-gray-400'
+                  }`}
+                  title="List View"
+                >
+                  <ListBulletIcon className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => setViewMode('rolling')}
+                  className={`p-2 rounded-md transition-colors duration-200 ${
+                    viewMode === 'rolling'
+                      ? 'bg-yellow-400 text-black'
+                      : 'text-gray-600 hover:text-yellow-400 dark:text-gray-400'
+                  }`}
+                  title="Rolling View"
+                >
+                  <ChevronRightIcon className="h-5 w-5" />
+                </button>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <label className="text-sm text-gray-600 dark:text-gray-300">Items:</label>
+                <select
+                  value={pageSize}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value) || 10);
+                  }}
+                  className="px-2 py-1 rounded-md bg-white dark:bg-gray-800 text-sm"
+                >
+                  <option value={10}>10</option>
+                  <option value={20}>20</option>
+                  <option value={50}>50</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
 
-        {loading ? (
+        {/* Search and Filter Section */}
+        <div className="mb-6 space-y-4">
+          {/* Search Bar */}
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <MagnifyingGlassIcon className="h-5 w-5 text-gray-400" />
+            </div>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by title or description..."
+              className="block w-full pl-10 pr-12 py-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-500 focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              >
+                <XMarkIcon className="h-5 w-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" />
+              </button>
+            )}
+          </div>
+
+          {/* Filter Toggle Button */}
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
+            >
+              <FunnelIcon className="h-5 w-5 text-gray-600 dark:text-gray-400" />
+              <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {showFilters ? 'Hide Filters' : 'Show Filters'}
+              </span>
+              {(sentiment || fromDate || toDate) && (
+                <span className="ml-2 px-2 py-0.5 bg-yellow-400 text-black text-xs rounded-full font-medium">
+                  Active
+                </span>
+              )}
+            </button>
+
+            {/* Results count */}
+            <div className="text-sm text-gray-600 dark:text-gray-400">
+              {totalResults > 0 ? (
+                <span>
+                  Showing {images.length} of {totalResults} upload{totalResults !== 1 ? 's' : ''}
+                </span>
+              ) : (
+                !loading && <span>No uploads found</span>
+              )}
+            </div>
+          </div>
+
+          {/* Advanced Filters */}
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4 space-y-4"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Sentiment Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Sentiment
+                  </label>
+                  <select
+                    value={sentiment}
+                    onChange={(e) => setSentiment(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
+                  >
+                    <option value="">All Sentiments</option>
+                    <option value="positive">Positive</option>
+                    <option value="neutral">Neutral</option>
+                    <option value="negative">Negative</option>
+                  </select>
+                </div>
+
+                {/* From Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    From Date
+                  </label>
+                  <input
+                    type="date"
+                    value={fromDate ? fromDate.split('T')[0] : ''}
+                    onChange={(e) => setFromDate(e.target.value ? `${e.target.value}T00:00:00Z` : '')}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
+                  />
+                </div>
+
+                {/* To Date */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    To Date
+                  </label>
+                  <input
+                    type="date"
+                    value={toDate ? toDate.split('T')[0] : ''}
+                    onChange={(e) => setToDate(e.target.value ? `${e.target.value}T23:59:59Z` : '')}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
+                  />
+                </div>
+
+                {/* Sort By */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Sort By
+                  </label>
+                  <div className="flex space-x-2">
+                    <select
+                      value={sortBy}
+                      onChange={(e) => {
+                        const newValue = e.target.value;
+                        setSortBy(newValue);
+                        // Auto-switch from relevance to date if search query is cleared
+                        if (newValue === 'relevance' && !searchQuery) {
+                          setSortBy('date');
+                        }
+                      }}
+                      className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition-colors duration-200"
+                    >
+                      <option value="date">Date</option>
+                      <option value="title">Title</option>
+                      {searchQuery && <option value="relevance">Relevance</option>}
+                    </select>
+                    <button
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                      className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors duration-200"
+                      title={sortOrder === 'asc' ? 'Ascending' : 'Descending'}
+                    >
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Clear Filters Button */}
+              <div className="flex justify-end">
+                <button
+                  onClick={handleClearFilters}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors duration-200"
+                >
+                  Clear All Filters
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </div>
+
+        {loading && currentPage === 1 ? (
           <div className="flex justify-center items-center h-64">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-400"></div>
           </div>
         ) : viewMode === 'rolling' ? (
           renderRollingView()
         ) : (
-          <div className={viewMode === 'grid' ? `grid gap-6 ${getGridCols()}` : 'space-y-4'}>
-            {images.map((image, index) => (
-              <motion.div
-                key={image.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  duration: 0.3,
-                  delay: index * 0.1,
-                  ease: "easeOut"
-                }}
-                whileHover={{ scale: 1.02 }}
-                className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md ${
-                  viewMode === 'list' ? 'flex items-center' : ''
-                }`}
-              >
-                <motion.div
-                  className={`relative cursor-pointer group ${
-                    viewMode === 'list' ? 'w-32 h-32 flex-shrink-0' : 'w-full'
-                  }`}
-                  onClick={() => handleFileClick(image.filename)}
-                  whileHover={{ scale: 1.05 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <img
-                    src={getThumbnailUrl(image.filename)}
-                    alt={image.title}
-                    className={`w-full h-full object-cover transition-transform duration-200`}
-                  />
-                  {image.sentiment && (
-                    <motion.span
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${getSentimentColor(image.sentiment)}`}
-                    >
-                      {image.sentiment}
-                    </motion.span>
-                  )}
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity duration-200" />
-                </motion.div>
-
-                <div className={`p-4 ${viewMode === 'list' ? 'flex-grow flex flex-col justify-between min-w-0' : ''}`}>
-                  <div className="flex-grow">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="min-w-0 flex-1">
-                        <motion.h3 
-                          className="text-lg font-semibold mb-1 text-gray-900 dark:text-white truncate"
-                          whileHover={{ x: 5 }}
-                          transition={{ duration: 0.2 }}
-                        >
-                          {image.title}
-                        </motion.h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
-                          {image.description}
-                        </p>
-                        {viewMode === 'list' && (
-                          <motion.div 
-                            className="text-xs text-gray-500 dark:text-gray-400 mt-1"
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            transition={{ delay: 0.2 }}
-                          >
-                            Uploaded: {new Date(image.created_at).toLocaleDateString()}
-                          </motion.div>
-                        )}
-                      </div>
-                      <div className="flex items-center space-x-2 flex-shrink-0">
-                        <motion.button
-                          onClick={() => handleEdit(image)}
-                          className="p-1.5 text-gray-600 hover:text-yellow-400 dark:text-gray-400 transition-colors duration-200"
-                          title="Edit"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <PencilIcon className="h-4 w-4" />
-                        </motion.button>
-                        <motion.button
-                          onClick={() => handleDelete(image.id)}
-                          className="p-1.5 text-gray-600 hover:text-red-500 dark:text-gray-400 transition-colors duration-200"
-                          title="Delete"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <TrashIcon className="h-4 w-4" />
-                        </motion.button>
-                        <motion.button
-                          onClick={() => handleDownload(image.filename)}
-                          className="p-1.5 text-gray-600 hover:text-yellow-400 dark:text-gray-400 transition-colors duration-200"
-                          title="Download"
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.95 }}
-                        >
-                          <ArrowDownTrayIcon className="h-4 w-4" />
-                        </motion.button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {image.audio_filename && (
-                    <motion.div 
-                      className="flex items-center space-x-2 mt-2"
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.3 }}
-                    >
-                      <motion.button
-                        onClick={() => handleAudioClick(image.audio_filename!)}
-                        className={`p-1.5 rounded-full transition-colors duration-200 ${
-                          currentAudio === image.audio_filename
-                            ? 'bg-yellow-400 text-black'
-                            : 'text-gray-600 hover:text-yellow-400 dark:text-gray-400'
-                        }`}
-                        title="Play Voice Note"
-                        whileHover={{ scale: 1.1 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
-                        <SpeakerWaveIcon className="h-4 w-4" />
-                      </motion.button>
-                      {currentAudio === image.audio_filename && (
-                        <motion.audio
-                          ref={audioRef}
-                          src={`http://127.0.0.1:5000/audio/${image.audio_filename}`}
-                          controls
-                          className="h-6"
-                          onEnded={() => setCurrentAudio(null)}
-                          initial={{ opacity: 0, x: -10 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.2 }}
-                        />
-                      )}
-                    </motion.div>
+          <>
+            <div className={viewMode === 'grid' ? `grid gap-6 ${getGridCols()}` : 'space-y-4'}>
+              {filteredImages.length === 0 ? (
+                <div className="col-span-full flex flex-col items-center justify-center h-64 text-center">
+                  <EmptyGalleryIcon />
+                  {images.length === 0 ? (
+                    <>
+                      <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-300 mb-2">No uploads yet</h3>
+                      <p className="text-gray-500 dark:text-gray-400">Start by uploading your first image or document</p>
+                    </>
+                  ) : (
+                    <p className="text-gray-500 dark:text-gray-400 text-lg">No images match your filters</p>
                   )}
                 </div>
-              </motion.div>
-            ))}
+              ) : (
+                filteredImages.map((image, index) => (
+                  <motion.div
+                    key={image.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{
+                      duration: 0.3,
+                      delay: index * 0.1,
+                      ease: "easeOut"
+                    }}
+                    whileHover={{ scale: 1.02 }}
+                    className={`bg-white dark:bg-gray-800 rounded-xl shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md ${viewMode === 'list' ? 'flex items-center' : ''
+                      }`}
+                  >
+                    <motion.div
+                      className={`relative cursor-pointer group ${viewMode === 'list' ? 'w-32 h-32 flex-shrink-0' : 'w-full aspect-[4/3]'
+                        }`}
+                      onClick={() => handleFileClick(image.filename)}
+                      whileHover={{ scale: 1.05 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <img
+                        src={getThumbnailUrl(image.filename)}
+                        alt={image.title}
+                        className={`w-full h-full object-cover transition-transform duration-200`}
+                      />
+                      {image.sentiment && (
+                        <motion.span
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium ${getSentimentColor(image.sentiment)}`}
+                        >
+                          {image.sentiment}
+                        </motion.span>
+                      )}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-opacity duration-200" />
+                    </motion.div>
+
+                    <div className={`p-4 ${viewMode === 'list' ? 'flex-grow flex flex-col justify-between min-w-0' : ''}`}>
+                      <div className="flex-grow">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="min-w-0 flex-1">
+                            <motion.h3
+                              className="text-lg font-semibold mb-1 text-gray-900 dark:text-white truncate"
+                              whileHover={{ x: 5 }}
+                              transition={{ duration: 0.2 }}
+                            >
+                              {image.title}
+                            </motion.h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+                              {image.description}
+                            </p>
+                            {viewMode === 'list' && (
+                              <motion.div
+                                className="text-xs text-gray-500 dark:text-gray-400 mt-1"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.2 }}
+                              >
+                                Uploaded: {new Date(image.created_at).toLocaleDateString()}
+                              </motion.div>
+                            )}
+                          </div>
+                          <div className="flex items-center space-x-2 flex-shrink-0">
+                            <motion.button
+                              onClick={() => handleEdit(image)}
+                              className="p-1.5 text-gray-600 hover:text-yellow-400 dark:text-gray-400 transition-colors duration-200"
+                              title="Edit"
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <PencilIcon className="h-4 w-4" />
+                            </motion.button>
+                            <motion.button
+                              onClick={() => handleDelete(image.id)}
+                              className="p-1.5 text-gray-600 hover:text-red-500 dark:text-gray-400 transition-colors duration-200"
+                              title="Delete"
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <TrashIcon className="h-4 w-4" />
+                            </motion.button>
+                            <motion.button
+                              onClick={() => handleDownload(image.filename)}
+                              className="p-1.5 text-gray-600 hover:text-yellow-400 dark:text-gray-400 transition-colors duration-200"
+                              title="Download"
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
+                            >
+                              <ArrowDownTrayIcon className="h-4 w-4" />
+                            </motion.button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {image.audio_filename && (
+                        <motion.div
+                          className="flex items-center space-x-2 mt-2"
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.3 }}
+                        >
+                          <motion.button
+                            onClick={() => handleAudioClick(image.audio_filename!)}
+                            disabled={audioLoading && currentAudio !== image.audio_filename}
+                            className={`p-1.5 rounded-full transition-colors duration-200 ${
+                              currentAudio === image.audio_filename
+                                ? 'bg-yellow-400 text-black'
+                                : audioLoading
+                                ? 'text-gray-400 cursor-not-allowed dark:text-gray-600'
+                                : 'text-gray-600 hover:text-yellow-400 dark:text-gray-400'
+                            }`}
+                            title="Play Voice Note"
+                            whileHover={{ scale: audioLoading ? 1 : 1.1 }}
+                            whileTap={{ scale: audioLoading ? 1 : 0.95 }}
+                          >
+                            {audioLoading && currentAudio === image.audio_filename ? (
+                              <div className="h-4 w-4 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <SpeakerWaveIcon className="h-4 w-4" />
+                            )}
+                          </motion.button>
+                          {currentAudio === image.audio_filename && currentAudioUrl && !audioLoading && (
+                            <motion.audio
+                              ref={audioRef}
+                              src={currentAudioUrl}
+                              controls
+                              className="h-6"
+                              onEnded={() => cleanupAudio()}
+                              onError={(e) => {
+                                console.error('Audio playback error:', e);
+                                toast.error('Error playing audio');
+                                cleanupAudio();
+                              }}
+                              initial={{ opacity: 0, x: -10 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.2 }}
+                            />
+                          )}
+                        </motion.div>
+                      )}
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </div>
+
+            {/* Loading indicator */}
+            {loadingMore && (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
+              </div>
+            )}
+
+            {/* Infinite scroll observer target */}
+            <div ref={observerTarget} className="h-1" />
+
+            {/* End of page indicator */}
+            {currentPage >= totalPages && images.length > 0 && (
+              <div className="flex justify-center py-8">
+                <p className="text-gray-500 dark:text-gray-400 text-center">
+                  You've viewed all {totalCount} images
+                </p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && totalResults > pageSize && (searchQuery || sentiment || fromDate || toDate || sortBy !== 'date' || sortOrder !== 'desc') && (
+          <div className="mt-8 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-6">
+            <div className="flex-1 flex justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className={`relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md ${
+                  currentPage === 1
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={!hasMore}
+                className={`ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium rounded-md ${
+                  !hasMore
+                    ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                    : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
+              >
+                Next
+              </button>
+            </div>
+
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Showing <span className="font-medium">{(currentPage - 1) * pageSize + 1}</span> to{' '}
+                  <span className="font-medium">{Math.min(currentPage * pageSize, totalResults)}</span> of{' '}
+                  <span className="font-medium">{totalResults}</span> results
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 text-sm font-medium ${
+                      currentPage === 1
+                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                        : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <span className="sr-only">Previous</span>
+                    <ChevronLeftIcon className="h-5 w-5" aria-hidden="true" />
+                  </button>
+
+                  {/* Page numbers - Optimized generation */}
+                  {generatePageNumbers(currentPage, totalResults, pageSize).map((pageNum, index, array) => {
+                    // Add ellipsis if needed
+                    const showEllipsis = index > 0 && pageNum - array[index - 1] > 1;
+                    return (
+                      <div key={pageNum} className="inline-flex">
+                        {showEllipsis && (
+                          <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
+                            ...
+                          </span>
+                        )}
+                        <button
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm font-medium ${
+                            currentPage === pageNum
+                              ? 'z-10 bg-yellow-400 border-yellow-500 text-black'
+                              : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      </div>
+                    );
+                  })}
+
+                  <button
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={!hasMore}
+                    className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 text-sm font-medium ${
+                      !hasMore
+                        ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 cursor-not-allowed'
+                        : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700'
+                    }`}
+                  >
+                    <span className="sr-only">Next</span>
+                    <ChevronRightIcon className="h-5 w-5" aria-hidden="true" />
+                  </button>
+                </nav>
+              </div>
+            </div>
           </div>
         )}
 

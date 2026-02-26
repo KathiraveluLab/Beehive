@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
+import { apiUrl } from '../../utils/api';
+import { getToken } from '../../utils/auth';
 import {
-  UsersIcon,
   PhotoIcon,
   ChartBarIcon,
   MicrophoneIcon,
@@ -43,7 +44,7 @@ const StatCard = ({
   <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md transition-colors duration-200">
     <div className="p-6">
       <div className="flex items-center">
-        <div className={`p-3 rounded-lg ${color} bg-opacity-10 mr-4`}>
+        <div className={`p-3 rounded-lg ${color}/10 mr-4`}>
           <Icon className={`h-6 w-6 ${color}`} />
         </div>
         <div>
@@ -71,15 +72,19 @@ const Dashboard = () => {
       setLoading(true);
       setError(null);
       
-      // Get the authentication token from Clerk
-      const token = await window.Clerk.session?.getToken();
+      // Get the JWT token from helper
+      const token = getToken();
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
       
-      const response = await fetch('http://127.0.0.1:5000/api/admin/dashboard?limit=10', {
+      const response = await fetch(apiUrl('/api/admin/dashboard?limit=10'), {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers,
         credentials: 'include',
       });
 
@@ -220,4 +225,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard; 
+export default Dashboard;
