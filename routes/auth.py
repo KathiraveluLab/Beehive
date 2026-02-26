@@ -163,7 +163,7 @@ def complete_signup():
 
     if verified_at.tzinfo is None:
         verified_at = verified_at.replace(tzinfo=timezone.utc)
-    if (datetime.now(timezone.utc) - verified_at).total_seconds() > 600:
+    if (datetime.now(timezone.utc) - verified_at).total_seconds() > current_app.config.get("OTP_VERIFY_TIMEOUT_SECONDS", 600):
         db.email_otps.delete_many({"email": email})
         return (
             jsonify(
