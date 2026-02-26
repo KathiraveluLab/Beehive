@@ -56,7 +56,9 @@ CORS(app, resources={
     }
 })  # Enable CORS for all routes with specific configuration
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=30)
-app.secret_key = 'beehive'
+app.secret_key = os.getenv('FLASK_SECRET_KEY')
+if not app.secret_key:
+    raise ValueError("FLASK_SECRET_KEY environment variable must be set")
 app.config['UPLOAD_FOLDER'] = 'static/uploads'
 app.config['PDF_THUMBNAIL_FOLDER'] = 'static/uploads/thumbnails/'
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
