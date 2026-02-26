@@ -1,56 +1,226 @@
-import { SignUp } from '@clerk/clerk-react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { saveToken } from "../../utils/auth";
+import { apiFetch } from "../../utils/apiFetch";
 
 const SignUpPage = () => {
   const navigate = useNavigate();
 
+  const [email, setEmail] = useState("");
+  const [otp, setOtp] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [step, setStep] = useState<"email" | "otp" | "password" | "complete">(
+    "email",
+  );
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const requestOtp = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      await apiFetch("/api/auth/request-otp", {
+        method: "POST",
+        body: JSON.stringify({ email, purpose: "signup" }),
+      });
+
+      // if apiFetch didn't throw → success
+      setStep("otp");
+    } catch (err: any) {
+      setError(err.message || "Failed to send OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyOtp = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      await apiFetch("/api/auth/verify-otp", {
+        method: "POST",
+        body: JSON.stringify({ email, otp }),
+      });
+
+      // success → move ahead
+      setStep("complete");
+    } catch (err: any) {
+      console.error("VERIFY OTP ERROR:", err);
+      setError(err.message || "Invalid or expired OTP");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const completeSignup = async () => {
+    // Email format check
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Please enter a valid email");
+      return;
+    }
+
+    // Password length check
+    if (password.length < 8) {
+      setError("Password must be at least 8 characters");
+      return;
+    }
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = await apiFetch("/api/auth/complete-signup", {
+        method: "POST",
+        body: JSON.stringify({
+          email,
+          username,
+          password,
+        }),
+      });
+
+      saveToken(data.access_token);
+
+      // auto redirect
+      data.role === "admin" ? navigate("/admin") : navigate("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Failed to complete signup");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const setPasswordAndSignup = async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const data = await apiFetch("/api/auth/set-password", {
+        method: "POST",
+        body: JSON.stringify({ email, password, purpose: "signup" }),
+      });
+
+      saveToken(data.access_token);
+
+      data.role === "admin" ? navigate("/admin") : navigate("/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Failed to create account");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <SignUp
-      appearance={{
-        elements: {
-          formButtonPrimary: 
-            'bg-yellow-500 hover:bg-yellow-600 text-white transition-all duration-300 rounded-xl px-8 py-3 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5',
-          card: 
-            'bg-white shadow-none border-none',
-          headerTitle: 
-            'text-2xl font-bold text-gray-900 dark:text-white',
-          headerSubtitle: 
-            'text-gray-500 dark:text-gray-400',
-          socialButtonsBlockButton: 
-            'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 rounded-xl shadow-sm hover:shadow transform hover:-translate-y-0.5',
-          socialButtonsBlockButtonText: 
-            'text-gray-600 dark:text-gray-300 font-medium',
-          formFieldLabel: 
-            'text-gray-700 dark:text-gray-300 font-medium',
-          formFieldInput: 
-            'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-yellow-500 dark:focus:border-yellow-500 focus:ring-4 focus:ring-yellow-500/20 dark:focus:ring-yellow-500/20 rounded-xl transition-all duration-200',
-          footerActionLink: 
-            'text-yellow-600 dark:text-yellow-500 hover:text-yellow-700 dark:hover:text-yellow-400 transition-colors duration-200 font-semibold',
-          dividerLine: 
-            'bg-gray-200 dark:bg-gray-700',
-          dividerText: 
-            'text-gray-400 dark:text-gray-500 bg-transparent px-4',
-          formFieldInputShowPasswordButton: 
-            'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300',
-          otpCodeFieldInput: 
-            'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-yellow-500 dark:focus:border-yellow-500 focus:ring-4 focus:ring-yellow-500/20 dark:focus:ring-yellow-500/20 rounded-xl transition-all duration-200',
-          footer: 
-            'pb-6',
-          main: 
-            'px-6 pt-6',
-        },
-        layout: {
-          socialButtonsPlacement: "bottom",
-          socialButtonsVariant: "blockButton",
-        },
-      }}
-      routing="path"
-      path="/sign-up"
-      signInUrl="/sign-in"
-      afterSignUpUrl="/landing"
-      redirectUrl="/sign-up"
-    />
+    // Added text-gray-900 to ensure text visibility across all systems
+    <div className="inline-block">
+      <div className="bg-white p-8 rounded-xl shadow-xl max-w-md">
+        <h2 className="text-2xl font-bold mb-6 text-center text-gray-800">
+          Sign Up
+        </h2>
+
+        {error && (
+          <p className="text-red-600 text-sm mb-4 text-center font-medium">
+            {error}
+          </p>
+        )}
+
+        <div className="space-y-4">
+          {/* EMAIL STEP */}
+          {step === "email" && (
+            <>
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="input"
+              />
+              <button
+                onClick={requestOtp}
+                disabled={loading}
+                className={`w-full py-2 rounded-md transition font-medium
+    ${
+      loading
+        ? "bg-yellow-300 cursor-not-allowed text-gray-600"
+        : "bg-yellow-400 hover:bg-yellow-600 text-black"
+    }`}
+              >
+                {loading ? "Sending OTP..." : "Send OTP"}
+              </button>
+            </>
+          )}
+
+          {step === "otp" && (
+            <>
+              <input
+                type="text"
+                placeholder="Enter OTP"
+                value={otp}
+                onChange={(e) => setOtp(e.target.value)}
+                className="input"
+              />
+              <button
+                onClick={verifyOtp}
+                className="w-full bg-yellow-400 text-black py-2 rounded-md hover:bg-yellow-600 transition"
+              >
+                Verify OTP
+              </button>
+            </>
+          )}
+
+          {step === "complete" && (
+            <>
+              <input
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                className="input"
+              />
+
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="input"
+              />
+
+              <button
+                onClick={completeSignup}
+                className="w-full bg-yellow-400 text-black py-2 rounded-md hover:bg-yellow-600 transition"
+              >
+                Create Account
+              </button>
+            </>
+          )}
+
+          {/* PASSWORD STEP */}
+          {step === "password" && (
+            <>
+              <input
+                type="password"
+                placeholder="Create password"
+                className="w-full border border-gray-300 px-3 py-2 rounded-lg text-gray-900 bg-white focus:ring-2 focus:ring-amber-500 outline-none"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <button
+                onClick={setPasswordAndSignup}
+                disabled={loading}
+                className="w-full bg-amber-500 hover:bg-amber-600 text-white font-semibold py-2 rounded-lg transition-colors disabled:bg-amber-300"
+              >
+                {loading ? "Creating..." : "Create Account"}
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
-export default SignUpPage; 
+export default SignUpPage;

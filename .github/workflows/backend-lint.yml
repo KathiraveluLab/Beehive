@@ -1,0 +1,47 @@
+name: Backend Lint
+
+on:
+  pull_request:
+    branches:
+      - dev
+    paths:
+      - '**.py'
+      - 'requirements.txt'
+      - '.flake8'
+      - 'pyproject.toml'
+      - '.github/workflows/backend-lint.yml'
+  push:
+    branches:
+      - dev
+    paths:
+      - '**.py'
+      - 'requirements.txt'
+      - '.flake8'
+      - 'pyproject.toml'
+      - '.github/workflows/backend-lint.yml'
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      
+      - name: Install dependencies
+        run: |
+          pip install black==24.10.0 flake8==7.1.1
+      
+      - name: Run Black
+        continue-on-error: true
+        run: black --check .
+      
+      - name: Run Flake8
+        continue-on-error: true
+        run: flake8 .

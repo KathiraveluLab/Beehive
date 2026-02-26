@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom';
-import { useUser } from '@clerk/clerk-react';
 import { CloudArrowUpIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import { useAuth } from '../hooks/useAuth';
 
 const Home = () => {
-  const { user } = useUser();
+  const { user } = useAuth();
 
   return (
     <div className="py-12">
@@ -43,24 +43,24 @@ const Home = () => {
           </Link>
         </div>
 
-        {user?.publicMetadata?.role === 'admin' && (
+        {user?.role === 'admin' && (
           <div className="mt-12">
             <h2 className="text-2xl font-semibold mb-4">Admin Quick Access</h2>
             <div className="flex justify-center space-x-4">
-              <Link 
-                to="/admin" 
+              <Link
+                to="/admin"
                 className="bg-yellow-400 hover:bg-yellow-500 text-black font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
               >
                 Dashboard
               </Link>
-              <Link 
-                to="/admin/users" 
+              <Link
+                to="/admin/users"
                 className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
               >
                 Manage Users
               </Link>
-              <Link 
-                to="/admin/analytics" 
+              <Link
+                to="/admin/analytics"
                 className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-900 dark:text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
               >
                 View Analytics
@@ -73,4 +73,4 @@ const Home = () => {
   );
 };
 
-export default Home; 
+export default Home;

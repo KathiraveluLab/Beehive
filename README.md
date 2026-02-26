@@ -11,7 +11,7 @@ This project aims to analyze behavioral health and complement healthcare practic
 - **Backend**: Flask (Python)
 - **Frontend**: React (TypeScript) in `frontend/`
 - **User Authentication**: Google OAuth2
-- **Local Authentication**: Clerk REST API
+- **Local Authentication**: JWT-based auth with optional Google OAuth for admin
 - **Database**: MongoDB
 - **Storage**: Local filesystem for media uploads in `static/uploads/` with PDF thumbnails in `static/uploads/thumbnails/`
   
@@ -31,6 +31,10 @@ graph TD;
 ## Setup Instructions  
 
 For instructions to configure and run this project locally, see the [setup.md](docs/setup.md).
+
+## GitHub Stars
+
+[![Star History Chart](https://api.star-history.com/svg?repos=KathiraveluLab/Beehive&type=date&legend=top-left)](https://www.star-history.com/#KathiraveluLab/Beehive&type=date&legend=top-left)
 
 ## Contributing  
 
