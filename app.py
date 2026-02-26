@@ -110,7 +110,10 @@ def role_required(required_role):
     
 # Upload images 
 @app.route('/api/user/upload/<user_id>', methods=['POST'])
+@require_auth
 def upload_images(user_id):
+    if request.current_user['id'] != user_id:
+        return jsonify({'error': 'Unauthorized'}), 403
     try:
         username = request.form.get('username', '')
         files = request.files.getlist('files')  # Supports multiple file uploads
