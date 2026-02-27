@@ -285,7 +285,7 @@ const Dashboard = () => {
                 <select
                   id="sort"
                   value={sortOption}
-                  onChange={(e) => setSortOption(e.target.value as any)}
+                  onChange={(e) => setSortOption(e.target.value as 'date_desc'|'date_asc'|'user_asc'|'user_desc')}
                   className="px-3 py-2 border rounded-md text-sm"
                 >
                   <option value="date_desc">Date (newest)</option>
