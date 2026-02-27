@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { apiUrl } from '../../utils/api';
 import { getToken } from '../../utils/auth';
 import {
@@ -63,9 +64,23 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // sorting / filtering state
+  const [sortOption, setSortOption] = useState<'date_desc'|'date_asc'|'user_asc'|'user_desc'>('date_desc');
+  const [filterUser, setFilterUser] = useState('');
+  const [filterFromDate, setFilterFromDate] = useState('');
+  const [filterToDate, setFilterToDate] = useState('');
+
+  const location = useLocation();
+
   useEffect(() => {
+    // if user filter provided in query string, pre-populate
+    const params = new URLSearchParams(location.search);
+    const userParam = params.get('user');
+    if (userParam) {
+      setFilterUser(userParam);
+    }
     fetchDashboardData();
-  }, []);
+  }, [location.search]);
 
   const fetchDashboardData = async () => {
     try {
@@ -157,6 +172,55 @@ const Dashboard = () => {
 
   const { stats, recentUploads } = dashboardData;
 
+  // apply filters and sorting to recent uploads
+  let displayedUploads = [...recentUploads];
+
+  // filter by user substring
+  if (filterUser.trim()) {
+    const term = filterUser.trim().toLowerCase();
+    displayedUploads = displayedUploads.filter((u) =>
+      u.user.toLowerCase().includes(term)
+    );
+  }
+
+  // filter by date range
+  const parseDate = (s: string) => (s ? new Date(s) : null);
+  const from = parseDate(filterFromDate);
+  const to = parseDate(filterToDate);
+  if (from) {
+    displayedUploads = displayedUploads.filter(
+      (u) => new Date(u.timestamp) >= from
+    );
+  }
+  if (to) {
+    // include the entire day of 'to'
+    const end = new Date(to);
+    end.setHours(23, 59, 59, 999);
+    displayedUploads = displayedUploads.filter(
+      (u) => new Date(u.timestamp) <= end
+    );
+  }
+
+  // sort array
+  displayedUploads.sort((a, b) => {
+    switch (sortOption) {
+      case 'date_asc':
+        return (
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
+      case 'date_desc':
+        return (
+          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+        );
+      case 'user_asc':
+        return a.user.localeCompare(b.user);
+      case 'user_desc':
+        return b.user.localeCompare(a.user);
+      default:
+        return 0;
+    }
+  });
+
   return (
     <div className="py-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -188,7 +252,51 @@ const Dashboard = () => {
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md transition-colors duration-200">
           <div className="p-6">
             <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-            {recentUploads.length === 0 ? (
+
+            {/* filter and sort controls */}
+            <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Filter by user"
+                  value={filterUser}
+                  onChange={(e) => setFilterUser(e.target.value)}
+                  className="px-3 py-2 border rounded-md text-sm w-40"
+                />
+                <label className="text-sm">From:</label>
+                <input
+                  type="date"
+                  value={filterFromDate}
+                  onChange={(e) => setFilterFromDate(e.target.value)}
+                  className="px-3 py-2 border rounded-md text-sm"
+                />
+                <label className="text-sm">To:</label>
+                <input
+                  type="date"
+                  value={filterToDate}
+                  onChange={(e) => setFilterToDate(e.target.value)}
+                  className="px-3 py-2 border rounded-md text-sm"
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <label htmlFor="sort" className="text-sm font-medium">
+                  Sort by:
+                </label>
+                <select
+                  id="sort"
+                  value={sortOption}
+                  onChange={(e) => setSortOption(e.target.value as any)}
+                  className="px-3 py-2 border rounded-md text-sm"
+                >
+                  <option value="date_desc">Date (newest)</option>
+                  <option value="date_asc">Date (oldest)</option>
+                  <option value="user_asc">User (A→Z)</option>
+                  <option value="user_desc">User (Z→A)</option>
+                </select>
+              </div>
+            </div>
+
+            {displayedUploads.length === 0 ? (
               <p className="text-gray-500 text-center py-8">No recent activity</p>
             ) : (
               <div className="overflow-x-auto">
@@ -202,7 +310,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {recentUploads.map((upload) => (
+                    {displayedUploads.map((upload) => (
                       <tr
                         key={upload.id}
                         className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"

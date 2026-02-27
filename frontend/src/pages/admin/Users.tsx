@@ -81,6 +81,11 @@ const Users = () => {
     navigate(`/admin/users/${userId}/uploads`);
   };
 
+  const handleUserClick = (name: string) => {
+    // redirect to dashboard with user filter in query string
+    navigate(`/admin?user=${encodeURIComponent(name)}`);
+  };
+
   const handleDownloadCSV = () => {
     try {
       // Create CSV content
@@ -191,7 +196,12 @@ const Users = () => {
                               )}
                             </div>
                             <div className="ml-4">
-                              <div className="font-medium">{user.name || 'N/A'}</div>
+                              <div
+                              className="font-medium cursor-pointer text-blue-600 hover:underline"
+                              onClick={() => handleUserClick(user.name)}
+                            >
+                              {user.name || 'N/A'}
+                            </div>
                               <div className="text-sm text-gray-500 dark:text-gray-400">
                                 {user.email}
                               </div>
