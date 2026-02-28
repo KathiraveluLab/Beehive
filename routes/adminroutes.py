@@ -56,7 +56,7 @@ def get_users():
                 'id': user['id'],
                 'name': f"{user['first_name']} {user['last_name']}".strip(),
                 'email': email,
-                'role': user['unsafe_metadata'].get('role', 'user'),
+                'role': user['public_metadata'].get('role', 'user'),
                 'lastActive': user['last_active_at'],
                 'image': user['image_url'],
                 'clerkId': user['id']
@@ -101,7 +101,7 @@ def get_only_users():
         transformed_users = []
         users_list = users_data  
         for user in users_list:
-            role = user['unsafe_metadata'].get('role', 'user')
+            role = user['public_metadata'].get('role', 'user')
             if role != 'user':
                 continue
             email = user['email_addresses'][0]['email_address'] if user['email_addresses'] else None
