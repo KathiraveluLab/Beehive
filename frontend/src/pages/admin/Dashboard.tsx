@@ -80,7 +80,7 @@ const Dashboard = () => {
       setFilterUser(userParam);
     }
     fetchDashboardData();
-  }, [location.search]);
+  }, [location.search, sortOption, filterFromDate, filterToDate, filterUser]);
 
   const fetchDashboardData = async () => {
     try {
@@ -97,7 +97,15 @@ const Dashboard = () => {
         headers['Authorization'] = `Bearer ${token}`;
       }
       
-      const response = await fetch(apiUrl('/api/admin/dashboard?limit=10'), {
+      // build query params to send filtering/sorting to server
+      const qp = new URLSearchParams();
+      qp.set('limit', '50');
+      if (filterUser) qp.set('user', filterUser);
+      if (filterFromDate) qp.set('from', filterFromDate);
+      if (filterToDate) qp.set('to', filterToDate);
+      if (sortOption) qp.set('sort', sortOption);
+
+      const response = await fetch(apiUrl(`/api/admin/dashboard?${qp.toString()}`), {
         method: 'GET',
         headers,
         credentials: 'include',
@@ -171,55 +179,7 @@ const Dashboard = () => {
   }
 
   const { stats, recentUploads } = dashboardData;
-
-  // apply filters and sorting to recent uploads
-  let displayedUploads = [...recentUploads];
-
-  // filter by user substring
-  if (filterUser.trim()) {
-    const term = filterUser.trim().toLowerCase();
-    displayedUploads = displayedUploads.filter((u) =>
-      u.user.toLowerCase().includes(term)
-    );
-  }
-
-  // filter by date range
-  const parseDate = (s: string) => (s ? new Date(s) : null);
-  const from = parseDate(filterFromDate);
-  const to = parseDate(filterToDate);
-  if (from) {
-    displayedUploads = displayedUploads.filter(
-      (u) => new Date(u.timestamp) >= from
-    );
-  }
-  if (to) {
-    // include the entire day of 'to'
-    const end = new Date(to);
-    end.setHours(23, 59, 59, 999);
-    displayedUploads = displayedUploads.filter(
-      (u) => new Date(u.timestamp) <= end
-    );
-  }
-
-  // sort array
-  displayedUploads.sort((a, b) => {
-    switch (sortOption) {
-      case 'date_asc':
-        return (
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-        );
-      case 'date_desc':
-        return (
-          new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
-        );
-      case 'user_asc':
-        return a.user.localeCompare(b.user);
-      case 'user_desc':
-        return b.user.localeCompare(a.user);
-      default:
-        return 0;
-    }
-  });
+  const displayedUploads = recentUploads;
 
   return (
     <div className="py-8">
