@@ -7,7 +7,8 @@ class AdminUser(HttpUser):
 
 
     def on_start(self):
-        self.token = os.getenv("CLERK_SECRET_KEY")  
+        # For load testing, set ADMIN_TEST_TOKEN to a valid JWT access token
+        self.token = os.getenv("ADMIN_TEST_TOKEN")
         self.headers = {
             "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"

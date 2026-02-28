@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useClerk } from '@clerk/clerk-react';
+import { getToken } from '../../utils/auth';
 import { motion } from 'framer-motion';
+import Pagination from '../../components/ui/Pagination';
 import { ArrowLeftIcon, XMarkIcon, ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 import { toast } from 'react-hot-toast';
+import { apiUrl } from '../../utils/api';
 
 interface Upload {
   id: string;
@@ -18,56 +20,93 @@ interface Upload {
 const UserUploads = () => {
   const { userId } = useParams();
   const navigate = useNavigate();
-  const clerk = useClerk();
+  const token = getToken();
   const [uploads, setUploads] = useState<Upload[]>([]);
-  const [userName, setUserName] = useState('User');
+  const userName = 'User';
   const [loading, setLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
   const [currentAudio, setCurrentAudio] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  
+  
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [pageSize, setPageSize] = useState(12);
 
-  useEffect(() => {
-    const fetchUploads = async () => {
-      try {
+  // Fetch uploads with pagination
+  const fetchUploads = useCallback(async (page: number = 1, append: boolean = false) => {
+    if (!userId) return;
+    
+    try {
+      if (page === 1) {
         setLoading(true);
-        
-        // Get the authentication token from Clerk
-        const token = await clerk.session?.getToken();
-        
-        const response = await fetch(`http://127.0.0.1:5000/api/admin/user_uploads/${userId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          credentials: 'include',
-          mode: 'cors'
-        });
-        
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
-        const data = await response.json();
-        console.log(data);
-        if (data.error) {
-          throw new Error(data.error);
-        }
-        
-        const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-        );
-        setUploads(sortedImages);
-      } catch (error) {
-        console.error('Error fetching uploads:', error);
-        toast.error('Failed to fetch uploads');
-      } finally {
-        setLoading(false);
+      } else {
+        setLoadingMore(true);
       }
-    };
-    fetchUploads();
-  }, [userId]);
+      
+      
+      const response = await fetch(apiUrl(`/api/admin/user_uploads/${userId}?page=${page}&page_size=${pageSize}`), {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        credentials: 'include',
+        mode: 'cors'
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      console.log(data);
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      const sortedImages: Upload[] = data.images.sort((a: Upload, b: Upload) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+      
+      if (append) {
+        setUploads(prev => [...prev, ...sortedImages]);
+      } else {
+        setUploads(sortedImages);
+      }
+      
+      setTotalPages(data.totalPages || 1);
+      setTotalCount(data.total_count || 0);
+      setCurrentPage(data.page || 1);
+      
+      console.log(`Loaded page ${page}/${data.totalPages}, ${sortedImages.length} uploads`);
+    } catch (error) {
+      console.error('Error fetching uploads:', error);
+      if (page === 1) {
+        toast.error('Failed to fetch uploads');
+      }
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [userId, pageSize, token]);
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    fetchUploads(page, false);
+  };
+
+  // Initial fetch
+  useEffect(() => {
+    if (userId) {
+      setCurrentPage(1);
+      fetchUploads(1, false);
+    }
+  }, [userId, fetchUploads]);
+
+  // Pagination is handled via explicit controls (no infinite scroll)
 
   const handleFileClick = (filename: string) => {
     setSelectedFile(filename);
@@ -104,7 +143,7 @@ const UserUploads = () => {
   const renderFilePreview = () => {
     if (!selectedFile) return null;
 
-    const fileUrl = `http://127.0.0.1:5000/static/uploads/${selectedFile}`;
+    const fileUrl = apiUrl(`/static/uploads/${selectedFile}`);
 
     if (isPDF(selectedFile)) {
       return (
@@ -126,7 +165,7 @@ const UserUploads = () => {
   };
 
   const handleDownload = (filename: string, type: 'file' | 'audio') => {
-    const url = `http://127.0.0.1:5000/static/uploads/${filename}`;
+    const url = apiUrl(`/static/uploads/${filename}`);
     window.open(url, '_blank');
     toast.success(`${type === 'file' ? 'File' : 'Audio'} opened in new window!`);
   };
@@ -146,6 +185,29 @@ const UserUploads = () => {
           <h1 className="text-3xl font-bold mt-4">
             Uploads by {userName}
           </h1>
+          <div className="mt-2 flex items-center space-x-4">
+            {totalCount > 0 && (
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Showing {uploads.length} of {totalCount} uploads
+              </p>
+            )}
+            <div className="flex items-center space-x-2">
+              <label className="text-sm text-gray-600 dark:text-gray-300">Items:</label>
+              <select
+                value={pageSize}
+                onChange={(e) => {
+                  setPageSize(Number(e.target.value) || 12);
+                }}
+                className="px-2 py-1 rounded-md bg-white dark:bg-gray-800 text-sm"
+              >
+                <option value={10}>10</option>
+                <option value={12}>12</option>
+                <option value={20}>20</option>
+                <option value={50}>50</option>
+                <option value={100}>100</option>
+              </select>
+            </div>
+          </div>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
@@ -229,7 +291,7 @@ const UserUploads = () => {
                                   ref={audioRef}
                                   controls
                                   className="w-full [&::-webkit-media-controls-panel]:bg-gray-100 dark:[&::-webkit-media-controls-panel]:bg-gray-800 [&::-webkit-media-controls-current-time-display]:text-gray-700 dark:[&::-webkit-media-controls-current-time-display]:text-gray-300 [&::-webkit-media-controls-time-remaining-display]:text-gray-700 dark:[&::-webkit-media-controls-time-remaining-display]:text-gray-300 [&::-webkit-media-controls-timeline]:bg-gray-300 dark:[&::-webkit-media-controls-timeline]:bg-gray-600 [&::-webkit-media-controls-volume-slider]:bg-gray-300 dark:[&::-webkit-media-controls-volume-slider]:bg-gray-600"
-                                  src={`http://127.0.0.1:5000/static/uploads/${upload.audio_filename}`}
+                                  src={apiUrl(`/static/uploads/${upload.audio_filename}`)}
                                   onEnded={() => setCurrentAudio(null)}
                                 >
                                   Your browser does not support the audio element.
@@ -271,6 +333,28 @@ const UserUploads = () => {
               </table>
             )}
           </div>
+
+            <div className="p-4">
+              <Pagination page={currentPage} totalPages={totalPages} onPageChange={handlePageChange} />
+            </div>
+          
+          
+
+          {/* Loading indicator */}
+          {loadingMore && (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400"></div>
+            </div>
+          )}
+
+          {/* End of page indicator */}
+          {currentPage >= totalPages && uploads.length > 0 && (
+            <div className="flex justify-center py-8">
+              <p className="text-gray-500 dark:text-gray-400 text-center">
+                You've viewed all {totalCount} uploads
+              </p>
+            </div>
+          )}
         </div>
       </div>
 

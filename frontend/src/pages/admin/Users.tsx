@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useClerk } from '@clerk/clerk-react';
+import { getToken } from '../../utils/auth';
 import {
   UserIcon,
   EnvelopeIcon,
@@ -11,6 +11,7 @@ import {
   ArrowDownTrayIcon,
 } from '@heroicons/react/24/outline';
 import toast from 'react-hot-toast';
+import { apiUrl } from '../../utils/api';
 
 interface User {
   id: string;
@@ -33,17 +34,17 @@ const Users = () => {
   // const [userId, setUserId] = useState('');
   const [limit] = useState(10);
   const navigate = useNavigate();
-  const clerk = useClerk();
+  const token = getToken();
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
       const offset = (currentPage - 1) * limit;
       
-      // Get the authentication token from Clerk
-      const token = await clerk.session?.getToken();
+      // Get the authentication token from local storage
+      // token is available above
       
-      const response = await fetch(`http://127.0.0.1:5000/api/admin/users?limit=${limit}&offset=${offset}&query=${searchTerm}`, {
+      const response = await fetch(apiUrl(`/api/admin/users?limit=${limit}&offset=${offset}&query=${searchTerm}`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -181,13 +182,16 @@ const Users = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="h-10 w-10 flex-shrink-0">
-                              <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                {/* <UserIcon className="h-6 w-6 text-gray-500 dark:text-gray-400" /> */}
+                              {user.image ? (
                                 <img src={user.image} alt="User" className="h-10 w-10 rounded-full" />
-                              </div>
+                              ) : (
+                                <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
+                                  <UserIcon className="h-6 w-6 text-gray-500 dark:text-gray-400" />
+                                </div>
+                              )}
                             </div>
                             <div className="ml-4">
-                              <div className="font-medium">{user.name}</div>
+                              <div className="font-medium">{user.name || 'N/A'}</div>
                               <div className="text-sm text-gray-500 dark:text-gray-400">
                                 {user.email}
                               </div>

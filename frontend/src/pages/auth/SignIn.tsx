@@ -1,68 +1,146 @@
-import { SignIn } from '@clerk/clerk-react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { saveToken, getUserRole } from "../../utils/auth";
+import { apiFetch } from "../../utils/apiFetch";
+import { GoogleLogin } from "@react-oauth/google";
 
 const SignInPage = () => {
   const navigate = useNavigate();
 
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false); // State for visibility
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      const data = await apiFetch("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ username, password }),
+      });
+
+      const token = data.access_token;
+      saveToken(token);
+
+      const role = getUserRole();
+      navigate(role === "admin" ? "/admin" : "/dashboard");
+    } catch (err: any) {
+      setError(err.message || "Invalid credentials");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <SignIn
-      appearance={{
-        elements: {
-          formButtonPrimary: 
-            'bg-yellow-500 hover:bg-yellow-600 text-white transition-all duration-300 rounded-xl px-8 py-3 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5',
-          card: 
-            'bg-white shadow-none border-none',
-          headerTitle: 
-            'text-2xl font-bold text-gray-900 dark:text-white',
-          headerSubtitle: 
-            'text-gray-500 dark:text-gray-400',
-          socialButtonsBlockButton: 
-            'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-all duration-200 rounded-xl shadow-sm hover:shadow transform hover:-translate-y-0.5',
-          socialButtonsBlockButtonText: 
-            'text-gray-600 dark:text-gray-300 font-medium',
-          formFieldLabel: 
-            'text-gray-700 dark:text-gray-300 font-medium',
-          formFieldInput: 
-            'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-yellow-500 dark:focus:border-yellow-500 focus:ring-4 focus:ring-yellow-500/20 dark:focus:ring-yellow-500/20 rounded-xl transition-all duration-200',
-          footerActionLink: 
-            'text-yellow-600 dark:text-yellow-500 hover:text-yellow-700 dark:hover:text-yellow-400 transition-colors duration-200 font-semibold',
-          dividerLine: 
-            'bg-gray-200 dark:bg-gray-700',
-          dividerText: 
-            'text-gray-400 dark:text-gray-500 bg-transparent px-4',
-          formFieldInputShowPasswordButton: 
-            'text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300',
-          otpCodeFieldInput: 
-            'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 focus:border-yellow-500 dark:focus:border-yellow-500 focus:ring-4 focus:ring-yellow-500/20 dark:focus:ring-yellow-500/20 rounded-xl transition-all duration-200',
-          footer: 
-            'pb-6',
-          main: 
-            'px-6 pt-6',
-          identityPreviewEditButton: 
-            'text-yellow-600 hover:text-yellow-700 dark:text-yellow-500 dark:hover:text-yellow-400',
-          formFieldSuccessText: 
-            'text-green-600 dark:text-green-500',
-          formFieldErrorText: 
-            'text-red-600 dark:text-red-500',
-          alert: 
-            'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300 border border-yellow-200 dark:border-yellow-900/50',
-          alertText: 
-            'text-yellow-800 dark:text-yellow-300',
-          formResendCodeLink: 
-            'text-yellow-600 hover:text-yellow-700 dark:text-yellow-500 dark:hover:text-yellow-400',
-        },
-        layout: {
-          socialButtonsPlacement: "bottom",
-          socialButtonsVariant: "blockButton",
-        },
-      }}
-      routing="path"
-      path="/sign-in"
-      signUpUrl="/sign-up"
-      afterSignInUrl="/landing"
-      redirectUrl="/sign-in"
-    />
+    <div className="inline-block">
+      <div className="bg-white p-8 rounded-xl shadow-xl max-w-md">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-900">Sign In</h2>
+          <p className="text-gray-500 mt-2">
+            Welcome back! Please enter your details.
+          </p>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm text-center">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              Username
+            </label>
+            <input
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              placeholder="Enter your username"
+              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-yellow-500 outline-none transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="text-sm font-semibold text-gray-700 block mb-1.5">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"} // Toggle type
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                placeholder="••••••••"
+                className="w-full border border-gray-300 rounded-xl px-4 py-3 text-gray-900 bg-white focus:ring-2 focus:ring-yellow-500 outline-none transition-all"
+              />
+              <button
+                type="button" // Important: prevents form submission
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-500 hover:text-yellow-600 uppercase"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+          </div>
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full bg-yellow-500 hover:bg-yellow-600 active:scale-[0.98] text-white font-bold py-3.5 rounded-xl shadow-md transition-all disabled:opacity-70"
+          >
+            {loading ? "Signing in..." : "Sign In"}
+          </button>
+        </form>
+        <div className="flex justify-end mt-2">
+          <button
+            type="button"
+            onClick={() => navigate("/forgot-password")}
+            className="text-sm text-yellow-600 font-semibold hover:underline"
+          >
+            Forgot Password?
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="bg-white px-2 text-gray-500">or</span>
+          </div>
+        </div>
+
+        {/* Google Sign In */}
+        <GoogleLogin
+          onSuccess={async (credentialResponse) => {
+            try {
+              const data = await apiFetch("/api/auth/google", {
+                method: "POST",
+                body: JSON.stringify({
+                  id_token: credentialResponse.credential,
+                }),
+              });
+
+              saveToken(data.access_token);
+              navigate(data.role === "admin" ? "/admin" : "/dashboard");
+            } catch (err) {
+              setError("Google sign-in failed");
+            }
+          }}
+          onError={() => setError("Google sign-in failed")}
+          useOneTap={false}
+        />
+      </div>
+    </div>
   );
 };
 
-export default SignInPage; 
+export default SignInPage;

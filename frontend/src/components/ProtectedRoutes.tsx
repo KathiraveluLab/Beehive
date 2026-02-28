@@ -1,31 +1,24 @@
-import { Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
-import { SignedIn } from '@clerk/clerk-react';
+import { Navigate, Outlet } from "react-router-dom";
+import { isAuthenticated, getUserRole } from "../utils/auth";
 
 export const AdminRoute = () => {
-  const { isAdmin, user } = useAuth();
+  if (!isAuthenticated()) {
+    return <Navigate to="/sign-in" replace />;
+  }
 
-  return (
-    <SignedIn>
-      {isAdmin() ? (
-        <Outlet />
-      ) : (
-        <Navigate to="/no-access" replace />
-      )}
-    </SignedIn>
-  );
+  if (getUserRole() !== "admin") {
+    return <Navigate to="/no-access" replace />;
+  }
+
+  return <Outlet />;
 };
 
 export const UserRoute = () => {
-  const { isUser } = useAuth();
+  const authenticated = isAuthenticated();
 
-  return (
-    <SignedIn>
-      {(isUser()) ? (
-        <Outlet />
-      ) : (
-        <Navigate to="/landing" replace />
-      )}
-    </SignedIn>
-  );
-}; 
+  if (!authenticated) {
+    return <Navigate to="/sign-in" replace />;
+  }
+
+  return <Outlet />;
+};
