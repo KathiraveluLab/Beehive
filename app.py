@@ -20,6 +20,7 @@ import fitz
 from PIL import Image
 import bcrypt
 from datetime import timedelta
+import uuid
 
 from database.admindatahandler import  is_admin
 from database.userdatahandler import ( 
@@ -112,6 +113,7 @@ def role_required(required_role):
 @app.route('/api/user/upload/<user_id>', methods=['POST'])
 def upload_images(user_id):
     try:
+        unique_id = uuid.uuid4()
         username = request.form.get('username', '')
         files = request.files.getlist('files')  # Supports multiple file uploads
         title = request.form.get('title', '')
@@ -130,7 +132,7 @@ def upload_images(user_id):
         for file in files:
             if file:
                 # Check file extension
-                filename = secure_filename(file.filename)
+                filename = f'{unique_id}{secure_filename(file.filename)}'
                 file_ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
                 if file_ext not in ALLOWED_EXTENSIONS:
                     return jsonify({'error': f'File type not allowed. Allowed types: {", ".join(ALLOWED_EXTENSIONS)}'}), 400
@@ -142,7 +144,7 @@ def upload_images(user_id):
                 # Handle audio file if provided
                 audio_filename = None
                 if audio_data:
-                    audio_filename = f"{secure_filename(title)}.wav"
+                    audio_filename = f"{unique_id}{secure_filename(title)}.wav"
                     audio_path = os.path.join(app.config['UPLOAD_FOLDER'], audio_filename)
                     os.makedirs(os.path.dirname(audio_path), exist_ok=True)
                     audio_binary = base64.b64decode(audio_data.split(',')[1])
@@ -156,7 +158,6 @@ def upload_images(user_id):
                 # Generate PDF thumbnail if applicable
                 if filename.lower().endswith('.pdf'):
                     generate_pdf_thumbnail(filepath, filename)
-
         return jsonify({'message': 'Upload successful'}), 200
 
     except Exception as e:
