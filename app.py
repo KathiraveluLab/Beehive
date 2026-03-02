@@ -168,7 +168,7 @@ flow = Flow.from_client_secrets_file(
         "https://www.googleapis.com/auth/userinfo.email",
         "openid",
     ],
-    redirect_uri="http://127.0.0.1:5000/admin/login/callback",
+    redirect_uri=os.getenv("REDIRECT_URI", "http://127.0.0.1:5000/admin/login/callback"),
 )
 
 
