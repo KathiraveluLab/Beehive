@@ -107,7 +107,12 @@ def verify_otp():
         if expires_at < datetime.now(timezone.utc):
             return jsonify({"error": "OTP expired"}), 400
 
-        db.email_otps.delete_many({"email": email})
+        # Mark email as verified instead of deleting
+        # This flag is checked by complete-signup to prevent OTP bypass
+        db.email_otps.update_one(
+            {"email": email},
+            {"$set": {"verified": True, "verified_at": datetime.now(timezone.utc)}},
+        )
 
         return jsonify({"message": "OTP verified"}), 200
 
@@ -134,6 +139,30 @@ def complete_signup():
     # Validate password length
     if len(password) < 8:
         return jsonify({"error": "Password must be at least 8 characters"}), 400
+    # Verify that OTP was actually completed for this email
+    otp_record = db.email_otps.find_one({"email": email, "verified": True})
+    if not otp_record:
+        return (
+            jsonify(
+                {"error": "Email not verified. Please complete OTP verification first."}
+            ),
+            403,
+        )
+
+    # Check if OTP verification session has expired (10 min window)
+    verified_at = otp_record.get("verified_at")
+    if verified_at:
+        if verified_at.tzinfo is None:
+            verified_at = verified_at.replace(tzinfo=timezone.utc)
+        if (datetime.now(timezone.utc) - verified_at).total_seconds() > 600:
+            db.email_otps.delete_many({"email": email})
+            return (
+                jsonify(
+                    {"error": "Verification session expired. Please restart signup."}
+                ),
+                403,
+            )
+
     # Prevent duplicate email
     if db.users.find_one({"email": email}):
         return jsonify({"error": "Email already registered"}), 400
@@ -213,7 +242,7 @@ def set_password():
     try:
         email = validate_email(data.get("email"))
         password = sanitize_string(data.get("password"))
-        purpose = sanitize_string(data.get("purpose"), field_name="purpose")
+        purpose = sanitize_string(data.get("purpose"), field_name="purpose").lower()
     except ValidationError as e:
         current_app.logger.warning("SET PASSWORD VALIDATION ERROR")
         return jsonify({"error": str(e)}), 400
