@@ -684,7 +684,6 @@ def delete_image_route(image_id):
         try:
             image_id = ObjectId(image_id)
         except Exception as e:
-            logging.error(f"Invalid Image ID fromat for image_id '{image_id}':{e}")            
             logging.error(f"Invalid image ID format for image_id '{image_id}': {e}")
             return jsonify({"error": "Invalid image ID format."}), 400
 
