@@ -196,12 +196,12 @@ const Users = () => {
                               )}
                             </div>
                             <div className="ml-4">
-                              <div
-                              className="font-medium cursor-pointer text-blue-600 hover:underline"
+                              <button
+                              className="font-medium cursor-pointer text-blue-600 hover:underline text-left"
                               onClick={() => handleUserClick(user.name)}
                             >
                               {user.name || 'N/A'}
-                            </div>
+                            </button>
                               <div className="text-sm text-gray-500 dark:text-gray-400">
                                 {user.email}
                               </div>
