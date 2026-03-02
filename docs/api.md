@@ -11,7 +11,7 @@ Base URL (dev): `http://127.0.0.1:5000`
 
 ### User Uploads
 
-#### POST `/api/user/upload/{user_id}`
+#### POST `/api/user/upload`
 - **Description**: Upload one or more images or PDFs, with optional audio data.
 - **Auth**: Logged-in user.
 - **Content-Type**: `multipart/form-data`
@@ -36,7 +36,7 @@ Side effects:
 
 ### Image Management
 
-#### POST `/edit/{image_id}`
+#### PATCH `/edit/{image_id}`
 - **Description**: Update title, description, and optionally sentiment for an image.
 - **Auth**: Owner (or admin).
 - **Content-Type**: `application/x-www-form-urlencoded` or `multipart/form-data`
@@ -47,7 +47,7 @@ Side effects:
   - 404: `{ error: "Image not found." }`
   - 500: `{ error: "Error updating image: ..." }`
 
-#### GET `/delete/{image_id}`
+#### DELETE `/delete/{image_id}`
 - **Description**: Delete image, associated audio, and PDF thumbnail (if any), and remove DB record.
 - **Auth**: Owner (or admin).
 - **Responses**:
@@ -69,12 +69,12 @@ Side effects:
 - Mirrors user uploads listing but from admin context.
 
 #### GET `/api/admin/users`
-- **Description**: List users via Clerk REST API.
+- **Description**: List users from the local MongoDB `users` collection.
 - **Query**: `query` (search), `limit` (default 10), `offset` (default 0)
 - **Responses**:
-  - 200: `{ users: [{ id, name, email, role, lastActive, image, clerkId }], totalCount }`
+  - 200: `{ users: [{ id, username, email, role, lastActive, image }], totalCount }`
   - 500: `{ error: "Failed to fetch users" }`
-- **Notes**: Requires env `CLERK_SECRET_KEY`. Backend calls `https://api.clerk.com/v1/users`.
+ - **Notes**: No external Clerk dependency; the backend reads users from MongoDB.
 
 #### GET `/api/admin/users/only-users`
 - As above, but filters to `role === 'user'`.
@@ -142,8 +142,8 @@ Side effects:
 ### User Profile
 - `GET /profile` - User profile page
 - `POST /upload` - Upload new image
-- `POST /edit/<image_id>` - Edit image details
-- `GET /delete/<image_id>` - Delete image
+- `PATCH /edit/<image_id>` - Edit image details
+- `DELETE /delete/<image_id>` - Delete image
 
 ## Admin Routes
 - `GET /signingoogle` - Google sign in page

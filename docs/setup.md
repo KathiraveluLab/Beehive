@@ -5,9 +5,11 @@
 - MongoDB
 - Google OAuth2 credentials
 
-# Setup Instructions
+## Setup Instructions
 
 Follow these steps to set up the project:
+
+> **Note:** For Docker-based setup, see [docker-setup.md](docker-setup.md)
 
 1. **Clone the Beehive Repository**
     - Clone the Beehive repository to your local machine.
@@ -70,25 +72,93 @@ Follow these steps to set up the project:
     - Update your Google Cloud Console to include the new redirect URI: ```http://localhost:5000/login/google/callback```
 
 
-8. **Set Up Clerk Authentication and create Clerk Keys**
-    - Sign up for a Clerk account at [https://clerk.dev](https://clerk.dev)
-    - Log in to Clerk and go to Clerk Dashboard
-    - Create a new application in Clerk
-    - Copy your Publishable Key and Secret Key from Clerk.
-      
-9. **Update `.env` File**
-    - Open the `.env` file and add the required credentials.
-    - Note: Add or modify the ADMIN_EMAILS variable with comma-separated emails. Make sure there are no spaces before or after the commas.
+8. **JWT Authentication Setup**
+    - This project uses JWT access tokens issued by the backend. Configure a strong `JWT_SECRET` in your `.env` (or Docker environment).
+    - Optionally set `JWT_EXPIRE_HOURS` (defaults to 24).
+
+9. **Grant Admin Access for Local Development**
+
+    **Prerequisite:** Admin emails are configured via `ADMIN_EMAILS` in your `.env`. Users created with those emails will be assigned the `admin` role by the backend utilities. For details, see [Admin Access Guide](common/admin-access.md).
+
+10. **Update `.env` File** 
+
+    Open the `.env` file and add the required credentials. **All environment variables below are mandatory** for the application to function properly.
+
+    **Note: Add or modify the ADMIN_EMAILS variable with comma-separated emails. Make sure there are no spaces before or after the commas.**
+
+    ```bash
+    # Database Configuration (Required)
+    MONGODB_URI=mongodb://localhost:27017/
+    DATABASE_NAME=beehive
+
+    # Google OAuth Configuration (Required for Google authentication)
+    GOOGLE_CLIENT_ID=your_google_client_id_here
+    GOOGLE_CLIENT_SECRET=your_google_client_secret_here
+    GOOGLE_API_KEY=your_google_api_key_here
+    REDIRECT_URI=http://localhost:5000/admin/login/callback
+    
+    # Email(SMTP)
+    MAIL_SERVER=smtp.gmail.com
+    MAIL_PORT=587
+    MAIL_USE_TLS=true
+    MAIL_USERNAME=your_email@gmail.com
+    MAIL_PASSWORD=your_app_password_here
+
+    # Admin Configuration (Required for admin access)
+    ADMIN_EMAILS=admin1@example.com,admin2@example.com
+
+    # JWT Authentication
+    JWT_SECRET=your_jwt_secret_here
+    JWT_EXPIRE_HOURS=24
+
+    # Flask Security (Optional - defaults to 'beehive' if not set)
+    FLASK_SECRET_KEY=your_custom_flask_secret
+    
+    # OAuth (Development only)
+    OAUTHLIB_INSECURE_TRANSPORT=1
+
+    # CORS Configuration (Optional - defaults to common development origins if not set)
+    # Format: comma-separated list of allowed origins (e.g., http://localhost:5173,https://example.com)
+    CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:3000,http://127.0.0.1:3000
     ```
-    MONGODB_CONNECTION_STRING=mongodb://...
+
+    #### 🌐 **About CORS_ORIGINS:**
+    - This variable specifies which frontend origins are allowed to make requests to the backend API
+    - Format: comma-separated list of URLs (no spaces around commas, or spaces will be automatically trimmed)
+    - If not set, defaults to common development origins (localhost:5173 and localhost:3000)
+    - For production, add your production frontend URL(s)
+    - Example: `CORS_ORIGINS=http://localhost:5173,https://yourdomain.com`
+
+    #### **Important Notes:**
+    - **JWT_SECRET is mandatory**: The application will fail to start if this is missing or insecure.
+    - **No quotes needed**: Environment variable values should not be wrapped in quotes
+    - **Keep it secure**: Never commit your `.env` file to version control (it's already in `.gitignore`)
+
+    #### 🔧 **Troubleshooting:**
+    If you see errors like:
+    - `ValueError: Missing or insecure JWT_SECRET environment variable.`
+    - `Config validation failed`
+
+    Make sure your `.env` file contains all required variables and restart the application.
+   
     GOOGLE_CLIENT_ID=your-client-id
     GOOGLE_CLIENT_SECRET=your-client-secret
     REDIRECT_URI=http://localhost:5000/admin/login/callback
+
+    ### Admin Configuration (Required for admin access)
     ADMIN_EMAILS=admin1@example.com,admin2@example.com
-    CLERK_SECRET_KEY = your clerk secret key
-    ```
-   
-10. **Run the backend**
+
+    ### JWT Authentication
+    JWT_SECRET=your_jwt_secret_here
+    JWT_EXPIRE_HOURS=24
+
+    ### Flask Security (Optional - defaults to 'beehive' if not set)
+    FLASK_SECRET_KEY=your_custom_flask_secret
+
+    #### 🔧 **Troubleshooting:**
+    If you see errors related to missing secrets or config validation, verify your `.env` and restart the application.
+
+11. **Run the backend**
     - Execute the `app.py` file to run the application.
     ```bash
     python app.py
@@ -96,31 +166,22 @@ Follow these steps to set up the project:
 
     This sets up the backend.
 
-11. **Configure the frontend**
+12. **Configure the frontend**
     - Install the frontend dependencies.
     ```bash
     cd frontend
     npm install
     ```
 
-    - Create a `.env` file in the frontend directory and add your Clerk publishable key:
-    ```
-    VITE_CLERK_PUBLISHABLE_KEY=your_clerk_publishable_key_here
-    ```
+    - Frontend does not require a Clerk publishable key when using JWTs. The frontend stores the access token in `localStorage` after login.
 
-11. **Run the frontend**
-    - Add .env file in the frontend folder.
-
-    ```
-    VITE_CLERK_PUBLISHABLE_KEY=your-clerk-publishable-key
-    ```
-    
-    - Run the following commmands to start the development server:
+13. **Run the frontend**
+    - Run the following commands to start the development server:
      ```bash
     npm run dev
-     ```
+    ```
 
-12. **Confirm the App is working.**
+14. **Confirm the App is working.**
     - Open [http://localhost:5173](http://localhost:5173) to view the app in your browser.
-    
+
 By following these steps, you will have the project set up and ready to use.
