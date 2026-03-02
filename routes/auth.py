@@ -261,6 +261,30 @@ def set_password():
         if existing_user:
             return jsonify({"error": "User already exists"}), 400
 
+        # Verify that OTP was actually completed for this email
+        otp_record = db.email_otps.find_one({"email": email, "verified": True})
+        if not otp_record:
+            return (
+                jsonify(
+                    {"error": "Email not verified. Please complete OTP verification first."}
+                ),
+                403,
+            )
+
+        # Check if OTP verification session has expired (10 min window)
+        verified_at = otp_record.get("verified_at")
+        if verified_at:
+            if verified_at.tzinfo is None:
+                verified_at = verified_at.replace(tzinfo=timezone.utc)
+            if (datetime.now(timezone.utc) - verified_at).total_seconds() > 600:
+                db.email_otps.delete_many({"email": email})
+                return (
+                    jsonify(
+                        {"error": "Verification session expired. Please restart signup."}
+                    ),
+                    403,
+                )
+
         role = "admin" if is_admin_email(email) else "user"
 
         user_id = db.users.insert_one({
@@ -270,6 +294,9 @@ def set_password():
             "role": role,
             "created_at": datetime.now(timezone.utc)
         }).inserted_id
+
+        # Cleanup OTPs
+        db.email_otps.delete_many({"email": email})
 
     elif purpose == "reset":
         if not existing_user:
