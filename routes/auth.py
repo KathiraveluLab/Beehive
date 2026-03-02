@@ -112,7 +112,7 @@ def verify_otp():
         return jsonify({"message": "OTP verified"}), 200
 
     except Exception as e:
-        print("VERIFY OTP ERROR:", e)
+        current_app.logger.error(f"VERIFY OTP ERROR: {e}")
         return jsonify({"error": "Server error"}), 500
 
 
