@@ -27,10 +27,13 @@ def create_user(username, email, password, role="user"):
     return beehive_user_collection.insert_one(user).inserted_id
 # Get user by username from MongoDB
 def update_last_seen(user_id):
-    beehive_user_collection.update_one(
-        {"_id": ObjectId(user_id)},
-        {"$set": {"last_active": datetime.now(timezone.utc)}}
-    )
+    try:
+        beehive_user_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"last_active": datetime.now(timezone.utc)}}
+        )
+    except Exception as e:
+        logger.error(f"Failed to update last_seen for user {user_id}: {e}")
 def get_user_by_username(username: str):
     query = {
         "username": username
