@@ -2,11 +2,6 @@
 
 Thank you for considering contributing to our project! To ensure a smooth collaboration, please follow these guidelines when submitting contributions.
 
-## Before commiting it is recommended to run:
-```bash
-pre-commit run --all-files
-```
-This will ensure that black, flake and isort is run.
 
 ## 1. Sign off your commits
 
