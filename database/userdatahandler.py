@@ -33,7 +33,7 @@ def update_last_seen(user_id):
             {"$set": {"last_active": datetime.now(timezone.utc)}}
         )
     except Exception as e:
-        logger.error(f"Failed to update last_seen for user {user_id}: {e}")
+        logger.error(f"Failed to update last_active for user {user_id}: {e}")
 def get_user_by_username(username: str):
     query = {
         "username": username
