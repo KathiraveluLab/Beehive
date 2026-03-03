@@ -20,11 +20,20 @@ def create_user(username, email, password, role="user"):
         "email": email,
         "password": hashed_pw,
         "role": role,
-        "created_at": datetime.now(timezone.utc)
+        "created_at": datetime.now(timezone.utc),
+        "last_active": datetime.now(timezone.utc)
     }
 
     return beehive_user_collection.insert_one(user).inserted_id
 # Get user by username from MongoDB
+def update_last_seen(user_id):
+    try:
+        beehive_user_collection.update_one(
+            {"_id": ObjectId(user_id)},
+            {"$set": {"last_active": datetime.now(timezone.utc)}}
+        )
+    except Exception as e:
+        logger.error(f"Failed to update last_active for user {user_id}: {e}")
 def get_user_by_username(username: str):
     query = {
         "username": username
@@ -45,7 +54,7 @@ def save_image(id, filename, title, description, time_created, audio_filename=No
         'sentiment': sentiment
     }
     beehive_image_collection.insert_one(image)
-
+    update_last_seen(id)
 # Count all images from MongoDB
 def total_images():
     return beehive_image_collection.count_documents({})
@@ -140,7 +149,7 @@ def search_and_filter_images(user_id, search_query=None, sentiment=None, from_da
                              sort_by='date', sort_order='desc', limit=12, offset=0):
     try:
         query = {'user_id': user_id}
-        
+        update_last_seen(user_id)
         if search_query and search_query.strip():
             query['$text'] = {'$search': search_query.strip()}
         

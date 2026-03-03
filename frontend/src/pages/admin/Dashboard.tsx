@@ -211,7 +211,7 @@ const Dashboard = () => {
         {/* Recent Activity */}
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md transition-colors duration-200">
           <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
+            <h2 className="text-xl font-semibold mb-4 dark:text-white">Recent Activity</h2>
 
             {/* filter and sort controls */}
             <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
@@ -221,32 +221,32 @@ const Dashboard = () => {
                   placeholder="Filter by user"
                   value={filterUser}
                   onChange={(e) => setFilterUser(e.target.value)}
-                  className="px-3 py-2 border rounded-md text-sm w-40"
+                  className="px-3 py-2 border rounded-md text-sm w-40 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200 dark:placeholder-gray-400"
                 />
-                <label className="text-sm">From:</label>
+                <label className="text-sm dark:text-gray-200">From:</label>
                 <input
                   type="date"
                   value={filterFromDate}
                   onChange={(e) => setFilterFromDate(e.target.value)}
-                  className="px-3 py-2 border rounded-md text-sm"
+                  className="px-3 py-2 border rounded-md text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
                 />
-                <label className="text-sm">To:</label>
+                <label className="text-sm dark:text-gray-200">To:</label>
                 <input
                   type="date"
                   value={filterToDate}
                   onChange={(e) => setFilterToDate(e.target.value)}
-                  className="px-3 py-2 border rounded-md text-sm"
+                  className="px-3 py-2 border rounded-md text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
                 />
               </div>
               <div className="flex items-center space-x-2">
-                <label htmlFor="sort" className="text-sm font-medium">
+                <label htmlFor="sort" className="text-sm font-medium dark:text-gray-200">
                   Sort by:
                 </label>
                 <select
                   id="sort"
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value as 'date_desc'|'date_asc'|'user_asc'|'user_desc')}
-                  className="px-3 py-2 border rounded-md text-sm"
+                  className="px-3 py-2 border rounded-md text-sm dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200"
                 >
                   <option value="date_desc">Date (newest)</option>
                   <option value="date_asc">Date (oldest)</option>
@@ -275,9 +275,9 @@ const Dashboard = () => {
                         key={upload.id}
                         className="border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200"
                       >
-                        <td className="py-3 px-4">{upload.title}</td>
-                        <td className="py-3 px-4">{upload.user}</td>
-                        <td className="py-3 px-4">
+                        <td className="py-3 px-4 dark:text-gray-200">{upload.title}</td>
+                        <td className="py-3 px-4 dark:text-gray-200">{upload.user}</td>
+                        <td className="py-3 px-4 dark:text-gray-200">
                           {new Date(upload.timestamp).toLocaleString()}
                         </td>
                       </tr>

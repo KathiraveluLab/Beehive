@@ -38,7 +38,11 @@ For instructions to configure and run this project locally, see the [setup.md](d
 
 ## Contributing  
 
-**Note**: `dev` branch is our primary development branch. The `main` branch is our stable branch. Please create pull requests against the dev branch if you are contributing to ongoing development. For specific contribution guidelines, see the [contributing.md](docs/contributing.md).
+`dev` branch is our primary development branch. The `main` branch is our stable branch. Please create pull requests against the dev branch if you are contributing to ongoing development. For specific contribution guidelines, see the [contributing.md](docs/contributing.md).
 
-The **`main` branch is frozen** for direct commits and only pull requests from a stable development branch are merged into the main branch.
 
+## Citation
+
+If you use this work in your research, please cite the following publication:
+
+* Abdullah, M. F, Kwon, J., Bagwan, Gupta, I., Moxley, D., and Kathiravelu, P. **A Data Framework for Behavioral Health with Digitized Drawings and Photographs.** In _the 20th Annual IEEE International Systems Conference (SysCon)._ Accepted. 8 pages. April 2026. 
