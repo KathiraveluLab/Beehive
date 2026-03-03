@@ -6,7 +6,8 @@ from database.userdatahandler import (
     _get_paginated_images_by_user,
     get_recent_uploads,
     get_upload_stats,
-    get_upload_analytics
+    get_upload_analytics,
+    get_user_analytics
 )
 from utils.pagination import parse_pagination_params
 from utils.logger import Logger
@@ -85,12 +86,14 @@ def get_all_analytics():
         days_ago = int(request.args.get("days", 7))
 
         upload_data = get_upload_analytics(trend_days=days_ago)
-
+        user_data = get_user_analytics()
         if not upload_data:
             return jsonify({"error": "Failed to retrieve analytics data"}), 500
-
+        if not user_data:
+            return jsonify({"error": "Failed to retrieve analytics data"}), 500
         return jsonify({
-            "uploads": upload_data
+            "uploads": upload_data,
+            "users":user_data
         }), 200
 
     except Exception:

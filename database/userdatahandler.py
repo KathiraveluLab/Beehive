@@ -25,7 +25,7 @@ def create_user(username, email, password, role="user"):
     }
 
     return beehive_user_collection.insert_one(user).inserted_id
-# Get user by username from MongoDB
+# updates the last_active time
 def update_last_seen(user_id):
     try:
         beehive_user_collection.update_one(
@@ -34,6 +34,7 @@ def update_last_seen(user_id):
         )
     except Exception as e:
         logger.error(f"Failed to update last_active for user {user_id}: {e}")
+# Get user by username from MongoDB
 def get_user_by_username(username: str):
     query = {
         "username": username
@@ -565,4 +566,35 @@ def get_upload_analytics(trend_days=7):
 
     except Exception as e:
         logger.error(f"Error getting upload analytics: {e}")
+        return None
+def get_user_analytics():
+    try:
+        one_month_ago = datetime.now(timezone.utc) - timedelta(days=30)
+        two_month_ago = datetime.now(timezone.utc) - timedelta(days=60)
+        total_users = beehive_user_collection.count_documents({"role":"user"})
+        active_users_this_month = beehive_user_collection.count_documents({"last_active": {"$gte": one_month_ago},"role":"user"})
+        active_users_last_month = beehive_user_collection.count_documents({"last_active": {"$gte": two_month_ago,"$lt":one_month_ago},"role":"user"})
+        new_users_count = beehive_user_collection.count_documents({"created_at": { "$gte": one_month_ago },"role":"user"})
+        if new_users_count == total_users:
+            increase = 100
+        else:
+            increase = (new_users_count / (total_users-new_users_count))*100
+        if active_users_this_month == active_users_last_month:
+            active_increase = 0
+        else:
+            active_increase = (active_users_this_month / (active_users_this_month-active_users_last_month))*100
+        summary = {
+            "users": {
+                "total" : total_users,
+                "increase" : increase
+            },
+            "activeUsers": {
+                "total" : active_users_this_month,
+                "increase": active_increase
+            },
+            "timeframe" : "This month"
+        }
+        return {"summary":summary}
+    except Exception as e:
+        logger.error(f"Error getting user analytics: {e}")
         return None
