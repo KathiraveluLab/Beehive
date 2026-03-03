@@ -69,9 +69,16 @@ const Dashboard = () => {
   const [filterUser, setFilterUser] = useState('');
   const [filterFromDate, setFilterFromDate] = useState('');
   const [filterToDate, setFilterToDate] = useState('');
-
+  const [debounce, setDebounce] = useState(filterUser);
   const location = useLocation();
+  // debounce to wait 500ms before refeatching data from the server
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebounce(filterUser);
+    }, 500);
 
+    return () => clearTimeout(timer);
+  }, [filterUser]);
   useEffect(() => {
     // if user filter provided in query string, pre-populate
     const params = new URLSearchParams(location.search);
@@ -80,7 +87,7 @@ const Dashboard = () => {
       setFilterUser(userParam);
     }
     fetchDashboardData();
-  }, [location.search, sortOption, filterFromDate, filterToDate, filterUser]);
+  }, [location.search, sortOption, filterFromDate, filterToDate, debounce]);
 
   const fetchDashboardData = async () => {
     try {
