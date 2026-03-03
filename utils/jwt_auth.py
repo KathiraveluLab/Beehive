@@ -77,7 +77,7 @@ def require_admin_role(f):
         token = auth_header.replace("Bearer ", "")
 
         if not token:
-            return jsonify({"error": "Authorization header missing"}), 401
+            return jsonify({"error": "Token not provided in Authorization header"}), 401
 
         try:
             claims = verify_jwt(token)
