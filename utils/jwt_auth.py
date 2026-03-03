@@ -7,7 +7,9 @@ from flask import request, jsonify, current_app
 # JWT creation
 def create_access_token(user_id, role="user"):
     expire_hours = current_app.config.get("JWT_EXPIRE_HOURS", 24)
-    jwt_secret = current_app.config.get("JWT_SECRET", "dev-secret-change-this")
+    jwt_secret = current_app.config.get("JWT_SECRET")
+    if not jwt_secret:
+        raise RuntimeError("JWT_SECRET is not configured.")
     jwt_algorithm = current_app.config.get("JWT_ALGORITHM", "HS256")
 
     payload = {
@@ -45,6 +47,9 @@ def require_auth(f):
 
         token = auth_header.replace("Bearer ", "")
 
+        if not token:
+            return jsonify({"error": "Authorization header missing"}), 401
+        
         try:
             claims = verify_jwt(token)
         except ValueError:
@@ -70,6 +75,9 @@ def require_admin_role(f):
             return jsonify({"error": "Authorization header missing"}), 401
 
         token = auth_header.replace("Bearer ", "")
+
+        if not token:
+            return jsonify({"error": "Authorization header missing"}), 401
 
         try:
             claims = verify_jwt(token)
