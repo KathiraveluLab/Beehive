@@ -15,6 +15,41 @@ from database.databaseConfig import beehive
 
 auth_bp = Blueprint("auth", __name__)
 
+OTP_VERIFICATION_WINDOW_SECONDS = 600  # 10 minutes
+
+
+def _validate_otp_verification(email: str):
+    """Check that a valid, unexpired OTP verification session exists for email.
+
+    Returns a Flask response tuple (jsonify(...), status_code) if validation
+    fails, or None if the email is properly verified.
+    """
+    otp_record = db.email_otps.find_one({"email": email, "verified": True})
+    if not otp_record:
+        return (
+            jsonify({"error": "Email not verified. Please complete OTP verification first."}),
+            403,
+        )
+
+    verified_at = otp_record.get("verified_at")
+    if not verified_at:
+        return (
+            jsonify({"error": "Invalid verification session. Please restart signup."}),
+            403,
+        )
+
+    if verified_at.tzinfo is None:
+        verified_at = verified_at.replace(tzinfo=timezone.utc)
+
+    if (datetime.now(timezone.utc) - verified_at).total_seconds() > OTP_VERIFICATION_WINDOW_SECONDS:
+        db.email_otps.delete_many({"email": email})
+        return (
+            jsonify({"error": "Verification session expired. Please restart signup."}),
+            403,
+        )
+
+    return None
+
 # Create EMAIL OTP
 def create_email_otp(email: str) -> str:
     otp = str(secrets.randbelow(900000) + 100000)
@@ -139,36 +174,10 @@ def complete_signup():
     # Validate password length
     if len(password) < 8:
         return jsonify({"error": "Password must be at least 8 characters"}), 400
-    # Verify that OTP was actually completed for this email
-    otp_record = db.email_otps.find_one({"email": email, "verified": True})
-    if not otp_record:
-        return (
-            jsonify(
-                {"error": "Email not verified. Please complete OTP verification first."}
-            ),
-            403,
-        )
-
-    # Check if OTP verification session has expired (10 min window)
-    verified_at = otp_record.get("verified_at")
-    if not verified_at:
-        return (
-            jsonify({"error": "Invalid verification session. Please restart signup."}),
-            403,
-        )
-
-    if verified_at.tzinfo is None:
-        verified_at = verified_at.replace(tzinfo=timezone.utc)
-
-    # Check if OTP verification session has expired (10 min window)
-    if (datetime.now(timezone.utc) - verified_at).total_seconds() > (10 * 60):
-        db.email_otps.delete_many({"email": email})
-        return (
-            jsonify(
-                {"error": "Verification session expired. Please restart signup."}
-            ),
-            403,
-        )
+    # Verify OTP session before creating the account
+    otp_error = _validate_otp_verification(email)
+    if otp_error:
+        return otp_error
 
     # Prevent duplicate email
     if db.users.find_one({"email": email}):
@@ -268,29 +277,10 @@ def set_password():
         if existing_user:
             return jsonify({"error": "User already exists"}), 400
 
-        # Verify that OTP was actually completed for this email
-        otp_record = db.email_otps.find_one({"email": email, "verified": True})
-        if not otp_record:
-            return (
-                jsonify(
-                    {"error": "Email not verified. Please complete OTP verification first."}
-                ),
-                403,
-            )
-
-        # Check if OTP verification session has expired (10 min window)
-        verified_at = otp_record.get("verified_at")
-        if verified_at:
-            if verified_at.tzinfo is None:
-                verified_at = verified_at.replace(tzinfo=timezone.utc)
-            if (datetime.now(timezone.utc) - verified_at).total_seconds() > 600:
-                db.email_otps.delete_many({"email": email})
-                return (
-                    jsonify(
-                        {"error": "Verification session expired. Please restart signup."}
-                    ),
-                    403,
-                )
+        # Verify OTP session before creating the account
+        otp_error = _validate_otp_verification(email)
+        if otp_error:
+            return otp_error
 
         role = "admin" if is_admin_email(email) else "user"
 
