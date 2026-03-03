@@ -578,3 +578,4 @@ def get_user_analytics():
     except Exception as e:
         logger.error(f"Error getting user analytics: {e}")
         return None
+    
