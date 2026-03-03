@@ -554,14 +554,15 @@ def get_user_analytics():
         active_users_this_month = beehive_user_collection.count_documents({"last_active": {"$gte": one_month_ago},"role":"user"})
         active_users_last_month = beehive_user_collection.count_documents({"last_active": {"$gte": two_month_ago,"$lt":one_month_ago},"role":"user"})
         new_users_count = beehive_user_collection.count_documents({"created_at": { "$gte": one_month_ago },"role":"user"})
-        if new_users_count == total_users:
-            increase = 100
+        previous_total_users = total_users - new_users_count
+        if previous_total_users == 0:
+            increase = 100 if new_users_count > 0 else 0
         else:
-            increase = (new_users_count / (total_users-new_users_count))*100
-        if active_users_this_month == active_users_last_month:
-            active_increase = 0
+            increase = (new_users_count / previous_total_users) * 100
+        if active_users_last_month == 0:
+            active_increase = 100 if active_users_this_month > 0 else 0
         else:
-            active_increase = (active_users_this_month / (active_users_this_month-active_users_last_month))*100
+            active_increase = ((active_users_this_month - active_users_last_month) / active_users_last_month) * 100
         summary = {
             "users": {
                 "total" : total_users,
