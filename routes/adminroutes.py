@@ -1,5 +1,4 @@
 import re
-
 from flask import Blueprint, request, jsonify
 from utils.jwt_auth import require_admin_role
 from database.userdatahandler import (
