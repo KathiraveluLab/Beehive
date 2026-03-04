@@ -17,7 +17,6 @@ import {
 import { apiUrl } from "../../utils/api";
 import { getToken } from '../../utils/auth';
 
-
 const COLORS = ["#10B981", "#6B7280", "#EF4444", "#FBBF24", "#6366F1"];
 
 interface AnalyticsData {
