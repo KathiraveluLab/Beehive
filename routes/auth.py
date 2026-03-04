@@ -8,7 +8,7 @@ from google.auth.transport import requests as google_requests
 
 from utils.validation import validate_email, validate_otp, sanitize_string, ValidationError
 from database.databaseConfig import db
-from database.userdatahandler import create_user, get_user_by_username, update_last_seen
+from database.userdatahandler import update_last_seen
 from utils.roles import is_admin_email
 from utils.jwt_auth import create_access_token
 from database.databaseConfig import beehive
