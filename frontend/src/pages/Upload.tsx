@@ -26,6 +26,7 @@ const allowedFileTypes = [
   'image/gif',
   'image/webp',
   'image/heif',
+  'image/avif',
   'application/pdf',
 ];
 

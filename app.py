@@ -114,8 +114,8 @@ ALLOWED_MIME_TYPES = {
     "image/gif",
     "image/webp",
     "image/heif",
-    "application/pdf",
     "image/avif",
+    "application/pdf",
 }
 
 ALLOWED_AUDIO_MIME_TYPES = {
@@ -179,6 +179,7 @@ MIME_SIZE_LIMITS = {
     "image/gif": 8 * 1024 * 1024,
     "image/heif": 15 * 1024 * 1024,
     "image/heic": 15 * 1024 * 1024,
+    "image/avif": 15 * 1024 * 1024,
     "application/pdf": 25 * 1024 * 1024,
 }
 
