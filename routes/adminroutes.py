@@ -46,16 +46,21 @@ def admin_user_images_show(user_id):
 def get_dashboard_data():
     try:
         user = request.args.get("user")
-        limit = int(request.args.get("limit", 10))
+        limit = min(int(request.args.get("limit", 10)),50)
         fromDate = None
         endDate = None
-        if  request.args.get("from") or request.args.get("to"):
-            if request.args.get("from"):
-                from_date = list(request.args.get("from").split("-"))
-                fromDate = datetime(year=int(from_date[0]),month=int(from_date[1]),day=int(from_date[2]))
-            if request.args.get("to"):
-                end_date = list(request.args.get("to").split("-"))
-                endDate = datetime(year=int(end_date[0]),month=int(end_date[1]),day=int(end_date[2]))        
+        from_date_str = request.args.get("from")
+        if from_date_str:
+            try:
+                fromDate = datetime.fromisoformat(from_date_str)
+            except ValueError:
+                return jsonify({"error": f"Invalid 'from' date format: {from_date_str}. Expected YYYY-MM-DD."}), 400
+        end_date_str = request.args.get("to")
+        if end_date_str:
+            try:
+                endDate = datetime.fromisoformat(end_date_str).replace(hour=23, minute=59, second=59)
+            except ValueError:
+                return jsonify({"error": f"Invalid 'to' date format: {end_date_str}. Expected YYYY-MM-DD."}), 400       
         sort_method = request.args.get("sort")
         stats = get_upload_stats()
         recent_uploads = get_recent_uploads(limit,user,fromDate,endDate,sort_method)
