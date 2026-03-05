@@ -275,7 +275,7 @@ const Landing = () => {
             >
               <motion.button
                 onClick={handleGetStarted}
-                className="bg-yellow-400 text-black px-8 py-3 rounded-full hover:bg-yellow-500 transition-all shadow-lg hover:shadow-xl font-semibold"
+                className="bg-primary text-black px-8 py-3 rounded-full hover:bg-primary-dark transition-all shadow-lg hover:shadow-xl font-semibold"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
