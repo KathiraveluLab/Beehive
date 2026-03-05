@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { getToken } from '../../utils/auth';
 import {
   UserIcon,
-  EnvelopeIcon,
-  KeyIcon,
   PhotoIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
