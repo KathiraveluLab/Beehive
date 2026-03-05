@@ -7,7 +7,6 @@ import { useTheme } from "../context/ThemeContext";
 import Spotlightcard from "../components/ui/Spotlightcard";
 import Blurtext from "../components/ui/Blurtext";
 import CardSwap, { Card } from "../components/ui/CardSwap";
-import PrimaryButton from "../components/ui/PrimaryButton";
 
 interface MousePosition {
   x: number;
@@ -274,9 +273,14 @@ const Landing = () => {
               transition={{ delay: 0.5 }}
               className="space-x-4"
             >
-              <PrimaryButton onClick={handleGetStarted}>
+              <motion.button
+                onClick={handleGetStarted}
+                className="bg-primary text-black px-8 py-3 rounded-full hover:bg-primary-dark transition-all shadow-lg hover:shadow-xl font-semibold"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
                 {isAuthenticated() ? "Go to Dashboard" : "Get Started"}
-              </PrimaryButton>
+              </motion.button>
             </motion.div>
           </motion.div>
 
@@ -547,9 +551,14 @@ const Landing = () => {
                   decisions while ensuring the highest standards of privacy and
                   security.
                 </p>
-                <PrimaryButton onClick={() => navigate("/about")} className="mt-4">
+                <motion.button
+                  className="bg-yellow-400 text-black px-8 py-3 rounded-full hover:bg-yellow-500 transition-all shadow-lg hover:shadow-xl mt-4"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate("/about")}
+                >
                   Learn More
-                </PrimaryButton>
+                </motion.button>
               </div>
             </motion.div>
             <motion.div
