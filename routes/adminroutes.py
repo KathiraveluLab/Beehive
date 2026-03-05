@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify
 from utils.jwt_auth import require_admin_role
+from datetime import datetime
 from database.userdatahandler import (
     _get_paginated_images_by_user,
     get_recent_uploads,
@@ -44,11 +45,20 @@ def admin_user_images_show(user_id):
 @require_admin_role
 def get_dashboard_data():
     try:
+        user = request.args.get("user")
         limit = int(request.args.get("limit", 10))
-
+        fromDate = None
+        endDate = None
+        if  request.args.get("from") or request.args.get("to"):
+            if request.args.get("from"):
+                from_date = list(request.args.get("from").split("-"))
+                fromDate = datetime(year=int(from_date[0]),month=int(from_date[1]),day=int(from_date[2]))
+            if request.args.get("to"):
+                end_date = list(request.args.get("to").split("-"))
+                endDate = datetime(year=int(end_date[0]),month=int(end_date[1]),day=int(end_date[2]))        
+        sort_method = request.args.get("sort")
         stats = get_upload_stats()
-        recent_uploads = get_recent_uploads(limit)
-
+        recent_uploads = get_recent_uploads(limit,user,fromDate,endDate,sort_method)
         return jsonify({
             "stats": stats,
             "recentUploads": recent_uploads
