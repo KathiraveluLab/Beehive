@@ -69,12 +69,22 @@ const Dashboard = () => {
   const [filterUser, setFilterUser] = useState('');
   const [filterFromDate, setFilterFromDate] = useState('');
   const [filterToDate, setFilterToDate] = useState('');
-  const [debounceFilter, setDebounceFilter] = useState(filterUser+filterFromDate+filterToDate+sortOption);
+  const [debouncedFilters, setDebouncedFilters] = useState({
+    user: '',
+    fromDate: '',
+    toDate: '',
+    sort: 'date_desc'
+  });
   const location = useLocation();
   // debounce to wait 500ms before refetching data from the server
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebounceFilter(filterUser+filterFromDate+filterToDate+sortOption);
+      setDebouncedFilters({
+      user: filterUser,
+      fromDate: filterFromDate,
+      toDate: filterToDate,
+      sort: sortOption
+    });
     }, 500);
     return () => clearTimeout(timer);
   }, [filterUser,sortOption, filterFromDate, filterToDate]);
@@ -88,7 +98,7 @@ const Dashboard = () => {
   }, [location.search]);
   useEffect(()=>{
       fetchDashboardData();
-  },[debounceFilter]);
+  },[debouncedFilters]);
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
