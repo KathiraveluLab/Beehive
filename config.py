@@ -10,7 +10,6 @@ class Config:
     JWT_EXPIRE_HOURS = int(os.getenv("JWT_EXPIRE_HOURS", 24))
 
     
-    # Flask Configuration
     SECRET_KEY = os.getenv('FLASK_SECRET_KEY')
     UPLOAD_FOLDER = 'static/uploads'
     PDF_THUMBNAIL_FOLDER = 'static/uploads/thumbnails/'
