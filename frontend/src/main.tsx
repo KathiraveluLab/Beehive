@@ -24,6 +24,8 @@ window.fetch = async (...args) => {
   ) {
     logout();
     window.location.href = '/sign-in';
+    // Prevent downstream code from processing the 401 response.
+    return new Promise(() => {});
   }
 
   return res;
