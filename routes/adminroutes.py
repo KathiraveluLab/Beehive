@@ -1,3 +1,4 @@
+import re
 from flask import Blueprint, request, jsonify
 from utils.jwt_auth import require_admin_role
 from database.userdatahandler import (
@@ -91,7 +92,8 @@ def list_users():
         # Build filter
         mongo_filter = {}
         if query:
-            regex = {"$regex": query, "$options": "i"}
+            safe_pattern = re.escape(query)
+            regex = {"$regex": safe_pattern, "$options": "i"}
             mongo_filter = {"$or": [{"username": regex}, {"email": regex}]}
 
         users_col = beehive.users
