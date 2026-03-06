@@ -29,7 +29,6 @@ const AdminLayout = () => {
   const navigate = useNavigate();
 
   const adminNavigation = [
-    { name: "Landing", href: "/landing" },
     { name: "Dashboard", href: "/admin" },
     { name: "Users", href: "/admin/users" },
     { name: "Analytics", href: "/admin/analytics" },
