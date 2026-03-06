@@ -90,7 +90,7 @@ def get_all_analytics():
         if not upload_data:
             return jsonify({"error": "Failed to retrieve analytics data"}), 500
         if not user_data:
-            return jsonify({"error": "Failed to retrieve analytics data"}), 500
+            return jsonify({"error": "Failed to retrieve user analytics data"}), 500
         return jsonify({
             "uploads": upload_data,
             "users":user_data
