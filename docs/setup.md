@@ -135,27 +135,6 @@ Follow these steps to set up the project:
     - **Keep it secure**: Never commit your `.env` file to version control (it's already in `.gitignore`)
 
     #### 🔧 **Troubleshooting:**
-    If you see errors like:
-    - `ValueError: Missing or insecure JWT_SECRET environment variable.`
-    - `Config validation failed`
-
-    Make sure your `.env` file contains all required variables and restart the application.
-   
-    GOOGLE_CLIENT_ID=your-client-id
-    GOOGLE_CLIENT_SECRET=your-client-secret
-    REDIRECT_URI=http://localhost:5000/admin/login/callback
-
-    ### Admin Configuration (Required for admin access)
-    ADMIN_EMAILS=admin1@example.com,admin2@example.com
-
-    ### JWT Authentication
-    JWT_SECRET=your_jwt_secret_here
-    JWT_EXPIRE_HOURS=24
-
-    ### Flask Security (Must be a strong secret key, recommended: 32+ characters)
-    FLASK_SECRET_KEY=your_custom_flask_secret
-
-    #### 🔧 **Troubleshooting:**
     If you see errors related to missing secrets or config validation, verify your `.env` and restart the application.
 
 11. **Run the backend**
