@@ -409,7 +409,6 @@ def get_upload_stats():
 # Get recent uploads for admin dashboard
 def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=None, sort_method="user_asc"):
     try:
-        print(beehive_user_collection.find_one())
         pipeline = [
             {
                 "$lookup":
@@ -439,7 +438,7 @@ def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=
         if from_date or end_date:
             match["created_at"] = created_at
         if username_filter:
-            match["username"] = {"$regex": username_filter ,"$options": "i"}
+            match["username"] = {"$regex": re.escape(username_filter) ,"$options": "i"}
         pipeline.append({"$match":match})
         if sort_method == "date_asc":
             sort["$sort"] = {"created_at":1}
@@ -466,7 +465,7 @@ def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=
             })
         return uploads_list
     except Exception as e:
-        logger.error(f"Error: {str(e)}")
+        logger.error(f"Error getting recent uploads: {str(e)}")
         return []
 
 def save_notification(user_id, username, filename, title, time_created, sentiment):

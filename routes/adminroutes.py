@@ -46,7 +46,10 @@ def admin_user_images_show(user_id):
 def get_dashboard_data():
     try:
         user = request.args.get("user")
-        limit = min(int(request.args.get("limit", 10)),50)
+        limit_str = request.args.get("limit", "10")
+        if not limit_str.isdigit():
+            return jsonify({"error": "Invalid 'limit' parameter. Must be an integer."}), 400
+        limit = min(int(limit_str), 50)
         fromDate = None
         endDate = None
         from_date_str = request.args.get("from")
