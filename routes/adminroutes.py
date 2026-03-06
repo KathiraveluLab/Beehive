@@ -74,7 +74,7 @@ def get_all_analytics():
             return jsonify({"error": "Failed to retrieve user analytics data"}), 500
         return jsonify({
             "uploads": upload_data,
-            "users":user_data
+            "users": user_data
         }), 200
 
     except Exception:
