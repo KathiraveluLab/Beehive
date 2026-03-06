@@ -50,23 +50,23 @@ def get_dashboard_data():
         if not limit_str.isdigit():
             return jsonify({"error": "Invalid 'limit' parameter. Must be an integer."}), 400
         limit = min(int(limit_str), 50)
-        fromDate = None
-        endDate = None
+        from_date = None
+        end_date = None
         from_date_str = request.args.get("from")
         if from_date_str:
             try:
-                fromDate = datetime.fromisoformat(from_date_str)
+                from_date = datetime.fromisoformat(from_date_str)
             except ValueError:
                 return jsonify({"error": f"Invalid 'from' date format: {from_date_str}. Expected YYYY-MM-DD."}), 400
         end_date_str = request.args.get("to")
         if end_date_str:
             try:
-                endDate = datetime.fromisoformat(end_date_str).replace(hour=23, minute=59, second=59)
+                end_date = datetime.fromisoformat(end_date_str).replace(hour=23, minute=59, second=59)
             except ValueError:
                 return jsonify({"error": f"Invalid 'to' date format: {end_date_str}. Expected YYYY-MM-DD."}), 400       
         sort_method = request.args.get("sort")
         stats = get_upload_stats()
-        recent_uploads = get_recent_uploads(limit,user,fromDate,endDate,sort_method)
+        recent_uploads = get_recent_uploads(limit,user,from_date,end_date,sort_method)
         return jsonify({
             "stats": stats,
             "recentUploads": recent_uploads

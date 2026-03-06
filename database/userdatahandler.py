@@ -411,42 +411,46 @@ def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=
     try:
         pipeline = [
             {
-                "$lookup":
-                {
-                "from": "users",
-                "localField": "user_id",
-                "foreignField": "_id",
-                "as": "user_mapping"
+                "$lookup": {
+                    "from": "users",
+                    "localField": "user_id",
+                    "foreignField": "_id",
+                    "as": "user_mapping"
                 }
             },
             {"$set": {"user_mapping": {"$first": "$user_mapping"}}},
             {"$set": {
                 "username": "$user_mapping.username"
             }},
-            {
-                "$limit" : limit
-            }
         ]
-        created_at = {}
         match = {}
-        sort = {}
+        created_at = {}
         if from_date:
             created_at["$gte"] = from_date
         if end_date:
             created_at["$lte"] = end_date
 
-        if from_date or end_date:
+        if created_at:
             match["created_at"] = created_at
         if username_filter:
-            match["username"] = {"$regex": re.escape(username_filter) ,"$options": "i"}
-        pipeline.append({"$match":match})
+            match["username"] = {"$regex": re.escape(username_filter), "$options": "i"}
+        
+        if match:
+            pipeline.append({"$match": match})
+
+        sort = {}
+        print(sort_method)
         if sort_method == "date_asc":
-            sort["$sort"] = {"created_at":1}
+            sort = {"$sort": {"created_at": 1}}
+        elif sort_method == "user_asc":
+            sort = {"$sort": {"username": 1, "created_at": -1}}
         elif sort_method == "user_desc":
-            sort["$sort"] = {"created_at":-1,"username":-1}
-        else:
-            sort["$sort"] = {"created_at":-1}
+            sort = {"$sort": {"username": -1, "created_at": -1}}
+        else: 
+            sort = {"$sort": {"created_at": -1}}
         pipeline.append(sort)
+
+        pipeline.append({"$limit": limit})
         result = beehive_image_collection.aggregate(pipeline)
         uploads_list = []
         for upload in result:
