@@ -548,33 +548,55 @@ def get_upload_analytics(trend_days=7):
         return None
 def get_user_analytics():
     try:
-        one_month_ago = datetime.now(timezone.utc) - timedelta(days=30)
-        two_month_ago = datetime.now(timezone.utc) - timedelta(days=60)
-        total_users = beehive_user_collection.count_documents({"role":"user"})
-        active_users_this_month = beehive_user_collection.count_documents({"last_active": {"$gte": one_month_ago},"role":"user"})
-        active_users_last_month = beehive_user_collection.count_documents({"last_active": {"$gte": two_month_ago,"$lt":one_month_ago},"role":"user"})
-        new_users_count = beehive_user_collection.count_documents({"created_at": { "$gte": one_month_ago },"role":"user"})
+        # Use calendar months for consistency and clarity
+        today_utc = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        start_of_this_month = today_utc.replace(day=1)
+        start_of_last_month = (start_of_this_month - timedelta(days=1)).replace(day=1)
+
+        # Use a single aggregation pipeline for performance
+        pipeline = [
+            {
+                '$facet': {
+                    'total_users': [{'$match': {'role': 'user'}}, {'$count': 'count'}],
+                    'new_users_this_month': [{'$match': {'role': 'user', 'created_at': {'$gte': start_of_this_month}}}, {'$count': 'count'}],
+                    'active_users_this_month': [{'$match': {'role': 'user', 'last_active': {'$gte': start_of_this_month}}}, {'$count': 'count'}],
+                    'active_users_last_month': [{'$match': {'role': 'user', 'last_active': {'$gte': start_of_last_month, '$lt': start_of_this_month}}}, {'$count': 'count'}]
+                }
+            }
+        ]
+
+        result = list(beehive_user_collection.aggregate(pipeline))
+        if not result:
+            return None
+        data = result[0]
+
+        total_users = (data.get('total_users', [{}])[0].get('count', 0) if data.get('total_users') else 0)
+        new_users_count = (data.get('new_users_this_month', [{}])[0].get('count', 0) if data.get('new_users_this_month') else 0)
+        active_users_this_month = (data.get('active_users_this_month', [{}])[0].get('count', 0) if data.get('active_users_this_month') else 0)
+        active_users_last_month = (data.get('active_users_last_month', [{}])[0].get('count', 0) if data.get('active_users_last_month') else 0)
         previous_total_users = total_users - new_users_count
         if previous_total_users == 0:
-            increase = 100 if new_users_count > 0 else 0
+            increase = 100.0 if new_users_count > 0 else 0.0
         else:
             increase = (new_users_count / previous_total_users) * 100
+
         if active_users_last_month == 0:
-            active_increase = 100 if active_users_this_month > 0 else 0
+            active_increase = 100.0 if active_users_this_month > 0 else 0.0
         else:
             active_increase = ((active_users_this_month - active_users_last_month) / active_users_last_month) * 100
+
         summary = {
             "users": {
-                "total" : total_users,
-                "increase" : increase
+                "total": total_users,
+                "increase": round(increase, 2)
             },
             "activeUsers": {
-                "total" : active_users_this_month,
-                "increase": active_increase
+                "total": active_users_this_month,
+                "increase": round(active_increase, 2)
             },
-            "timeframe" : "This month"
+            "timeframe": "This month"
         }
-        return {"summary":summary}
+        return {"summary": summary}
     except Exception as e:
         logger.error(f"Error getting user analytics: {e}")
         return None
