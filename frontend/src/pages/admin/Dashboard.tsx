@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { apiUrl } from '../../utils/api';
 import { getToken } from '../../utils/auth';
@@ -63,42 +63,60 @@ const Dashboard = () => {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // sorting / filtering state
+  const location = useLocation();
+  const isInitialMount = useRef(true);
+   // sorting / filtering state
   const [sortOption, setSortOption] = useState<'date_desc'|'date_asc'|'user_asc'|'user_desc'>('date_desc');
-  const [filterUser, setFilterUser] = useState('');
+  const [filterUser, setFilterUser] = useState(() => new URLSearchParams(location.search).get('user') || '');
   const [filterFromDate, setFilterFromDate] = useState('');
   const [filterToDate, setFilterToDate] = useState('');
+
   const [debouncedFilters, setDebouncedFilters] = useState({
-    user: '',
-    fromDate: '',
-    toDate: '',
-    sort: 'date_desc'
+    user: filterUser,
+    fromDate: filterFromDate,
+    toDate: filterToDate,
+    sort: sortOption,
   });
-  const location = useLocation();
-  // debounce to wait 500ms before refetching data from the server
+
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     const timer = setTimeout(() => {
-      setDebouncedFilters({
-      user: filterUser,
-      fromDate: filterFromDate,
-      toDate: filterToDate,
-      sort: sortOption
-    });
+      setDebouncedFilters(prevFilters => {
+        const newFilters = {
+          user: filterUser,
+          fromDate: filterFromDate,
+          toDate: filterToDate,
+          sort: sortOption
+        };
+        // Avoid state update if filter values are unchanged to prevent redundant fetches.
+        if (
+          prevFilters.user === newFilters.user &&
+          prevFilters.fromDate === newFilters.fromDate &&
+          prevFilters.toDate === newFilters.toDate &&
+          prevFilters.sort === newFilters.sort
+        ) {
+          return prevFilters;
+        }
+        return newFilters;
+      });
     }, 500);
     return () => clearTimeout(timer);
-  }, [filterUser,sortOption, filterFromDate, filterToDate]);
+  }, [filterUser, sortOption, filterFromDate, filterToDate]);
+
   useEffect(() => {
-    // if user filter provided in query string, pre-populate
     const params = new URLSearchParams(location.search);
     const userParam = params.get('user');
-    if (userParam) {
+    if (userParam && userParam !== filterUser) {
       setFilterUser(userParam);
     }
   }, [location.search]);
-  useEffect(()=>{
-      fetchDashboardData();
-  },[debouncedFilters]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [debouncedFilters]);
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
