@@ -69,16 +69,15 @@ const Dashboard = () => {
   const [filterUser, setFilterUser] = useState('');
   const [filterFromDate, setFilterFromDate] = useState('');
   const [filterToDate, setFilterToDate] = useState('');
-  const [debounce, setDebounce] = useState(filterUser);
+  const [debounceFilter, setDebounceFilter] = useState(filterUser+filterFromDate+filterToDate+sortOption);
   const location = useLocation();
-  // debounce to wait 500ms before refeatching data from the server
+  // debounce to wait 500ms before refetching data from the server
   useEffect(() => {
     const timer = setTimeout(() => {
-      setDebounce(filterUser);
+      setDebounceFilter(filterUser+filterFromDate+filterToDate+sortOption);
     }, 500);
-
     return () => clearTimeout(timer);
-  }, [filterUser]);
+  }, [filterUser,sortOption, filterFromDate, filterToDate]);
   useEffect(() => {
     // if user filter provided in query string, pre-populate
     const params = new URLSearchParams(location.search);
@@ -86,9 +85,10 @@ const Dashboard = () => {
     if (userParam) {
       setFilterUser(userParam);
     }
-    fetchDashboardData();
-  }, [location.search, sortOption, filterFromDate, filterToDate, debounce]);
-
+  }, [location.search]);
+  useEffect(()=>{
+      fetchDashboardData();
+  },[debounceFilter]);
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
