@@ -4,15 +4,28 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import './index.css'
 import App from './App.tsx'
 import { logout } from './utils/auth'
+import { API_BASE_URL } from './utils/api'
 
-// Global 401 interceptor - redirects to sign-in on unauthorized responses
+// Global 401 interceptor - redirects to sign-in on unauthorized responses from backend API
 const originalFetch = window.fetch;
+
 window.fetch = async (...args) => {
   const res = await originalFetch(...args);
-  if (res.status === 401 && window.location.pathname !== '/sign-in') {
+
+  const url = typeof args[0] === "string" ? args[0] : args[0].url;
+
+  // Only handle 401 if it comes from the backend API endpoint
+  const isBackendApiRequest = url.startsWith(API_BASE_URL);
+
+  if (
+    res.status === 401 &&
+    isBackendApiRequest &&
+    !window.location.pathname.startsWith('/sign-in')
+  ) {
     logout();
     window.location.href = '/sign-in';
   }
+
   return res;
 };
 
