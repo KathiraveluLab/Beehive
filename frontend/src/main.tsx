@@ -12,7 +12,7 @@ const originalFetch = window.fetch;
 window.fetch = async (...args) => {
   const res = await originalFetch(...args);
 
-  const url = typeof args[0] === "string" ? args[0] : args[0].url;
+  const url = args[0] instanceof Request ? args[0].url : String(args[0]);
 
   // Only handle 401 if it comes from the backend API endpoint
   const isBackendApiRequest = url.startsWith(API_BASE_URL);
