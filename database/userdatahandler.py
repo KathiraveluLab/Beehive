@@ -591,10 +591,13 @@ def get_user_analytics():
             return None
         data = result[0]
 
-        total_users = (data.get('total_users', [{}])[0].get('count', 0) if data.get('total_users') else 0)
-        new_users_count = (data.get('new_users_this_month', [{}])[0].get('count', 0) if data.get('new_users_this_month') else 0)
-        active_users_this_month = (data.get('active_users_this_month', [{}])[0].get('count', 0) if data.get('active_users_this_month') else 0)
-        active_users_last_month = (data.get('active_users_last_month', [{}])[0].get('count', 0) if data.get('active_users_last_month') else 0)
+        def _get_facet_count(results):
+            return results[0].get('count', 0) if results else 0
+
+        total_users = _get_facet_count(data.get('total_users'))
+        new_users_count = _get_facet_count(data.get('new_users_this_month'))
+        active_users_this_month = _get_facet_count(data.get('active_users_this_month'))
+        active_users_last_month = _get_facet_count(data.get('active_users_last_month'))
         previous_total_users = total_users - new_users_count
         if previous_total_users == 0:
             increase = 100.0 if new_users_count > 0 else 0.0
