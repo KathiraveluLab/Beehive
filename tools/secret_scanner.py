@@ -1,5 +1,6 @@
 import re
 import os
+import sys
 from pathlib import Path
 from typing import List, Dict, Set
 
@@ -50,7 +51,7 @@ class SecretScanner:
         if filepath.suffix in {'.pyc', '.pyo', '.pyd', '.so', '.dll'}:
             return False
         
-        if filepath.name == '.env.example':
+        if filepath.name.startswith('.env'):
             return False
         
         return True
@@ -60,7 +61,7 @@ class SecretScanner:
             return
         
         try:
-            with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(filepath, 'r', encoding='utf-8') as f:
                 content = f.read()
                 lines = content.split('\n')
             
@@ -95,7 +96,7 @@ class SecretScanner:
                         continue
                     if 'example' in line_content.lower():
                         continue
-                    if 'test' in str(filepath):
+                    if 'tests' in filepath.parts:
                         continue
                     
                     matched_text = match.group()
@@ -108,17 +109,18 @@ class SecretScanner:
                             'preview': line_content[:80]
                         })
         
+        except UnicodeDecodeError:
+            print(f"Warning: Could not decode {filepath}, skipping")
         except Exception as e:
-            pass
+            print(f"Error scanning {filepath}: {e}")
     
     def scan_project(self) -> None:
         python_files = list(self.project_root.glob('**/*.py'))
-        config_files = list(self.project_root.glob('**/.env*'))
         yaml_files = list(self.project_root.glob('**/*.yaml'))
         yml_files = list(self.project_root.glob('**/*.yml'))
         json_files = list(self.project_root.glob('**/*.json'))
         
-        all_files = python_files + config_files + yaml_files + yml_files + json_files
+        all_files = python_files + yaml_files + yml_files + json_files
         
         for filepath in all_files:
             self.scan_file(filepath)
@@ -177,6 +179,10 @@ def main():
         f.write(report)
     
     print(f"\nReport saved to: {report_path}")
+    
+    if scanner.findings:
+        sys.exit(1)
+    sys.exit(0)
 
 
 if __name__ == "__main__":

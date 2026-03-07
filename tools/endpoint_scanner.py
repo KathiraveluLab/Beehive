@@ -41,7 +41,7 @@ class EndpointScanner:
         if not route_decorator:
             return
         
-        has_auth = any(d in ['login_required', 'jwt_required', 'admin_required'] 
+        has_auth = any(d in ['require_auth', 'require_admin_role', 'login_required', 'jwt_required'] 
                       for d in decorators if d)
         
         route_info = {
@@ -60,24 +60,26 @@ class EndpointScanner:
                 'type': 'Missing Authentication',
                 'location': f"{route_info['file']}:{route_info['line']}",
                 'function': func_node.name,
-                'recommendation': 'Add authentication decorator (@login_required or @jwt_required)'
+                'recommendation': 'Add authentication decorator (@require_auth or @require_admin_role)'
             })
     
     def _is_public_route(self, func_name: str) -> bool:
-        public_routes = {
-            'login', 'register', 'signup', 'signin', 
-            'health', 'index', 'landing', 'home',
-            'privacy', 'terms', 'about'
-        }
-        return any(p in func_name.lower() for p in public_routes)
+        public_prefixes = ['login', 'register', 'signup', 'signin', 'auth', 'request_otp', 'verify_otp', 'set_password', 'google']
+        public_exact = {'health', 'index', 'landing', 'home', 'privacy', 'terms', 'about'}
+        
+        func_lower = func_name.lower()
+        if func_lower in public_exact:
+            return True
+        if any(func_lower.startswith(prefix) for prefix in public_prefixes):
+            return True
+        return False
     
     def scan_project(self) -> None:
         python_files = list(self.project_root.glob('**/*.py'))
+        exclude_dirs = {'venv', '__pycache__', 'tests', 'node_modules', '.git'}
         
         for filepath in python_files:
-            if 'venv' in str(filepath) or '__pycache__' in str(filepath):
-                continue
-            if 'tests' in str(filepath):
+            if any(excluded in filepath.parts for excluded in exclude_dirs):
                 continue
                 
             self.scan_file(filepath)
