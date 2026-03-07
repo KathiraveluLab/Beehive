@@ -121,6 +121,7 @@ declare global {
 }
 
 export function installFetch401Interceptor(): void {
+  
   if (typeof window === "undefined" || typeof window.fetch !== "function") {
     return;
   }
@@ -143,7 +144,7 @@ export function installFetch401Interceptor(): void {
     input: RequestInfo | URL,
     init?: RequestInit
   ): Promise<Response> => {
-    const response = await originalFetch(input as any, init as any);
+    const response = await originalFetch(input, init);
 
     if (shouldHandleUnauthorized(response, input, backendConfig)) {
       try {
