@@ -298,17 +298,19 @@ const AdminLayout = () => {
                             {notifications.map((notif, idx) => (
                               <li
                                 key={notif._id || idx}
-                                className={`mb-2 last:mb-0 text-sm rounded-lg p-2 ${
+                                className={`mb-2 last:mb-0 text-sm rounded-lg p-2 break-words ${
                                   notif.seen
                                     ? "bg-transparent"
                                     : "bg-yellow-100 dark:bg-yellow-900"
                                 }`}
                               >
-                                <span className="font-medium">
-                                  Image uploaded by {notif.username || "a user"}
-                                </span>
-                                : {notif.title}
-                                <div className="text-xs text-gray-500">
+                                <div className="break-words">
+                                  <span className="font-medium break-all">
+                                    Image uploaded by {notif.username || "a user"}
+                                  </span>
+                                  <span className="break-words">: {notif.title}</span>
+                                </div>
+                                <div className="text-xs text-gray-500 mt-1">
                                   {notif.timestamp
                                     ? new Date(notif.timestamp).toLocaleString()
                                     : ""}

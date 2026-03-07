@@ -804,6 +804,7 @@ def user_images_show():
 def get_admin_notifications():
     try:
         notification_collection = get_beehive_notification_collection()
+        user_collection = get_beehive_user_collection()
 
         try:
             page = int(request.args.get("page", 1))
@@ -824,10 +825,23 @@ def get_admin_notifications():
             .limit(per_page)
         )
 
+        # Enrich notifications with usernames from database
         for n in notifications:
             n["_id"] = str(n["_id"])
             if "timestamp" in n:
                 n["timestamp"] = n["timestamp"].isoformat()
+            
+            # If username is missing or looks like an ID, fetch from database
+            if "user_id" in n and (not n.get("username") or len(n.get("username", "")) == 24):
+                try:
+                    user = user_collection.find_one({"_id": ObjectId(n["user_id"])})
+                    if user and user.get("username"):
+                        n["username"] = user["username"]
+                    elif user and user.get("email"):
+                        # Fallback to email if username not available
+                        n["username"] = user["email"].split("@")[0]
+                except Exception as e:
+                    logging.warning(f"Could not fetch username for user_id {n.get('user_id')}: {e}")
 
         return jsonify(
             {"notifications": notifications, "unseen_count": unseen_count, "page": page}
