@@ -69,5 +69,19 @@ def initialize_text_index():
             logger.info("Text index created on image collection")
         else:
             logger.debug("Text index already exists on image collection")
+        # Ensure an index exists for OTP verification queries to keep lookups fast
+        try:
+            otp_collection = beehive.email_otps
+            otp_indexes = otp_collection.index_information()
+            if 'email_verified_idx' not in otp_indexes:
+                otp_collection.create_index(
+                    [("email", 1), ("verified", 1), ("verified_at", -1)],
+                    name='email_verified_idx',
+                )
+                logger.info("Created index on email_otps (email, verified, verified_at)")
+            else:
+                logger.debug("email_verified_idx already exists on email_otps")
+        except Exception as ie:
+            logger.error(f"Error creating email_otps index: {ie}")
     except Exception as e:
         logger.error(f"Error creating text index: {str(e)}")
