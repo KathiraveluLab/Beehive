@@ -17,36 +17,54 @@ def test_secret_key_minimum_length():
     assert len(Config.SECRET_KEY) >= 32
 
 
-def test_validate_config_checks_secret_key():
-    original_key = Config.SECRET_KEY
-    
-    Config.SECRET_KEY = None
-    with pytest.raises(ValueError, match="FLASK_SECRET_KEY"):
-        Config.validate_config()
-    
-    Config.SECRET_KEY = "short"
-    with pytest.raises(ValueError, match="at least 32 characters"):
-        Config.validate_config()
-    
-    Config.SECRET_KEY = "beehive"
-    with pytest.raises(ValueError, match="default or example value"):
-        Config.validate_config()
-    
-    Config.SECRET_KEY = original_key
+def test_jwt_secret_loaded_from_environment():
+    assert Config.JWT_SECRET is not None
+    assert Config.JWT_SECRET == os.environ.get('JWT_SECRET')
 
 
-def test_validate_config_checks_clerk_keys():
-    original_clerk_key = Config.CLERK_SECRET_KEY
-    original_clerk_issuer = Config.CLERK_ISSUER
-    
-    Config.CLERK_SECRET_KEY = None
-    with pytest.raises(ValueError, match="CLERK_SECRET_KEY"):
+def test_validate_config_missing_flask_secret(monkeypatch):
+    monkeypatch.setattr(Config, 'SECRET_KEY', None)
+    with pytest.raises(SystemExit):
         Config.validate_config()
-    
-    Config.CLERK_SECRET_KEY = original_clerk_key
-    Config.CLERK_ISSUER = None
-    with pytest.raises(ValueError, match="CLERK_ISSUER"):
+
+
+def test_validate_config_short_flask_secret(monkeypatch):
+    monkeypatch.setattr(Config, 'SECRET_KEY', "short")
+    with pytest.raises(SystemExit):
         Config.validate_config()
-    
-    Config.CLERK_SECRET_KEY = original_clerk_key
-    Config.CLERK_ISSUER = original_clerk_issuer
+
+
+def test_validate_config_weak_flask_secret(monkeypatch):
+    monkeypatch.setattr(Config, 'SECRET_KEY', "your_flask_secret_key_here_CHANGE_THIS")
+    with pytest.raises(SystemExit):
+        Config.validate_config()
+
+
+def test_validate_config_missing_jwt_secret(monkeypatch):
+    monkeypatch.setattr(Config, 'JWT_SECRET', None)
+    with pytest.raises(SystemExit):
+        Config.validate_config()
+
+
+def test_validate_config_short_jwt_secret(monkeypatch):
+    monkeypatch.setattr(Config, 'JWT_SECRET', "short")
+    with pytest.raises(SystemExit):
+        Config.validate_config()
+
+
+def test_validate_config_missing_mongodb_uri(monkeypatch):
+    monkeypatch.setattr(Config, 'MONGODB_URI', None)
+    with pytest.raises(SystemExit):
+        Config.validate_config()
+
+
+def test_validate_config_invalid_mongodb_uri(monkeypatch):
+    monkeypatch.setattr(Config, 'MONGODB_URI', "invalid://localhost")
+    with pytest.raises(SystemExit):
+        Config.validate_config()
+
+
+def test_validate_config_missing_cors_origins(monkeypatch):
+    monkeypatch.setattr(Config, 'CORS_ORIGINS', [])
+    with pytest.raises(SystemExit):
+        Config.validate_config()
