@@ -24,7 +24,10 @@ def _validate_otp_verification(email: str):
     Returns a Flask response tuple (jsonify(...), status_code) if validation
     fails, or None if the email is properly verified.
     """
-    otp_record = db.email_otps.find_one({"email": email, "verified": True})
+    otp_record = db.email_otps.find_one(
+        {"email": email, "verified": True},
+        sort=[("verified_at", -1)],
+    )
     if not otp_record:
         return (
             jsonify({"error": "Email not verified. Please complete OTP verification first."}),
@@ -144,8 +147,9 @@ def verify_otp():
 
         # Mark email as verified instead of deleting
         # This flag is checked by complete-signup to prevent OTP bypass
+        # Use _id to target the exact validated record, not just email
         db.email_otps.update_one(
-            {"email": email},
+            {"_id": record["_id"]},
             {"$set": {"verified": True, "verified_at": datetime.now(timezone.utc)}},
         )
 
@@ -299,10 +303,18 @@ def set_password():
         if not existing_user:
             return jsonify({"error": "User not found"}), 404
 
+        # Verify OTP session before allowing password reset
+        otp_error = _validate_otp_verification(email)
+        if otp_error:
+            return otp_error
+
         db.users.update_one(
             {"email": email},
             {"$set": {"password": hashed}}
         )
+
+        # Cleanup OTPs after successful reset
+        db.email_otps.delete_many({"email": email})
 
         user_id = existing_user["_id"]
         role = existing_user.get("role", "user")
