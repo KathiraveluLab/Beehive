@@ -28,6 +28,50 @@ graph TD;
 
 ```
 
+## Architecture Overview
+
+The system follows a simple client–server architecture:
+
+1. Users upload images with metadata such as title, description, sentiment, and voice notes.
+2. The Flask backend processes the request and stores metadata in MongoDB.
+3. Media files (images and voice notes) are stored in the local filesystem under static/uploads/.
+4. Administrators can view uploaded data through authenticated endpoints.
+
+## Quick Start
+
+1. Clone the repository
+
+git clone https://github.com/kathiravelulab/beehive.git
+cd beehive
+
+2. Create a virtual environment
+
+python -m venv venv
+
+Activate it:
+Linux / macOS: 
+source venv/bin/activate
+
+Windows: 
+venv\Scripts\activate
+
+3. Install dependencies
+
+pip install -r requirements.txt
+
+4. Configure environment variables
+
+Create a .env file in the project root and add the required variables:
+
+MONGO_DB_URL=<your_mongodb_connection_string> JWT_SECRET=<your_secret_key>
+
+5. Run the backend server
+
+python app.py
+
+The server will start at: http://127.0.0.1:5000
+
+
 ## Setup Instructions  
 
 For instructions to configure and run this project locally, see the [setup.md](docs/setup.md).
