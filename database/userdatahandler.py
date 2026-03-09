@@ -439,7 +439,6 @@ def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=
             pipeline.append({"$match": match})
 
         sort = {}
-        print(sort_method)
         if sort_method == "date_asc":
             sort = {"$sort": {"created_at": 1}}
         elif sort_method == "user_asc":
