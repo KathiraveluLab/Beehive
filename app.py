@@ -42,14 +42,11 @@ from database.userdatahandler import (
     delete_image,
     get_image_by_id,
     get_image_by_audio_filename,
-    get_images_by_user,
     search_and_filter_images,
-    get_user_by_username,
     save_image,
     save_notification,
     update_image,
 )
-from utils.pagination import parse_pagination_params
 
 from utils.jwt_auth import require_auth,require_admin_role 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
