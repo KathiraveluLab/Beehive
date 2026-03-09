@@ -17,34 +17,6 @@ import {
 import { apiUrl } from "../../utils/api";
 import { getToken } from '../../utils/auth';
 
-// Mock data - replace with actual data from backend
-// const mockAnalytics = {
-//   uploads: {
-//     summary: {
-//       total: 675,
-//       voiceNotes: 225,
-//       increase: 12.5,
-//       timeframe: "This month",
-//       sentimentAnalysis: { positive: 45, neutral: 35, negative: 20 },
-//     },
-//     trend: [
-//       { date: "2024-10-16", uploads: { total: 150, increase: 12.0 } },
-//       { date: "2024-10-17", uploads: { total: 180, increase: 20.0 } },
-//     ],
-//   },
-//   users: {
-//     summary: {
-//       users: { total: 320, increase: 15.0 },
-//       activeUsers: { total: 120, increase: 8.3 },
-//       timeframe: "This month",
-//     },
-//     trend: [
-//       { date: "2024-10-16", users: { total: 50, increase: 10.0 }, activeUsers: { total: 55, increase: 12.0 } },
-//       { date: "2024-10-17", users: { total: 52, increase: 4.0 }, activeUsers: { total: 60, increase: 9.09 } },
-//     ],
-//   },
-// };
-
 const COLORS = ["#10B981", "#6B7280", "#EF4444", "#FBBF24", "#6366F1"];
 
 interface AnalyticsData {
