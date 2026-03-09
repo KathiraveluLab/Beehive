@@ -12,6 +12,7 @@ from database.userdatahandler import update_last_seen
 from utils.roles import is_admin_email
 from utils.jwt_auth import create_access_token
 from database.databaseConfig import beehive
+from utils.rate_limit import rate_limit
 
 auth_bp = Blueprint("auth", __name__)
 
@@ -71,6 +72,7 @@ def create_email_otp(email: str) -> str:
 
 # REQUEST OTP 
 @auth_bp.route("/request-otp", methods=["POST"])
+@rate_limit(max_requests=3, window_seconds=900)
 def request_otp():
     data = request.get_json(force=True)
     try: 
@@ -119,6 +121,7 @@ def request_otp():
 from datetime import datetime, timezone
 
 @auth_bp.route("/verify-otp", methods=["POST"], strict_slashes=False)
+@rate_limit(max_requests=5, window_seconds=900)
 def verify_otp():
     try:
         data = request.get_json(force=True)
@@ -218,6 +221,7 @@ def complete_signup():
     }), 201
 
 @auth_bp.route("/login", methods=["POST"])
+@rate_limit(max_requests=5, window_seconds=900)
 def login():
     data = request.get_json(force=True)
 
