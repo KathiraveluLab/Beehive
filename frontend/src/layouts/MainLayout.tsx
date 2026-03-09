@@ -23,7 +23,6 @@ const MainLayout = () => {
   const { user} = useAuth();
   const userId = (user as any)?.id || "";
   const navigation = [
-    { name: "Landing", href: "/landing" },
     { name: "Home", href: "/dashboard" },
     { name: "Gallery", href: "/gallery" },
     { name: "Upload", href: "/upload" },

@@ -25,7 +25,7 @@ def create_user(username, email, password, role="user"):
     }
 
     return beehive_user_collection.insert_one(user).inserted_id
-# Get user by username from MongoDB
+# updates the last_active time
 def update_last_seen(user_id):
     try:
         beehive_user_collection.update_one(
@@ -34,6 +34,7 @@ def update_last_seen(user_id):
         )
     except Exception as e:
         logger.error(f"Failed to update last_active for user {user_id}: {e}")
+# Get user by username from MongoDB
 def get_user_by_username(username: str):
     query = {
         "username": username
@@ -545,3 +546,58 @@ def get_upload_analytics(trend_days=7):
     except Exception as e:
         logger.error(f"Error getting upload analytics: {e}")
         return None
+def get_user_analytics():
+    try:
+        # Use calendar months for consistency and clarity
+        today_utc = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
+        start_of_this_month = today_utc.replace(day=1)
+        start_of_last_month = (start_of_this_month - timedelta(days=1)).replace(day=1)
+
+        # Use a single aggregation pipeline for performance
+        pipeline = [
+            {
+                '$facet': {
+                    'total_users': [{'$match': {'role': 'user'}}, {'$count': 'count'}],
+                    'new_users_this_month': [{'$match': {'role': 'user', 'created_at': {'$gte': start_of_this_month}}}, {'$count': 'count'}],
+                    'active_users_this_month': [{'$match': {'role': 'user', 'last_active': {'$gte': start_of_this_month}}}, {'$count': 'count'}],
+                    'active_users_last_month': [{'$match': {'role': 'user', 'last_active': {'$gte': start_of_last_month, '$lt': start_of_this_month}}}, {'$count': 'count'}]
+                }
+            }
+        ]
+
+        data = list(beehive_user_collection.aggregate(pipeline))[0]
+
+        def _get_facet_count(results):
+            return results[0].get('count', 0) if results else 0
+
+        total_users = _get_facet_count(data.get('total_users'))
+        new_users_count = _get_facet_count(data.get('new_users_this_month'))
+        active_users_this_month = _get_facet_count(data.get('active_users_this_month'))
+        active_users_last_month = _get_facet_count(data.get('active_users_last_month'))
+        previous_total_users = total_users - new_users_count
+        if previous_total_users == 0:
+            increase = 100.0 if new_users_count > 0 else 0.0
+        else:
+            increase = (new_users_count / previous_total_users) * 100
+
+        if active_users_last_month == 0:
+            active_increase = 100.0 if active_users_this_month > 0 else 0.0
+        else:
+            active_increase = ((active_users_this_month - active_users_last_month) / active_users_last_month) * 100
+
+        summary = {
+            "users": {
+                "total": total_users,
+                "increase": round(increase, 2)
+            },
+            "activeUsers": {
+                "total": active_users_this_month,
+                "increase": round(active_increase, 2)
+            },
+            "timeframe": "This month"
+        }
+        return {"summary": summary}
+    except Exception as e:
+        logger.error(f"Error getting user analytics: {e}")
+        return None
+    

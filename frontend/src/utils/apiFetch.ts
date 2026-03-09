@@ -1,6 +1,7 @@
 import { getToken } from "./auth";
+import { API_BASE_URL } from "./api";
 
-const BASE_URL = import.meta.env.VITE_API_URL;
+const BASE_URL = API_BASE_URL;
 
 export async function apiFetch(
   url: string,
