@@ -826,23 +826,46 @@ def get_admin_notifications():
         )
 
         # Enrich notifications with usernames from database
+        # Collect user_ids that need enrichment to avoid N+1 queries
+        user_ids_to_fetch = set()
+        for n in notifications:
+            if "user_id" in n and (not n.get("username") or len(n.get("username", "")) == 24):
+                try:
+                    user_ids_to_fetch.add(ObjectId(n["user_id"]))
+                except Exception as e:
+                    logging.warning(
+                        f"Could not convert user_id {n.get('user_id')} to ObjectId: {e}"
+                    )
+
+        # Batch-fetch users for collected user_ids
+        user_map = {}
+        if user_ids_to_fetch:
+            users_cursor = user_collection.find(
+                {"_id": {"$in": list(user_ids_to_fetch)}},
+                {"username": 1, "email": 1},
+            )
+            for user in users_cursor:
+                user_map[str(user["_id"])] = user
+
+        # Enrich notifications with usernames from database
         for n in notifications:
             n["_id"] = str(n["_id"])
             if "timestamp" in n:
                 n["timestamp"] = n["timestamp"].isoformat()
-            
-            # If username is missing or looks like an ID, fetch from database
-            username = n.get("username")
-            if "user_id" in n and (not username or ObjectId.is_valid(username)):
+
+            # If username is missing or looks like an ID, enrich from pre-fetched users
+            if "user_id" in n and (not n.get("username") or len(n.get("username", "")) == 24):
                 try:
-                    user = user_collection.find_one({"_id": ObjectId(n["user_id"])})
+                    user = user_map.get(str(n["user_id"]))
                     if user and user.get("username"):
                         n["username"] = user["username"]
                     elif user and user.get("email"):
                         # Fallback to email if username not available
                         n["username"] = user["email"].split("@")[0]
                 except Exception as e:
-                    logging.warning(f"Could not fetch username for user_id {n.get('user_id')}: {e}")
+                    logging.warning(
+                        f"Could not enrich username for user_id {n.get('user_id')}: {e}"
+                    )
 
         return jsonify(
             {"notifications": notifications, "unseen_count": unseen_count, "page": page}
