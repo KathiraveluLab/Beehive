@@ -304,11 +304,12 @@ const AdminLayout = () => {
                                     : "bg-yellow-100 dark:bg-yellow-900"
                                 }`}
                               >
-                                <div className="break-words">
+                                <div>
                                   <span className="font-medium break-all">
                                     Image uploaded by {notif.username || "a user"}
                                   </span>
-                                  <span className="break-words">: {notif.title}</span>
+                                  <span>: {notif.title}</span>
+                                </div>
                                 </div>
                                 <div className="text-xs text-gray-500 mt-1">
                                   {notif.timestamp
