@@ -86,7 +86,7 @@ class SecretScanner:
                     })
             
             for weak_value, description in self.weak_values:
-                pattern = rf'["\'].*{re.escape(weak_value)}.*["\']'
+                pattern = rf'["\'][^"\']*{re.escape(weak_value)}[^"\']*["\']'
                 matches = re.finditer(pattern, content, re.IGNORECASE)
                 for match in matches:
                     line_num = content[:match.start()].count('\n') + 1
