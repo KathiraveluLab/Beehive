@@ -152,7 +152,7 @@ Follow these steps to set up the project:
     JWT_SECRET=your_jwt_secret_here
     JWT_EXPIRE_HOURS=24
 
-    ### Flask Security (Must be a strong secret key, recommended: 32+ characters)
+    ### Flask Security (Optional - defaults to 'beehive' if not set)
     FLASK_SECRET_KEY=your_custom_flask_secret
 
     #### 🔧 **Troubleshooting:**
