@@ -832,7 +832,8 @@ def get_admin_notifications():
                 n["timestamp"] = n["timestamp"].isoformat()
             
             # If username is missing or looks like an ID, fetch from database
-            if "user_id" in n and (not n.get("username") or len(n.get("username", "")) == 24):
+            username = n.get("username")
+            if "user_id" in n and (not username or ObjectId.is_valid(username)):
                 try:
                     user = user_collection.find_one({"_id": ObjectId(n["user_id"])})
                     if user and user.get("username"):
