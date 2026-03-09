@@ -455,7 +455,7 @@ def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=
         uploads_list = []
         for upload in result:
             user_id = upload.get('user_id')
-            user_name = upload.get('username')
+            user_name = upload.get('username') or 'Unknown User'
             uploads_list.append({
                 'id': str(upload['_id']),
                 'title': upload.get('title', ''),
