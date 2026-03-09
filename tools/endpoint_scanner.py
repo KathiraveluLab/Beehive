@@ -1,8 +1,7 @@
 import ast
-import os
 import sys
 from pathlib import Path
-from typing import List, Dict, Set
+from typing import List, Dict
 
 
 class EndpointScanner:
@@ -26,29 +25,28 @@ class EndpointScanner:
                 self._check_route_function(node, filepath)
     
     def _check_route_function(self, func_node: ast.FunctionDef, filepath: Path) -> None:
-        decorators = [d.attr if isinstance(d, ast.Attribute) else 
-                     d.id if isinstance(d, ast.Name) else None 
-                     for d in func_node.decorator_list]
-        
-        route_decorator = None
-        for dec in func_node.decorator_list:
-            if isinstance(dec, ast.Attribute) and dec.attr == 'route':
-                route_decorator = dec
-            elif isinstance(dec, ast.Call) and isinstance(dec.func, ast.Attribute):
-                if dec.func.attr == 'route':
-                    route_decorator = dec
-        
-        if not route_decorator:
+        decorator_names = []
+        for decorator in func_node.decorator_list:
+            node = decorator
+            while isinstance(node, ast.Call):
+                node = node.func
+            
+            if isinstance(node, ast.Name):
+                decorator_names.append(node.id)
+            elif isinstance(node, ast.Attribute):
+                decorator_names.append(node.attr)
+
+        if 'route' not in decorator_names:
             return
         
-        has_auth = any(d in ['require_auth', 'require_admin_role', 'login_required', 'jwt_required'] 
-                      for d in decorators if d)
+        auth_decorators = {'require_auth', 'require_admin_role', 'login_required', 'jwt_required'}
+        has_auth = any(d in auth_decorators for d in decorator_names)
         
         route_info = {
             'function': func_node.name,
             'file': str(filepath.relative_to(self.project_root)),
             'line': func_node.lineno,
-            'decorators': [d for d in decorators if d],
+            'decorators': decorator_names,
             'has_auth': has_auth
         }
         

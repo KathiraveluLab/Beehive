@@ -1,8 +1,6 @@
 import re
-import os
 import sys
 from pathlib import Path
-from typing import List, Dict, Set
 
 
 class SecretScanner:
@@ -40,6 +38,13 @@ class SecretScanner:
             'secret_scanner.py', 'endpoint_scanner.py',
             '.pyc', '.pyo', '.pyd'
         }
+    
+    def _mask_secret(self, text: str) -> str:
+        import re
+        masked = re.sub(r'(["\'][^"\']{0,3})[^"\']+([^"\']{0,3}["\'])', r'\1***MASKED***\2', text)
+        masked = re.sub(r'(password|secret|key|token)\s*=\s*["\'][^"\']+["\']', 
+                       r'\1=***MASKED***', masked, flags=re.IGNORECASE)
+        return masked
     
     def should_scan_file(self, filepath: Path) -> bool:
         if any(excluded in filepath.parts for excluded in self.exclude_dirs):
@@ -82,7 +87,7 @@ class SecretScanner:
                         'type': description,
                         'file': str(filepath.relative_to(self.project_root)),
                         'line': line_num,
-                        'preview': line_content[:80] if len(line_content) > 80 else line_content
+                        'preview': self._mask_secret(line_content[:80] if len(line_content) > 80 else line_content)
                     })
             
             for weak_value, description in self.weak_values:
@@ -106,7 +111,7 @@ class SecretScanner:
                             'type': description,
                             'file': str(filepath.relative_to(self.project_root)),
                             'line': line_num,
-                            'preview': line_content[:80]
+                            'preview': self._mask_secret(line_content[:80])
                         })
         
         except UnicodeDecodeError:
@@ -115,14 +120,11 @@ class SecretScanner:
             print(f"Error scanning {filepath}: {e}")
     
     def scan_project(self) -> None:
-        python_files = list(self.project_root.glob('**/*.py'))
-        yaml_files = list(self.project_root.glob('**/*.yaml'))
-        yml_files = list(self.project_root.glob('**/*.yml'))
-        json_files = list(self.project_root.glob('**/*.json'))
+        all_files = []
+        for ext in ('py', 'yaml', 'yml', 'json'):
+            all_files.extend(self.project_root.glob(f'**/*.{ext}'))
         
-        all_files = python_files + yaml_files + yml_files + json_files
-        
-        for filepath in all_files:
+        for filepath in set(all_files):
             self.scan_file(filepath)
     
     def generate_report(self) -> str:
