@@ -15,6 +15,44 @@ from database.databaseConfig import beehive
 
 auth_bp = Blueprint("auth", __name__)
 
+OTP_VERIFICATION_WINDOW_SECONDS = 600  # 10 minutes
+
+
+def _validate_otp_verification(email: str):
+    """Check that a valid, unexpired OTP verification session exists for email.
+
+    Returns a Flask response tuple (jsonify(...), status_code) if validation
+    fails, or None if the email is properly verified.
+    """
+    otp_record = db.email_otps.find_one(
+        {"email": email, "verified": True},
+        sort=[("verified_at", -1)],
+    )
+    if not otp_record:
+        return (
+            jsonify({"error": "Email not verified. Please complete OTP verification first."}),
+            403,
+        )
+
+    verified_at = otp_record.get("verified_at")
+    if not verified_at:
+        return (
+            jsonify({"error": "Invalid verification session. Please restart signup."}),
+            403,
+        )
+
+    if verified_at.tzinfo is None:
+        verified_at = verified_at.replace(tzinfo=timezone.utc)
+
+    if (datetime.now(timezone.utc) - verified_at).total_seconds() > OTP_VERIFICATION_WINDOW_SECONDS:
+        db.email_otps.delete_many({"email": email})
+        return (
+            jsonify({"error": "Verification session expired. Please restart signup."}),
+            403,
+        )
+
+    return None
+
 # Create EMAIL OTP
 def create_email_otp(email: str) -> str:
     otp = str(secrets.randbelow(900000) + 100000)
@@ -107,7 +145,13 @@ def verify_otp():
         if expires_at < datetime.now(timezone.utc):
             return jsonify({"error": "OTP expired"}), 400
 
-        db.email_otps.delete_many({"email": email})
+        # Mark email as verified instead of deleting
+        # This flag is checked by complete-signup to prevent OTP bypass
+        # Use _id to target the exact validated record, not just email
+        db.email_otps.update_one(
+            {"_id": record["_id"]},
+            {"$set": {"verified": True, "verified_at": datetime.now(timezone.utc)}},
+        )
 
         return jsonify({"message": "OTP verified"}), 200
 
@@ -134,6 +178,11 @@ def complete_signup():
     # Validate password length
     if len(password) < 8:
         return jsonify({"error": "Password must be at least 8 characters"}), 400
+    # Verify OTP session before creating the account
+    otp_error = _validate_otp_verification(email)
+    if otp_error:
+        return otp_error
+
     # Prevent duplicate email
     if db.users.find_one({"email": email}):
         return jsonify({"error": "Email already registered"}), 400
@@ -213,7 +262,7 @@ def set_password():
     try:
         email = validate_email(data.get("email"))
         password = sanitize_string(data.get("password"))
-        purpose = sanitize_string(data.get("purpose"), field_name="purpose")
+        purpose = sanitize_string(data.get("purpose"), field_name="purpose").lower()
     except ValidationError as e:
         current_app.logger.warning("SET PASSWORD VALIDATION ERROR")
         return jsonify({"error": str(e)}), 400
@@ -232,6 +281,11 @@ def set_password():
         if existing_user:
             return jsonify({"error": "User already exists"}), 400
 
+        # Verify OTP session before creating the account
+        otp_error = _validate_otp_verification(email)
+        if otp_error:
+            return otp_error
+
         role = "admin" if is_admin_email(email) else "user"
 
         user_id = db.users.insert_one({
@@ -242,14 +296,25 @@ def set_password():
             "created_at": datetime.now(timezone.utc)
         }).inserted_id
 
+        # Cleanup OTPs
+        db.email_otps.delete_many({"email": email})
+
     elif purpose == "reset":
         if not existing_user:
             return jsonify({"error": "User not found"}), 404
+
+        # Verify OTP session before allowing password reset
+        otp_error = _validate_otp_verification(email)
+        if otp_error:
+            return otp_error
 
         db.users.update_one(
             {"email": email},
             {"$set": {"password": hashed}}
         )
+
+        # Cleanup OTPs after successful reset
+        db.email_otps.delete_many({"email": email})
 
         user_id = existing_user["_id"]
         role = existing_user.get("role", "user")
