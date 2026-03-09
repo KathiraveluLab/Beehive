@@ -35,7 +35,6 @@ python tools/secret_scanner.py
 - Hardcoded passwords and API keys
 - Connection strings with embedded credentials
 - Weak or default passwords
-- Insecure configuration patterns
 
 **Output:**
 - Console report
