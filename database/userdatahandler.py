@@ -565,10 +565,7 @@ def get_user_analytics():
             }
         ]
 
-        result = list(beehive_user_collection.aggregate(pipeline))
-        if not result:
-            return None
-        data = result[0]
+        data = list(beehive_user_collection.aggregate(pipeline))[0]
 
         def _get_facet_count(results):
             return results[0].get('count', 0) if results else 0
