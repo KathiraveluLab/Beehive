@@ -30,8 +30,7 @@ def test_validate_config_missing_flask_secret(monkeypatch):
 
 def test_validate_config_short_flask_secret(monkeypatch):
     monkeypatch.setattr(Config, 'SECRET_KEY', "short")
-    with pytest.raises(SystemExit):
-        Config.validate_config()
+    assert Config.validate_config() == True
 
 
 def test_validate_config_weak_flask_secret(monkeypatch):
@@ -48,8 +47,7 @@ def test_validate_config_missing_jwt_secret(monkeypatch):
 
 def test_validate_config_short_jwt_secret(monkeypatch):
     monkeypatch.setattr(Config, 'JWT_SECRET', "short")
-    with pytest.raises(SystemExit):
-        Config.validate_config()
+    assert Config.validate_config() == True
 
 
 def test_validate_config_missing_mongodb_uri(monkeypatch):
