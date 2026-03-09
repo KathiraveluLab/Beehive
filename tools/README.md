@@ -45,7 +45,7 @@ python tools/secret_scanner.py
 To run both scanners:
 
 ```bash
-python tools/endpoint_scanner.py && python tools/secret_scanner.py
+python tools/endpoint_scanner.py; python tools/secret_scanner.py
 ```
 
 ## CI/CD Integration
