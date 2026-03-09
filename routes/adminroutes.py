@@ -68,7 +68,7 @@ def get_dashboard_data():
                 return jsonify({"error": f"Invalid 'to' date format: {end_date_str}. Expected YYYY-MM-DD."}), 400       
         sort_method = request.args.get("sort")
         stats = get_upload_stats()
-        recent_uploads = get_recent_uploads(limit=limit, username_filter=user, from_date=from_date, end_date=end_date, sort_method=sort_method)
+        recent_uploads = get_recent_uploads(limit=limit,username_filter=user,from_date=from_date,end_date=end_date,sort_method=sort_method)
         return jsonify({
             "stats": stats,
             "recentUploads": recent_uploads
