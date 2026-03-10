@@ -28,9 +28,11 @@ def test_validate_config_missing_flask_secret(monkeypatch):
         Config.validate_config()
 
 
-def test_validate_config_short_flask_secret(monkeypatch):
+def test_validate_config_short_flask_secret(monkeypatch, capsys):
     monkeypatch.setattr(Config, 'SECRET_KEY', "short")
     assert Config.validate_config() == True
+    captured = capsys.readouterr()
+    assert "FLASK_SECRET_KEY is too short" in captured.err
 
 
 def test_validate_config_weak_flask_secret(monkeypatch):
@@ -45,9 +47,11 @@ def test_validate_config_missing_jwt_secret(monkeypatch):
         Config.validate_config()
 
 
-def test_validate_config_short_jwt_secret(monkeypatch):
+def test_validate_config_short_jwt_secret(monkeypatch, capsys):
     monkeypatch.setattr(Config, 'JWT_SECRET', "short")
     assert Config.validate_config() == True
+    captured = capsys.readouterr()
+    assert "JWT_SECRET is too short" in captured.err
 
 
 def test_validate_config_missing_mongodb_uri(monkeypatch):
