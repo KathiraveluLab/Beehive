@@ -446,7 +446,7 @@ def upload_images():
                     sentiment,
                 )
                 save_notification(
-                    user_id, username, unique_filename, title, time_created, sentiment
+                    user_id, unique_filename, title, time_created, sentiment
                 )
 
                 # Generate PDF thumbnail if applicable
@@ -822,10 +822,22 @@ def get_admin_notifications():
             .limit(per_page)
         )
 
+        user_collection = get_beehive_user_collection()
         for n in notifications:
             n["_id"] = str(n["_id"])
             if "timestamp" in n:
                 n["timestamp"] = n["timestamp"].isoformat()
+
+            # Always fetch username from database based on user_id (security fix)
+            if "user_id" in n:
+                try:
+                    user = user_collection.find_one({"_id": ObjectId(n["user_id"])})
+                    if user and user.get("username"):
+                        n["username"] = user["username"]
+                    elif user and user.get("email"):
+                        n["username"] = user["email"].split("@")[0]
+                except Exception as e:
+                    logging.warning(f"Could not fetch username for user_id {n.get('user_id')}: {e}")
 
         return jsonify(
             {"notifications": notifications, "unseen_count": unseen_count, "page": page}
