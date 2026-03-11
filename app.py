@@ -154,7 +154,8 @@ if (
 app.config["UPLOAD_FOLDER"] = "static/uploads"
 app.config["PDF_THUMBNAIL_FOLDER"] = "static/uploads/thumbnails/"
 app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+if os.getenv("FLASK_ENV") == "development":
+    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
 
 
