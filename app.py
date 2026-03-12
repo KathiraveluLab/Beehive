@@ -835,7 +835,7 @@ def get_admin_notifications():
                     if user and user.get("username"):
                         n["username"] = user["username"]
                     elif user and user.get("email"):
-                        n["username"] = user["email"].split("@")[0]
+                        n["username"] = user["email"]
                 except Exception as e:
                     logging.warning(f"Could not fetch username for user_id {n.get('user_id')}: {e}")
 
