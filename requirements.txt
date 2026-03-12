@@ -1,8 +1,8 @@
 # Core Flask dependencies
-Flask==3.1.1
+Flask==3.1.3
 Flask-Cors==6.0.1
 Flask-Mail==0.9.1
-Werkzeug==3.1.4
+Werkzeug==3.1.6
 Jinja2==3.1.5
 MarkupSafe==3.0.2
 itsdangerous==2.2.0
@@ -14,7 +14,7 @@ pymongo==4.11.0
 dnspython==2.7.0
 
 # Authentication & OAuth
-Authlib==1.6.5
+Authlib==1.6.7
 google-api-core==2.24.1
 google-api-python-client==2.160.0
 google-auth==2.38.0
@@ -26,22 +26,22 @@ oauthlib==3.2.2
 # HTTP & Networking
 requests==2.32.4
 requests-oauthlib==2.0.0
-urllib3==2.6.0
+urllib3==2.6.3
 httplib2==0.22.0
 certifi==2025.1.31
 charset-normalizer==3.4.1
 idna==3.10
 
 # Image processing & PDFs
-Pillow==10.4.0
+Pillow==12.1.1
 PyMuPDF==1.24.14
 
 # Utilities
 python-dotenv==1.0.1
 cachetools==5.5.1
 proto-plus==1.26.0
-protobuf==5.29.5
-pyasn1==0.6.1
+protobuf==5.29.6
+pyasn1==0.6.2
 pyasn1_modules==0.4.1
 pyparsing==3.2.1
 uritemplate==4.1.1
@@ -51,7 +51,7 @@ cffi==1.17.1
 
 # Development & Testing tools
 bcrypt==4.2.1
-black==24.10.0
+black==26.3.1
 flake8==7.1.1
 isort==5.13.2
 pre-commit==4.0.1
@@ -63,7 +63,7 @@ google-generativeai==0.8.3
 python-magic==0.4.27
 
 # Basic security (will be enhanced in separate security PR)
-cryptography==44.0.1
+cryptography==46.0.5
 PyJWT==2.9.0
 
 # input validation and sanitization
