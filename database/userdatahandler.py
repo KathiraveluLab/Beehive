@@ -439,15 +439,11 @@ def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=
         if match:
             pipeline.append({"$match": match})
 
-        sort = {}
+        sort = {"$sort": {"created_at": -1,"username" : -1}}
         if sort_method == "date_asc":
-            sort = {"$sort": {"created_at": 1}}
+            sort["$sort"]["created_at"] = 1
         elif sort_method == "user_asc":
-            sort = {"$sort": {"username": 1, "created_at": -1}}
-        elif sort_method == "user_desc":
-            sort = {"$sort": {"username": -1, "created_at": -1}}
-        else: 
-            sort = {"$sort": {"created_at": -1}}
+            sort["$sort"]["username"] = 1
         pipeline.append(sort)
 
         pipeline.append({"$limit": limit})
