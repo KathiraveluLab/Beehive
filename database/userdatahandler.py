@@ -410,20 +410,7 @@ def get_upload_stats():
 # Get recent uploads for admin dashboard
 def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=None, sort_method="date_desc"):
     try:
-        pipeline = [
-            {
-                "$lookup": {
-                    "from": "users",
-                    "localField": "user_id",
-                    "foreignField": "_id",
-                    "as": "user_mapping"
-                }
-            },
-            {"$set": {"user_mapping": {"$first": "$user_mapping"}}},
-            {"$set": {
-                "username": "$user_mapping.username"
-            }},
-        ]
+        pipeline = []
         match = {}
         created_at = {}
         if from_date:
@@ -433,11 +420,34 @@ def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=
 
         if created_at:
             match["created_at"] = created_at
-        if username_filter:
-            match["username"] = {"$regex": re.escape(username_filter), "$options": "i"}
-        
         if match:
             pipeline.append({"$match": match})
+        pipeline.extend([
+            {
+                "$set": {
+                    "user_id_obj": {
+                        "$convert": {
+                            "input": "$user_id",
+                            "to": "objectId",
+                            "onError": None,
+                            "onNull": None
+                        }
+                    }
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "users",
+                    "localField": "user_id_obj",
+                    "foreignField": "_id",
+                    "as": "user_mapping"
+                }
+            },
+            {"$set": {"user_mapping": {"$first": "$user_mapping"}}},
+            {"$set": {"username": "$user_mapping.username"}},
+        ])
+        if username_filter:
+            pipeline.append({"$match":{"username":{"$regex": re.escape(username_filter), "$options": "i"}}})
 
         sort = {"$sort": {"created_at": -1,"username" : -1}}
         if sort_method == "date_asc":
