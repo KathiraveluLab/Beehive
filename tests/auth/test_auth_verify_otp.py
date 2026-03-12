@@ -26,8 +26,8 @@ def test_verify_otp_success(client, mock_db):
     assert data["message"] == "OTP verified"
 
 
-def test_request_otp_failure(client, mock_db):
-    """POST /api/auth/request-otp - Not existing user"""
+def test_verify_otp_failure(client, mock_db):
+    """POST /api/auth/verify-otp - Invalid OTP"""
 
     response = client.post("/api/auth/verify-otp", json={
         "email": "test@example.com",

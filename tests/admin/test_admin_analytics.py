@@ -1,7 +1,5 @@
 import pytest
-import mongomock
 from unittest.mock import patch
-from utils.jwt_auth import create_access_token
 
 def test_admin_analytics_success(client, admin_token):
     """

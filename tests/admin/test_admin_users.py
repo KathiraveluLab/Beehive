@@ -1,7 +1,4 @@
 import pytest
-import mongomock
-from unittest.mock import patch
-from utils.jwt_auth import create_access_token
 
 def test_admin_users_empty(client, mock_db, admin_token):
     """GET /api/admin/users - No users in database"""
