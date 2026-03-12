@@ -20,7 +20,6 @@ def test_login_success(client, mock_db):
         "password": "securepassword"
     })
 
-    # 3. Assert the result
     assert response.status_code == 200
     data = response.get_json()
     assert "access_token" in data
@@ -35,13 +34,11 @@ def test_login_invalid_credentials(client, mock_db):
         "password": hashed_pw
     })
 
-    # 2. Make the API request
     response = client.post("/api/auth/login", json={
         "username": "test@example.com",
         "password": "wrongpassword"
     })
 
-    # 3. Assert the result
     assert response.status_code == 401
     data = response.get_json()
     assert "access_token" not in data
