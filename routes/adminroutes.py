@@ -14,7 +14,7 @@ logger = Logger.get_logger("adminroutes")
 
 admin_bp = Blueprint("admin", __name__, url_prefix="/api/admin")
 
-from database.databaseConfig import beehive
+from database.databaseConfig import get_db
 
 # Admin: Get user uploads
 @admin_bp.route("/user_uploads/<user_id>")
@@ -94,7 +94,7 @@ def list_users():
             regex = {"$regex": query, "$options": "i"}
             mongo_filter = {"$or": [{"username": regex}, {"email": regex}]}
 
-        users_col = beehive.users
+        users_col = get_db().users
         total_count = users_col.count_documents(mongo_filter)
 
         cursor = users_col.find(mongo_filter).skip(offset).limit(limit)
@@ -122,7 +122,7 @@ def list_users():
 @require_admin_role
 def list_only_users():
     try:
-        users_col = beehive.users
+        users_col = get_db().users
         cursor = users_col.find({}, {"_id": 1, "username": 1, "email": 1}).limit(100)
         users = []
         for u in cursor:
