@@ -7,53 +7,59 @@ logger = Logger.get_logger("databaseConfig")
 
 load_dotenv(find_dotenv())
 
-connectionString = os.environ.get("MONGODB_URI")
+_client = None
 
-# Fallback to local MongoDB if connection string is not properly configured
-if (
-    not connectionString
-    or "username:password" in connectionString
-    or connectionString == "mongodb+srv://username:password@cluster.mongodb.net/"
-):
-    logger.warning(
-        "MONGODB_URI not properly configured, using local MongoDB"
-    )
-    connectionString = "mongodb://localhost:27017/"
+def get_db():
+    global _client
+    if _client is not None:
+        return _client.beehive
 
-try:
-    dbclient = MongoClient(connectionString)
-    # Test the connection
-    dbclient.admin.command("ping")
-    logger.info("Successfully connected to MongoDB")
-except Exception as e:
-    logger.error("Failed to connect to MongoDB", exc_info=True)
-    logger.info("Attempting to connect to local MongoDB as fallback...")
-    connectionString = "mongodb://localhost:27017/"
-    dbclient = MongoClient(connectionString)
-    dbclient.admin.command("ping")
-    logger.info("Connected to local MongoDB")
+    connectionString = os.environ.get("MONGODB_URI")
 
-beehive = dbclient.beehive
-db = beehive
+    # Fallback to local MongoDB if connection string is not properly configured
+    if (
+        not connectionString
+        or "username:password" in connectionString
+        or connectionString == "mongodb+srv://username:password@cluster.mongodb.net/"
+    ):
+        logger.warning(
+            "MONGODB_URI not properly configured, using local MongoDB"
+        )
+        connectionString = "mongodb://localhost:27017/"
+
+    try:
+        _client = MongoClient(connectionString)
+        # Test the connection
+        _client.admin.command("ping")
+        logger.info("Successfully connected to MongoDB")
+    except Exception as e:
+        logger.error("Failed to connect to MongoDB", exc_info=True)
+        logger.info("Attempting to connect to local MongoDB as fallback...")
+        connectionString = "mongodb://localhost:27017/"
+        _client = MongoClient(connectionString)
+        _client.admin.command("ping")
+        logger.info("Connected to local MongoDB")
+
+    return _client.beehive
 
 def get_beehive_user_collection():
-    return beehive.users
+    return get_db().users
 
 
 def get_beehive_image_collection():
-    return beehive.images
+    return get_db().images
 
 
 def get_beehive_admin_collection():
-    return beehive.admins
+    return get_db().admins
 
 
 def get_beehive_notification_collection():
-    return beehive.notifications
+    return get_db().notifications
 
 
 def get_beehive_message_collection():
-    return beehive.messages
+    return get_db().messages
 
 
 def initialize_text_index():
