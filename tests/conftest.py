@@ -9,9 +9,12 @@ def mock_db():
     db = client.beehive
     with patch("routes.auth.get_db", return_value=db), \
          patch("routes.adminroutes.get_db", return_value=db), \
+         patch("database.databaseConfig.get_db", return_value=db), \
          patch("database.userdatahandler.beehive_image_collection", db.images), \
-         patch("database.userdatahandler.beehive_user_collection", db.users):
+         patch("database.userdatahandler.beehive_user_collection", db.users), \
+         patch("database.userdatahandler.beehive_notification_collection", db.notifications):
         yield db
+
 
 from utils.jwt_auth import create_access_token
 
