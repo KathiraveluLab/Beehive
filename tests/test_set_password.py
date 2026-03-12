@@ -92,10 +92,11 @@ def test_set_password_short_password(client):
 # ---------------------------------------------------------------------------
 
 
-@patch("routes.auth.db")
+@patch("routes.auth.get_db")
 @patch("routes.auth.create_access_token", return_value="mock-jwt-token")
-def test_set_password_reset_success(mock_token, mock_db, client):
+def test_set_password_reset_success(mock_token, mock_get_db, client):
     """Successful password reset returns a new access token."""
+    mock_db = mock_get_db.return_value
     mock_db.users.find_one.return_value = {
         "_id": "abc123",
         "email": "user@example.com",
@@ -114,9 +115,10 @@ def test_set_password_reset_success(mock_token, mock_db, client):
     mock_db.users.update_one.assert_called_once()
 
 
-@patch("routes.auth.db")
-def test_set_password_reset_user_not_found(mock_db, client):
+@patch("routes.auth.get_db")
+def test_set_password_reset_user_not_found(mock_get_db, client):
     """Reset must return 404 if user does not exist."""
+    mock_db = mock_get_db.return_value
     mock_db.users.find_one.return_value = None
 
     resp = _post_set_password(client, {
@@ -135,10 +137,11 @@ def test_set_password_reset_user_not_found(mock_db, client):
 
 
 @patch("routes.auth.is_admin_email", return_value=False)
-@patch("routes.auth.db")
+@patch("routes.auth.get_db")
 @patch("routes.auth.create_access_token", return_value="mock-jwt-token")
-def test_set_password_signup_success(mock_admin, mock_db, mock_token, client):
+def test_set_password_signup_success(mock_admin, mock_get_db, mock_token, client):
     """Successful signup via set-password returns a new access token."""
+    mock_db = mock_get_db.return_value
     mock_db.users.find_one.return_value = None  # no existing user
     mock_db.users.insert_one.return_value = MagicMock(inserted_id="new-id-123")
 
@@ -153,9 +156,10 @@ def test_set_password_signup_success(mock_admin, mock_db, mock_token, client):
     assert data["role"] == "user"
 
 
-@patch("routes.auth.db")
-def test_set_password_signup_duplicate_email(mock_db, client):
+@patch("routes.auth.get_db")
+def test_set_password_signup_duplicate_email(mock_get_db, client):
     """Signup must return 400 if user already exists."""
+    mock_db = mock_get_db.return_value
     mock_db.users.find_one.return_value = {"_id": "exists", "email": "dup@example.com"}
 
     resp = _post_set_password(client, {
