@@ -114,7 +114,6 @@ def list_users():
                 "lastActive": u.get("last_active") or u.get("last_seen") or None,
                 "status": u.get("status", "active"),
                 "image": u.get("avatar_url", ""),
-                "clerkId": u.get("clerk_id", ""),
             })
 
         return jsonify({"users": users, "totalCount": total_count}), 200
