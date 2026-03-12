@@ -26,6 +26,7 @@ const allowedFileTypes = [
   'image/gif',
   'image/webp',
   'image/heif',
+  'image/avif',
   'application/pdf',
 ];
 
@@ -223,6 +224,7 @@ const Upload = () => {
     "image/webp": 10 * 1024 * 1024,
     "image/gif": 8 * 1024 * 1024,
     "image/heif": 15 * 1024 * 1024,
+    "image/avif": 15 * 1024 * 1024,
     "application/pdf": 25 * 1024 * 1024,
   };
 

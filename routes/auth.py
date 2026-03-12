@@ -109,7 +109,6 @@ def request_otp():
             return jsonify({"message": "OTP sent"}), 200
         else:
             current_app.logger.info("MAIL not configured, printing OTP to console")
-            print("EMAIL OTP:", otp)
             return jsonify({"message": "OTP stored (mail not configured)"}), 200
     except Exception as e:
         current_app.logger.exception("Failed to send OTP email: %s", e)
