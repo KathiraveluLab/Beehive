@@ -20,7 +20,6 @@ interface User {
   lastActive: string;
   status: string;
   image: string;
-  clerkId: string;
 }
 
 const Users = () => {
