@@ -448,13 +448,15 @@ def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=
         ])
         if username_filter:
             pipeline.append({"$match":{"username":{"$regex": re.escape(username_filter), "$options": "i"}}})
-
-        sort = {"$sort": {"created_at": -1,"username" : -1}}
+        
+        sort_criteria = {"created_at": -1} 
         if sort_method == "date_asc":
-            sort["$sort"]["created_at"] = 1
+            sort_criteria = {"created_at": 1}
         elif sort_method == "user_asc":
-            sort["$sort"]["username"] = 1
-        pipeline.append(sort)
+            sort_criteria = {"username": 1, "created_at": -1}
+        elif sort_method == "user_desc":
+            sort_criteria = {"username": -1, "created_at": -1}
+        pipeline.append({"$sort": sort_criteria})
 
         pipeline.append({"$limit": limit})
         result = beehive_image_collection.aggregate(pipeline)
