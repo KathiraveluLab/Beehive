@@ -1,24 +1,22 @@
-import pytest
-import mongomock
-from unittest.mock import patch
 import bcrypt
-from datetime import datetime, timedelta, timezone
+
 
 def test_login_success(client, mock_db):
     """
     POST /api/auth/login
     """
     hashed_pw = bcrypt.hashpw(b"securepassword", bcrypt.gensalt())
-    mock_db.users.insert_one({
-        "email": "test@example.com",
-        "username": "testuser",
-        "password": hashed_pw
-    })
+    mock_db.users.insert_one(
+        {"email": "test@example.com", "username": "testuser", "password": hashed_pw}
+    )
 
-    response = client.post("/api/auth/login", json={
-        "username": "test@example.com", # Works with email
-        "password": "securepassword"
-    })
+    response = client.post(
+        "/api/auth/login",
+        json={
+            "username": "test@example.com",  # Works with email
+            "password": "securepassword",
+        },
+    )
 
     assert response.status_code == 200
     data = response.get_json()
@@ -28,16 +26,14 @@ def test_login_success(client, mock_db):
 def test_login_invalid_credentials(client, mock_db):
     """POST /api/auth/login - invalid credentials should return 401"""
     hashed_pw = bcrypt.hashpw(b"securepassword", bcrypt.gensalt())
-    mock_db.users.insert_one({
-        "email": "test@example.com",
-        "username": "testuser",
-        "password": hashed_pw
-    })
+    mock_db.users.insert_one(
+        {"email": "test@example.com", "username": "testuser", "password": hashed_pw}
+    )
 
-    response = client.post("/api/auth/login", json={
-        "username": "test@example.com",
-        "password": "wrongpassword"
-    })
+    response = client.post(
+        "/api/auth/login",
+        json={"username": "test@example.com", "password": "wrongpassword"},
+    )
 
     assert response.status_code == 401
     data = response.get_json()
