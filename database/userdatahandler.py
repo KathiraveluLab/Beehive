@@ -451,12 +451,12 @@ def get_recent_uploads(limit=10):
         return []
 
 
-def save_notification(user_id, username, filename, title, time_created, sentiment):
+def save_notification(user_id, filename, title, time_created, sentiment):
     # Insert notification for admin
+    # Username is intentionally not stored - it will be fetched from database when displaying (security fix)
     notification = {
         "type": "image_upload",
         "user_id": user_id,
-        "username": username,
         "image_filename": filename,
         "title": title,
         "timestamp": time_created,
