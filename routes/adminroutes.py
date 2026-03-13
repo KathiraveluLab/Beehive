@@ -67,7 +67,7 @@ def get_dashboard_data():
             except ValueError:
                 return jsonify({"error": f"Invalid 'to' date format: {end_date_str}. Expected YYYY-MM-DD."}), 400       
         sort_method = request.args.get("sort")
-        if sort_method not in ['date_desc','date_asc',"user_desc",'user_asc']:
+        if sort_method not in ['date_desc','date_asc','user_desc','user_asc']:
             return jsonify({"error": f"Invalid sort method"}), 400
         stats = get_upload_stats()
         recent_uploads = get_recent_uploads(limit=limit,username_filter=user,from_date=from_date,end_date=end_date,sort_method=sort_method)
