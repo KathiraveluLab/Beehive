@@ -46,7 +46,7 @@ def get_user_by_username(username: str):
 # Save image to MongoDB
 def save_image(id, filename, title, description, time_created, audio_filename=None, sentiment=None):
     image = {
-        'user_id': id,
+        'user_id': ObjectId(id),
         'filename': filename,
         'title': title,
         'description': description,
@@ -408,32 +408,62 @@ def get_upload_stats():
         }
 
 # Get recent uploads for admin dashboard
-def get_recent_uploads(limit=10):
-    """Get recent uploads with user information from Clerk for admin dashboard."""
+def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=None, sort_method="date_desc"):
     try:
-        #  Get recent uploads sorted by creation date
-        recent_uploads = list(beehive_image_collection.find().sort(
-            'created_at', -1).limit(limit))
-        if not recent_uploads:
-            return []
-        # collect user ids and query local user collection
-        raw_ids = [upload.get('user_id') for upload in recent_uploads if upload.get('user_id')]
-        object_ids = []
-        for uid in raw_ids:
-            try:
-                object_ids.append(ObjectId(uid))
-            except Exception:
-                # skip invalid ids
-                continue
+        pipeline = []
+        match = {}
+        created_at = {}
+        if from_date:
+            created_at["$gte"] = from_date
+        if end_date:
+            created_at["$lte"] = end_date
 
-        users_cursor = beehive_user_collection.find({'_id': {'$in': object_ids}}) if object_ids else []
-        users_data = {str(u['_id']): u for u in users_cursor}
+        if created_at:
+            match["created_at"] = created_at
+        if match:
+            pipeline.append({"$match": match})
+        pipeline.extend([
+            {
+                "$set": {
+                    "user_id_obj": {
+                        "$convert": {
+                            "input": "$user_id",
+                            "to": "objectId",
+                            "onError": None,
+                            "onNull": None
+                        }
+                    }
+                }
+            },
+            {
+                "$lookup": {
+                    "from": "users",
+                    "localField": "user_id_obj",
+                    "foreignField": "_id",
+                    "as": "user_mapping"
+                }
+            },
+            {"$set": {"user_mapping": {"$first": "$user_mapping"}}},
+            {"$set": {"username": "$user_mapping.username"}},
+        ])
+        if username_filter:
+            pipeline.append({"$match":{"username":{"$regex": re.escape(username_filter), "$options": "i"}}})
+        
+        sort_criteria = {"created_at": -1} 
+        if sort_method == "date_asc":
+            sort_criteria = {"created_at": 1}
+        elif sort_method == "user_asc":
+            sort_criteria = {"username": 1, "created_at": -1}
+        elif sort_method == "user_desc":
+            sort_criteria = {"username": -1, "created_at": -1}
+        pipeline.append({"$sort": sort_criteria})
 
+        pipeline.append({"$limit": limit})
+        result = beehive_image_collection.aggregate(pipeline)
         uploads_list = []
-        for upload in recent_uploads:
+        for upload in result:
             user_id = upload.get('user_id')
-            user = users_data.get(str(user_id)) if user_id else None
-            user_name = user.get('username') if user else 'Unknown User'
+            user_name = upload.get('username') or "Unknown User"
             uploads_list.append({
                 'id': str(upload['_id']),
                 'title': upload.get('title', ''),
@@ -449,7 +479,6 @@ def get_recent_uploads(limit=10):
     except Exception as e:
         logger.error(f"Error getting recent uploads: {str(e)}")
         return []
-
 
 def save_notification(user_id, username, filename, title, time_created, sentiment):
     # Insert notification for admin
