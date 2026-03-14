@@ -965,4 +965,5 @@ app.register_blueprint(auth_bp, url_prefix="/api/auth")
 initialize_text_index()
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    debug_mode = os.getenv("FLASK_DEBUG", "False").strip().lower() in ("true", "1")
+    app.run(debug=debug_mode)
