@@ -51,7 +51,7 @@ cffi==1.17.1
 
 # Development & Testing tools
 bcrypt==4.2.1
-black==24.10.0
+black==26.3.1
 flake8==7.1.1
 isort==5.13.2
 pre-commit==4.0.1

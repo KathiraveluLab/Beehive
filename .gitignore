@@ -170,3 +170,6 @@ client_secret.json
 user_info.json
 
 .idea/
+
+# Security audit reports
+security_audit_*.txt
