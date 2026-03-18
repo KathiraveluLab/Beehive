@@ -173,6 +173,8 @@ if os.path.exists(client_secrets_file):
             ],
             redirect_uri=os.getenv("REDIRECT_URI", "http://127.0.0.1:5000/admin/login/callback"),
         )
+    except (ValueError, KeyError, json.JSONDecodeError) as e:
+        app_logger.warning(f"Failed to initialize Google OAuth flow due to invalid client secrets file: {e}")
     except Exception as e:
         app_logger.warning(f"Failed to initialize Google OAuth flow: {e}")
 else:
