@@ -45,6 +45,7 @@ from database.userdatahandler import (
     get_images_by_user,
     search_and_filter_images,
     get_user_by_username,
+    get_user_by_id,
     save_image,
     save_notification,
     update_image,
@@ -161,15 +162,22 @@ os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
 
 
-flow = Flow.from_client_secrets_file(
-    client_secrets_file=client_secrets_file,
-    scopes=[
-        "https://www.googleapis.com/auth/userinfo.profile",
-        "https://www.googleapis.com/auth/userinfo.email",
-        "openid",
-    ],
-    redirect_uri=os.getenv("REDIRECT_URI", "http://127.0.0.1:5000/admin/login/callback"),
-)
+if os.path.exists(client_secrets_file):
+    flow = Flow.from_client_secrets_file(
+        client_secrets_file=client_secrets_file,
+        scopes=[
+            "https://www.googleapis.com/auth/userinfo.profile",
+            "https://www.googleapis.com/auth/userinfo.email",
+            "openid",
+        ],
+        redirect_uri=os.getenv("REDIRECT_URI", "http://127.0.0.1:5000/admin/login/callback"),
+    )
+else:
+    flow = None
+    app_logger.warning(
+        "client_secret.json not found. Google OAuth login will be unavailable. "
+        "See docs/setup.md for setup instructions."
+    )
 
 
 MIME_SIZE_LIMITS = {
@@ -337,7 +345,13 @@ AUDIO_MIME_TO_EXTENSION = {
 def upload_images():
     user_id = request.current_user["id"]
     try:
-        username = sanitize_text(request.form.get("username", ""))
+        # Look up username from DB using the authenticated user_id (fixes issue #553)
+        user_doc = get_user_by_id(user_id)
+        username = (
+            (user_doc.get("username") or user_doc.get("email") or "Unknown User")
+            if user_doc
+            else "Unknown User"
+        )
         files = request.files.getlist("files")  # Supports multiple file uploads
         title = sanitize_text(request.form.get("title", ""))
         sentiment = sanitize_text(request.form.get("sentiment"))
