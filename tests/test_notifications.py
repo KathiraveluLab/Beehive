@@ -1,49 +1,56 @@
 import pytest
 from unittest.mock import patch, MagicMock
+import io
+from bson import ObjectId
 
 
-def test_notifications_returns_username_not_user_id(client):
+def test_upload_images_stores_correct_username_in_notification(client):
     """
-    Issue #553: Admin notifications should display username (or email),
-    not the raw MongoDB ObjectId hex string.
-
-    Verifies that save_notification() stores the username field from the DB
-    lookup (not client-supplied form data or a raw user_id).
+    Issue #553: Verify that uploading an image stores the actual username
+    in the notification document, retrieved from the user database.
     """
-    mock_notification = {
-        "_id": "64abc123def456789abc1234",
-        "type": "image_upload",
-        "user_id": "64abc123def456789abc1234",
-        "username": "testuser",  # Should be a real username, not a hex id
-        "image_filename": "test.jpg",
-        "title": "Test Upload",
-        "timestamp": "2026-01-01T00:00:00",
-        "seen": False,
+    mock_user = {
+        "_id": ObjectId("64abc123def456789abc1234"),
+        "username": "real_test_user",
+        "email": "test@example.com"
     }
 
-    with patch(
-        "database.databaseConfig.get_beehive_notification_collection"
-    ) as mock_col_fn:
-        mock_col = MagicMock()
-        mock_col.count_documents.return_value = 1
-        mock_col.find.return_value.sort.return_value.skip.return_value.limit.return_value = [
-            mock_notification
-        ]
-        mock_col_fn.return_value = mock_col
+    # Mock dependencies to avoid filesystem and MIME detection issues
+    with patch("app.get_user_by_id") as mock_get_user, \
+         patch("app.save_notification") as mock_save_notif, \
+         patch("app.save_image"), \
+         patch("app.os.makedirs"), \
+         patch("werkzeug.datastructures.FileStorage.save"), \
+         patch("app.MAGIC") as mock_magic:
+        
+        mock_get_user.return_value = mock_user
+        # Mock MIME detection to return an allowed type
+        mock_magic.from_buffer.return_value = "image/jpeg"
+        
+        # Call the upload endpoint with mocked auth
+        with patch("utils.jwt_auth.verify_jwt") as mock_verify:
+            mock_verify.return_value = {"sub": str(mock_user["_id"]), "role": "user"}
+            
+            # Form data for upload
+            test_data = {
+                "title": "Test Title",
+                "sentiment": "positive",
+                "description": "Test Description",
+                "files": [(io.BytesIO(b"dummy image data"), "test.jpg")]
+            }
 
-        # Admin JWT token (invalid but we'll mock auth)
-        with patch("utils.jwt_auth.require_admin_role", lambda f: f):
-            response = client.get(
-                "/api/admin/notifications",
+            response = client.post(
+                "/api/user/upload",
+                data=test_data,
                 headers={"Authorization": "Bearer fake_token"},
+                content_type="multipart/form-data"
             )
 
-    # The username stored should look like a name, not a 24-char hex string
-    username = mock_notification["username"]
-    assert len(username) > 0, "username should not be empty"
-    assert not (
-        len(username) == 24 and all(c in "0123456789abcdef" for c in username)
-    ), f"username looks like a raw ObjectId hex: {username!r}"
+    assert response.status_code == 200
+    
+    # Critical assertion: verify save_notification was called with the username, not hex ID
+    args, kwargs = mock_save_notif.call_args
+    assert args[1] == "real_test_user", f"Expected username 'real_test_user', got {args[1]!r}"
 
 
 def test_get_user_by_id_returns_user(client):
@@ -62,7 +69,7 @@ def test_get_user_by_id_returns_user(client):
 
 
 def test_get_user_by_id_returns_none_on_invalid_id(client):
-    """get_user_by_id() should return None for an invalid ObjectId."""
+    """get_user_by_id() should return None for an invalid ObjectId or error."""
     from database.userdatahandler import get_user_by_id
 
     result = get_user_by_id("not-a-valid-object-id")
