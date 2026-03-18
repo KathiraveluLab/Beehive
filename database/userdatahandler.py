@@ -42,6 +42,16 @@ def get_user_by_username(username: str):
     return user
 
 
+def get_user_by_id(user_id: str):
+    """Retrieve a user document by their MongoDB ObjectId string."""
+    try:
+        user = beehive_user_collection.find_one({"_id": ObjectId(user_id)})
+        return user
+    except Exception as e:
+        logger.warning(f"Could not retrieve user for id {user_id}: {e}")
+        return None
+
+
 # Save image to MongoDB
 def save_image(id, filename, title, description, time_created, audio_filename=None, sentiment=None):
     image = {
