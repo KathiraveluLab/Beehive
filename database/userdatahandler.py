@@ -413,6 +413,8 @@ def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=
         pipeline = []
         match = {}
         created_at = {}
+        
+        # Date filters
         if from_date:
             created_at["$gte"] = from_date
         if end_date:
@@ -420,8 +422,23 @@ def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=
 
         if created_at:
             match["created_at"] = created_at
+            
+        # Username filter: Pre-lookup the user IDs to inject into the primary match step
+        if username_filter:
+            matching_users = list(beehive_user_collection.find(
+                {"username": {"$regex": re.escape(username_filter), "$options": "i"}},
+                {"_id": 1}
+            ))
+            user_ids = [u["_id"] for u in matching_users]
+            user_ids_str = [str(u["_id"]) for u in matching_users]
+            match["$or"] = [
+                {"user_id": {"$in": user_ids}},
+                {"user_id": {"$in": user_ids_str}}
+            ]
+
         if match:
             pipeline.append({"$match": match})
+            
         pipeline.extend([
             {
                 "$set": {
@@ -446,8 +463,6 @@ def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=
             {"$set": {"user_mapping": {"$first": "$user_mapping"}}},
             {"$set": {"username": "$user_mapping.username"}},
         ])
-        if username_filter:
-            pipeline.append({"$match":{"username":{"$regex": re.escape(username_filter), "$options": "i"}}})
         
         sort_criteria = {"created_at": -1} 
         if sort_method == "date_asc":
@@ -459,17 +474,25 @@ def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=
         pipeline.append({"$sort": sort_criteria})
 
         pipeline.append({"$limit": limit})
-        result = beehive_image_collection.aggregate(pipeline)
+        
+        result = list(beehive_image_collection.aggregate(pipeline))
+        
         uploads_list = []
         for upload in result:
             user_id = upload.get('user_id')
             user_name = upload.get('username') or "Unknown User"
+            
+            # Handle possible nested datetime
+            created_at_dt = upload.get('created_at')
+            if isinstance(created_at_dt, dict) and '$date' in created_at_dt:
+                created_at_dt = created_at_dt['$date']
+                
             uploads_list.append({
                 'id': str(upload['_id']),
                 'title': upload.get('title', ''),
                 'user': user_name,
                 'user_id': str(user_id) if user_id else None,
-                'timestamp': upload['created_at']['$date'] if isinstance(upload.get('created_at'), dict) else upload.get('created_at'),
+                'timestamp': created_at_dt,
                 'description': upload.get('description', ''),
                 'filename': upload.get('filename', ''),
                 'audio_filename': upload.get('audio_filename', ''),

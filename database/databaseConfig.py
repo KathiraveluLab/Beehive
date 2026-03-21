@@ -83,5 +83,25 @@ def initialize_text_index():
                 logger.debug("email_verified_idx already exists on email_otps")
         except Exception as ie:
             logger.error(f"Error creating email_otps index: {ie}")
+
+        # Add image collection indices for efficient recent uploads aggregation
+        if 'created_at_-1' not in existing_indexes:
+            image_collection.create_index([('created_at', -1)])
+            logger.info("Created index on created_at for image collection")
+            
+        if 'user_id_1' not in existing_indexes:
+            image_collection.create_index([('user_id', 1)])
+            logger.info("Created index on user_id for image collection")
+        
+        # Add user collection indices
+        try:
+            user_collection = get_beehive_user_collection()
+            user_indexes = user_collection.index_information()
+            if 'username_1' not in user_indexes:
+                user_collection.create_index([('username', 1)])
+                logger.info("Created index on username for user collection")
+        except Exception as ue:
+            logger.error(f"Error creating user indexes: {ue}")
+            
     except Exception as e:
         logger.error(f"Error creating text index: {str(e)}")
