@@ -35,7 +35,7 @@ from flask_mail import Mail
 from database.databaseConfig import (
     get_beehive_message_collection,
     get_beehive_notification_collection,
-    initialize_text_index,
+    initialize_indexes as initialize_text_index,
 )
 from database.databaseConfig import get_beehive_user_collection
 from database.userdatahandler import (

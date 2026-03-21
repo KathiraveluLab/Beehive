@@ -56,11 +56,13 @@ def get_beehive_message_collection():
     return beehive.messages
 
 
-def initialize_text_index():
+def initialize_indexes():
     try:
         image_collection = get_beehive_image_collection()
-        existing_indexes = image_collection.index_information()
+        user_collection = get_beehive_user_collection()
         
+        # Image text index
+        existing_indexes = image_collection.index_information()
         if 'title_text_description_text' not in existing_indexes:
             image_collection.create_index([
                 ('title', TEXT),
@@ -69,5 +71,19 @@ def initialize_text_index():
             logger.info("Text index created on image collection")
         else:
             logger.debug("Text index already exists on image collection")
+            
+        # Standard indexes on images
+        image_collection.create_index("user_id")
+        image_collection.create_index("created_at")
+        image_collection.create_index("audio_filename")
+        
+        # Indexes on users
+        user_collection.create_index("email")
+        user_collection.create_index("username")
+        
+        # Indexes on OTPs
+        beehive.email_otps.create_index("email")
+        
+        logger.info("All MongoDB indexes initialized successfully")
     except Exception as e:
-        logger.error(f"Error creating text index: {str(e)}")
+        logger.error(f"Error initializing indexes: {str(e)}")

@@ -408,37 +408,64 @@ def get_upload_stats():
 
 # Get recent uploads for admin dashboard
 def get_recent_uploads(limit=10):
-    """Get recent uploads with user information from Clerk for admin dashboard."""
+    """Get recent uploads with user information for admin dashboard using $lookup."""
     try:
-        #  Get recent uploads sorted by creation date
-        recent_uploads = list(beehive_image_collection.find().sort(
-            'created_at', -1).limit(limit))
+        pipeline = [
+            {"$sort": {"created_at": -1}},
+            {"$limit": limit},
+            {
+                "$lookup": {
+                    "from": "users",
+                    "let": {"uid": "$user_id"},
+                    "pipeline": [
+                        {
+                            "$match": {
+                                "$expr": {
+                                    "$eq": [
+                                        "$_id",
+                                        {
+                                            "$convert": {
+                                                "input": "$$uid",
+                                                "to": "objectId",
+                                                "onError": None,
+                                                "onNull": None
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    "as": "user_info"
+                }
+            },
+            {
+                "$unwind": {
+                    "path": "$user_info",
+                    "preserveNullAndEmptyArrays": True
+                }
+            }
+        ]
+        
+        recent_uploads = list(beehive_image_collection.aggregate(pipeline))
         if not recent_uploads:
             return []
-        # collect user ids and query local user collection
-        raw_ids = [upload.get('user_id') for upload in recent_uploads if upload.get('user_id')]
-        object_ids = []
-        for uid in raw_ids:
-            try:
-                object_ids.append(ObjectId(uid))
-            except Exception:
-                # skip invalid ids
-                continue
-
-        users_cursor = beehive_user_collection.find({'_id': {'$in': object_ids}}) if object_ids else []
-        users_data = {str(u['_id']): u for u in users_cursor}
 
         uploads_list = []
         for upload in recent_uploads:
-            user_id = upload.get('user_id')
-            user = users_data.get(str(user_id)) if user_id else None
+            user = upload.get('user_info', {})
             user_name = user.get('username') if user else 'Unknown User'
+            user_id = upload.get('user_id')
+            
+            created_at = upload.get('created_at', {})
+            timestamp = created_at.get('$date') if isinstance(created_at, dict) else created_at
+            
             uploads_list.append({
                 'id': str(upload['_id']),
                 'title': upload.get('title', ''),
                 'user': user_name,
                 'user_id': str(user_id) if user_id else None,
-                'timestamp': upload['created_at']['$date'] if isinstance(upload.get('created_at'), dict) else upload.get('created_at'),
+                'timestamp': timestamp,
                 'description': upload.get('description', ''),
                 'filename': upload.get('filename', ''),
                 'audio_filename': upload.get('audio_filename', ''),
