@@ -35,7 +35,7 @@ from flask_mail import Mail
 from database.databaseConfig import (
     get_beehive_message_collection,
     get_beehive_notification_collection,
-    initialize_text_index,
+    initialize_indexes,
 )
 from database.databaseConfig import get_beehive_user_collection
 from database.userdatahandler import (
@@ -963,7 +963,7 @@ from routes.auth import auth_bp
 app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
 # Initialize text index for search functionality
-initialize_text_index()
+initialize_indexes()
 
 if __name__ == "__main__":
     debug_mode = os.getenv("FLASK_DEBUG", "False").strip().lower() in ("true", "1")

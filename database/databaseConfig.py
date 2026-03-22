@@ -56,7 +56,7 @@ def get_beehive_message_collection():
     return beehive.messages
 
 
-def initialize_text_index():
+def initialize_indexes():
     try:
         image_collection = get_beehive_image_collection()
         existing_indexes = image_collection.index_information()
@@ -84,14 +84,12 @@ def initialize_text_index():
         except Exception as ie:
             logger.error(f"Error creating email_otps index: {ie}")
 
-        # Add image collection indices for efficient recent uploads aggregation
-        if 'created_at_-1' not in existing_indexes:
-            image_collection.create_index([('created_at', -1)])
-            logger.info("Created index on created_at for image collection")
-            
-        if 'user_id_1' not in existing_indexes:
-            image_collection.create_index([('user_id', 1)])
-            logger.info("Created index on user_id for image collection")
+        # Compound index for queries that filter by user_id and sort by created_at.
+        # Also serves queries that only filter by user_id (leftmost prefix rule),
+        # making a separate user_id index redundant.
+        if 'user_id_1_created_at_-1' not in existing_indexes:
+            image_collection.create_index([('user_id', 1), ('created_at', -1)])
+            logger.info("Created compound index (user_id, created_at) for image collection")
         
         # Add user collection indices
         try:
@@ -101,7 +99,7 @@ def initialize_text_index():
                 user_collection.create_index([('username', 1)])
                 logger.info("Created index on username for user collection")
         except Exception as ue:
-            logger.error(f"Error creating user indexes: {ue}")
+            logger.error(f"Error creating user collection indexes: {ue}")
             
     except Exception as e:
-        logger.error(f"Error creating text index: {str(e)}")
+        logger.error(f"Error creating database indexes: {str(e)}")
