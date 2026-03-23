@@ -430,11 +430,11 @@ def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=
                 {"_id": 1}
             ))
             user_ids = [u["_id"] for u in matching_users]
-            user_ids_str = [str(u["_id"]) for u in matching_users]
-            match["$or"] = [
-                {"user_id": {"$in": user_ids}},
-                {"user_id": {"$in": user_ids_str}}
-            ]
+            # Since user_id in the images collection is stored as an ObjectId,
+            # we only need to query against that type. An empty $in list
+            # correctly matches no documents if no users are found.
+            match["user_id"] = {"$in": user_ids}
+
 
         if match:
             pipeline.append({"$match": match})
