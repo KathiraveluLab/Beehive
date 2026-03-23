@@ -96,8 +96,8 @@ def initialize_indexes():
             user_collection = get_beehive_user_collection()
             user_indexes = user_collection.index_information()
             if 'username_1' not in user_indexes:
-                user_collection.create_index([('username', 1)])
-                logger.info("Created index on username for user collection")
+                user_collection.create_index([('username', 1)], collation=Collation(locale='en', strength=2))
+                logger.info("Created case-insensitive index on username for user collection")
         except Exception as ue:
             logger.error(f"Error creating user collection indexes: {ue}")
             
