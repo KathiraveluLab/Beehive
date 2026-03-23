@@ -426,7 +426,7 @@ def get_recent_uploads(limit=10, username_filter=None, from_date=None, end_date=
         # Username filter: Pre-lookup the user IDs to inject into the primary match step
         if username_filter:
             matching_users = list(beehive_user_collection.find(
-                {"username": {"$regex": f"^{re.escape(username_filter)}", "$options": "i"}},
+                {"username": {"$regex": f"^{re.escape(username_filter)}"}},
                 {"_id": 1}
             ))
             user_ids = [u["_id"] for u in matching_users]
