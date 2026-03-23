@@ -47,7 +47,7 @@ pyparsing==3.2.1
 uritemplate==4.1.1
 rsa==4.9
 pycparser==2.22
-cffi>=2.0.0
+cffi==1.17.1
 
 # Development & Testing tools
 bcrypt==4.2.1
