@@ -5,6 +5,7 @@ import bcrypt
 from flask import session
 from database import databaseConfig
 from utils.logger import Logger
+from pymongo.collation import Collation 
 
 logger = Logger.get_logger("userdatahandler")
 
