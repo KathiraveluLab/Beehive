@@ -5,9 +5,7 @@
 - MongoDB
 - Google OAuth2 credentials
 
-## Setup Instructions
-
-Follow these steps to set up the project:
+## Installation
 
 > **Note:** For Docker-based setup, see [docker-setup.md](docker-setup.md)
 
