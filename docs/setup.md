@@ -12,7 +12,7 @@
 1. **Clone the Beehive Repository**
     - Clone the Beehive repository to your local machine.
     ```bash
-    git clone https://github.com/kathiravelulab/Beehive.git'
+    git clone https://github.com/kathiravelulab/Beehive.git
     cd Beehive
     ```
 
