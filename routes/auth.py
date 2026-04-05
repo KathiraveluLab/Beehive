@@ -297,10 +297,7 @@ def set_password():
             "last_active": now_utc
         }).inserted_id
 
-        # Cleanup OTPs
-        db.email_otps.delete_many({"email": email})
-
-    elif purpose == "reset":
+    else:
         if not existing_user:
             return jsonify({"error": "User not found"}), 404
 
@@ -314,11 +311,11 @@ def set_password():
             {"$set": {"password": hashed}}
         )
 
-        # Cleanup OTPs after successful reset
-        db.email_otps.delete_many({"email": email})
-
         user_id = existing_user["_id"]
         role = existing_user.get("role", "user")
+
+    # Cleanup OTPs after successful signup/reset
+    db.email_otps.delete_many({"email": email})
 
     token = create_access_token(
         user_id=str(user_id),
