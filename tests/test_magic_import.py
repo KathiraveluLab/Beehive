@@ -1,6 +1,8 @@
 import importlib
 import sys
 
+#---- Tests ----
+
 
 def test_app_imports_without_python_magic(monkeypatch):
     monkeypatch.setitem(sys.modules, "magic", None)

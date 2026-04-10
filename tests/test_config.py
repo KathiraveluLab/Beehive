@@ -2,15 +2,17 @@ import os
 import pytest
 from config import Config
 
+#---- Tests — environment loading ----
+
 
 def test_secret_key_loaded_from_environment():
     assert Config.SECRET_KEY is not None
-    assert Config.SECRET_KEY == os.environ.get('FLASK_SECRET_KEY')
+    assert Config.SECRET_KEY == os.environ.get("FLASK_SECRET_KEY")
 
 
 def test_secret_key_not_weak_default():
-    assert Config.SECRET_KEY != 'beehive'
-    assert Config.SECRET_KEY != 'beehive-secret-key'
+    assert Config.SECRET_KEY != "beehive"
+    assert Config.SECRET_KEY != "beehive-secret-key"
 
 
 def test_secret_key_minimum_length():
@@ -19,45 +21,51 @@ def test_secret_key_minimum_length():
 
 def test_jwt_secret_loaded_from_environment():
     assert Config.JWT_SECRET is not None
-    assert Config.JWT_SECRET == os.environ.get('JWT_SECRET')
+    assert Config.JWT_SECRET == os.environ.get("JWT_SECRET")
+
+
+#---- Tests — validate_config guardrails ----
 
 
 def test_validate_config_missing_flask_secret(monkeypatch):
-    monkeypatch.setattr(Config, 'SECRET_KEY', None)
+    monkeypatch.setattr(Config, "SECRET_KEY", None)
     with pytest.raises(SystemExit):
         Config.validate_config()
 
 
 def test_validate_config_short_flask_secret(monkeypatch, capsys):
-    monkeypatch.setattr(Config, 'SECRET_KEY', "short")
+    monkeypatch.setattr(Config, "SECRET_KEY", "short")
     assert Config.validate_config() == True
     captured = capsys.readouterr()
     assert "FLASK_SECRET_KEY is too short" in captured.err
 
 
 def test_validate_config_weak_flask_secret(monkeypatch):
-    monkeypatch.setattr(Config, 'SECRET_KEY', "your_flask_secret_key_here_CHANGE_THIS")
+    monkeypatch.setattr(Config, "SECRET_KEY", "your_flask_secret_key_here_CHANGE_THIS")
     with pytest.raises(SystemExit):
         Config.validate_config()
 
 
 def test_validate_config_weak_jwt_secret(monkeypatch):
-    monkeypatch.setattr(Config, 'JWT_SECRET', "secret")
+    monkeypatch.setattr(Config, "JWT_SECRET", "secret")
     with pytest.raises(SystemExit):
         Config.validate_config()
 
 
 def test_validate_config_missing_jwt_secret(monkeypatch):
-    monkeypatch.setattr(Config, 'JWT_SECRET', None)
+    monkeypatch.setattr(Config, "JWT_SECRET", None)
     with pytest.raises(SystemExit):
         Config.validate_config()
 
 
 def test_validate_config_short_jwt_secret(monkeypatch, capsys):
-    monkeypatch.setattr(Config, 'JWT_SECRET', "short")
+    monkeypatch.setattr(Config, "JWT_SECRET", "short")
     assert Config.validate_config() == True
     captured = capsys.readouterr()
     assert "JWT_SECRET is too short" in captured.err
+
+
+#---- Tests — validate_config required vars ----
 
 
 @pytest.mark.parametrize(
@@ -65,7 +73,7 @@ def test_validate_config_short_jwt_secret(monkeypatch, capsys):
     [
         ("MONGODB_URI", None),
         ("CORS_ORIGINS", []),
-    ]
+    ],
 )
 def test_validate_config_missing_required_vars(monkeypatch, key, value):
     monkeypatch.setattr(Config, key, value)
@@ -74,6 +82,6 @@ def test_validate_config_missing_required_vars(monkeypatch, key, value):
 
 
 def test_validate_config_invalid_mongodb_uri(monkeypatch):
-    monkeypatch.setattr(Config, 'MONGODB_URI', "invalid://localhost")
+    monkeypatch.setattr(Config, "MONGODB_URI", "invalid://localhost")
     with pytest.raises(SystemExit):
         Config.validate_config()

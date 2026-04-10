@@ -4,16 +4,14 @@ Tests for GET /api/user/stats endpoint.
 Verifies that authenticated users receive accurate personal upload statistics
 including totals, sentiment breakdown, voice note count, and daily trend.
 """
+
 from datetime import datetime, timedelta, timezone
 
 import bcrypt
 import pytest
 from bson import ObjectId
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+#---- Helpers ----
 
 USER_ID = str(ObjectId())
 OTHER_USER_ID = str(ObjectId())
@@ -22,6 +20,7 @@ OTHER_USER_ID = str(ObjectId())
 def _make_token(app, user_id=USER_ID, role="user"):
     with app.app_context():
         from utils.jwt_auth import create_access_token
+
         return create_access_token(user_id, role)
 
 
@@ -31,33 +30,35 @@ def _get(client, token=None):
 
 
 def _insert_user(mock_db, user_id=USER_ID):
-    mock_db.users.insert_one({
-        "_id": ObjectId(user_id),
-        "username": "testuser",
-        "email": "test@example.com",
-        "role": "user",
-        "password": bcrypt.hashpw(b"password123", bcrypt.gensalt()),
-        "created_at": datetime.now(timezone.utc),
-    })
+    mock_db.users.insert_one(
+        {
+            "_id": ObjectId(user_id),
+            "username": "testuser",
+            "email": "test@example.com",
+            "role": "user",
+            "password": bcrypt.hashpw(b"password123", bcrypt.gensalt()),
+            "created_at": datetime.now(timezone.utc),
+        }
+    )
 
 
 def _insert_image(mock_db, user_id=USER_ID, sentiment=None, audio=None, days_ago=0):
     created = datetime.utcnow() - timedelta(days=days_ago)
-    mock_db.images.insert_one({
-        "_id": ObjectId(),
-        "user_id": ObjectId(user_id),
-        "filename": f"file_{ObjectId()}.jpg",
-        "title": "Test",
-        "description": "desc",
-        "sentiment": sentiment,
-        "audio_filename": audio,
-        "created_at": created,
-    })
+    mock_db.images.insert_one(
+        {
+            "_id": ObjectId(),
+            "user_id": ObjectId(user_id),
+            "filename": f"file_{ObjectId()}.jpg",
+            "title": "Test",
+            "description": "desc",
+            "sentiment": sentiment,
+            "audio_filename": audio,
+            "created_at": created,
+        }
+    )
 
 
-# ---------------------------------------------------------------------------
-# Auth guard tests
-# ---------------------------------------------------------------------------
+#---- Auth guard tests ----
 
 
 def test_stats_no_token(client):
@@ -70,9 +71,7 @@ def test_stats_invalid_token(client):
     assert resp.status_code == 401
 
 
-# ---------------------------------------------------------------------------
-# Stats correctness tests
-# ---------------------------------------------------------------------------
+#---- Stats correctness tests ----
 
 
 def test_stats_empty_for_new_user(client, app, mock_db):

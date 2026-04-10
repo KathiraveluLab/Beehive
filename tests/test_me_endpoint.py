@@ -3,15 +3,13 @@ Tests for GET /api/auth/me endpoint.
 
 Verifies that authenticated users can retrieve their own profile information.
 """
+
 from datetime import datetime, timezone
 
 import pytest
 from bson import ObjectId
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+#---- Helpers ----
 
 USER_ID = str(ObjectId())
 
@@ -44,9 +42,7 @@ def _insert_user(mock_db, user_id=USER_ID, provider="local", has_password=True):
     mock_db.users.insert_one(user)
 
 
-# ---------------------------------------------------------------------------
-# Tests — authentication guard
-# ---------------------------------------------------------------------------
+#---- Tests — authentication guard ----
 
 
 def test_me_no_token(client):
@@ -61,9 +57,7 @@ def test_me_invalid_token(client):
     assert resp.status_code == 401
 
 
-# ---------------------------------------------------------------------------
-# Tests — successful profile retrieval
-# ---------------------------------------------------------------------------
+#---- Tests — successful profile retrieval ----
 
 
 def test_me_returns_profile(client, app, mock_db):

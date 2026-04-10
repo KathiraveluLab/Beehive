@@ -3,6 +3,8 @@ from datetime import datetime, timedelta, timezone
 import bcrypt
 import pytest
 
+#---- Fixtures ----
+
 
 @pytest.fixture
 def created_user(mock_db):
@@ -16,6 +18,9 @@ def created_user(mock_db):
     }
     mock_db.users.insert_one(user_data)
     return {"email": user_data["email"], "password": password}
+
+
+#---- Tests — request OTP ----
 
 
 def test_request_otp_invalid_purpose(client):
@@ -86,6 +91,9 @@ def test_request_otp_reset_failure(client):
     assert data["message"] == "If account exists, OTP sent"
 
 
+#---- Tests — verify OTP ----
+
+
 def test_verify_otp_success(client, mock_db):
     """POST /api/auth/verify-otp"""
     email = "test@example.com"
@@ -146,6 +154,9 @@ def test_verify_otp_expired(client, mock_db):
     assert response.status_code == 400
     data = response.get_json()
     assert data["error"] == "OTP expired"
+
+
+#---- Tests — input format validation ----
 
 
 def test_request_otp_invalid_email_format(client):

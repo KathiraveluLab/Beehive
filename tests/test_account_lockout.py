@@ -1,4 +1,5 @@
 """Tests for account lockout after repeated failed login attempts."""
+
 import pytest
 import bcrypt
 from datetime import datetime, timezone
@@ -12,41 +13,42 @@ from database.userdatahandler import (
     unlock_account,
 )
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
+#---- Helpers ----
 
 PASSWORD = "testpassword1"
 
 
 def _insert_user(mock_db, username="lockuser", password=PASSWORD, role="user"):
     hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
-    result = mock_db.users.insert_one({
-        "username": username,
-        "email": f"{username}@test.com",
-        "password": hashed,
-        "role": role,
-        "created_at": datetime.now(timezone.utc),
-        "last_active": datetime.now(timezone.utc),
-    })
+    result = mock_db.users.insert_one(
+        {
+            "username": username,
+            "email": f"{username}@test.com",
+            "password": hashed,
+            "role": role,
+            "created_at": datetime.now(timezone.utc),
+            "last_active": datetime.now(timezone.utc),
+        }
+    )
     return result.inserted_id
 
 
 def _login(client, username, password=PASSWORD):
-    return client.post("/api/auth/login", json={"username": username, "password": password})
+    return client.post(
+        "/api/auth/login", json={"username": username, "password": password}
+    )
 
 
 def _admin_token(app, mock_db):
     uid = _insert_user(mock_db, username="adminuser", role="admin")
     with app.app_context():
         from utils.jwt_auth import create_access_token
+
         return create_access_token(str(uid), "admin")
 
 
-# ---------------------------------------------------------------------------
-# Unit tests — DB helpers
-# ---------------------------------------------------------------------------
+#---- Unit tests — DB helpers ----
+
 
 def test_fresh_user_not_locked(mock_db):
     uid = _insert_user(mock_db, "freshuser")
@@ -100,9 +102,8 @@ def test_get_lock_status_invalid_id():
     assert status["is_locked"] is False
 
 
-# ---------------------------------------------------------------------------
-# Integration tests — login endpoint
-# ---------------------------------------------------------------------------
+#---- Integration tests — login endpoint ----
+
 
 def test_wrong_password_shows_attempts_remaining(client, mock_db):
     _insert_user(mock_db, "warnuser")
@@ -157,9 +158,8 @@ def test_lockout_response_includes_remaining_seconds(client, mock_db):
     assert 0 < data["remaining_seconds"] <= LOCKOUT_DURATION_MINUTES * 60
 
 
-# ---------------------------------------------------------------------------
-# Admin unlock endpoint
-# ---------------------------------------------------------------------------
+#---- Admin unlock endpoint ----
+
 
 def test_admin_can_unlock_locked_account(client, app, mock_db):
     uid = _insert_user(mock_db, "targetlock")
@@ -193,6 +193,7 @@ def test_non_admin_cannot_unlock(client, app, mock_db):
     regular_uid = _insert_user(mock_db, "regularuser3")
     with app.app_context():
         from utils.jwt_auth import create_access_token
+
         user_token = create_access_token(str(regular_uid), "user")
 
     res = client.post(

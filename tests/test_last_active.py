@@ -3,6 +3,8 @@ from unittest.mock import patch, MagicMock
 from datetime import datetime, timezone
 from bson import ObjectId
 
+#---- Helpers ----
+
 
 def _assert_last_active_set(mock_insert_call):
     """Helper to verify 'last_active' was set correctly on insert."""
@@ -13,6 +15,9 @@ def _assert_last_active_set(mock_insert_call):
     assert inserted_doc["last_active"].tzinfo == timezone.utc
 
 
+#---- Tests ----
+
+
 def test_complete_signup_sets_last_active(client):
     """
     Verify that /api/auth/complete-signup sets the last_active field.
@@ -20,24 +25,22 @@ def test_complete_signup_sets_last_active(client):
     mock_user_data = {
         "email": "newuser@example.com",
         "username": "newuser",
-        "password": "password123"
+        "password": "password123",
     }
-    
+
     with patch("routes.auth.db.users") as mock_users_col, \
-         patch("routes.auth._validate_otp_verification", return_value=None):
+        patch("routes.auth._validate_otp_verification", return_value=None):
         mock_users_col.find_one.return_value = None  # No duplicate user
         mock_users_col.insert_one.return_value = MagicMock(inserted_id=ObjectId())
-        
+
         with patch("routes.auth.create_access_token") as mock_token:
             mock_token.return_value = "fake_token"
-            
-            response = client.post(
-                "/api/auth/complete-signup",
-                json=mock_user_data
-            )
-            
+
+            response = client.post("/api/auth/complete-signup", json=mock_user_data)
+
             assert response.status_code == 201
             _assert_last_active_set(mock_users_col.insert_one)
+
 
 def test_set_password_signup_sets_last_active(client):
     """
@@ -46,24 +49,22 @@ def test_set_password_signup_sets_last_active(client):
     mock_data = {
         "email": "signupuser@example.com",
         "password": "password123",
-        "purpose": "signup"
+        "purpose": "signup",
     }
-    
+
     with patch("routes.auth.db.users") as mock_users_col, \
-         patch("routes.auth._validate_otp_verification", return_value=None):
+        patch("routes.auth._validate_otp_verification", return_value=None):
         mock_users_col.find_one.return_value = None  # No duplicate user
         mock_users_col.insert_one.return_value = MagicMock(inserted_id=ObjectId())
-        
+
         with patch("routes.auth.create_access_token") as mock_token:
             mock_token.return_value = "fake_token"
-            
-            response = client.post(
-                "/api/auth/set-password",
-                json=mock_data
-            )
-            
+
+            response = client.post("/api/auth/set-password", json=mock_data)
+
             assert response.status_code == 200
             _assert_last_active_set(mock_users_col.insert_one)
+
 
 def test_google_auth_new_user_sets_last_active(client):
     """
@@ -74,23 +75,20 @@ def test_google_auth_new_user_sets_last_active(client):
         "email": "googleuser@example.com",
         "name": "Google User",
         "sub": "12345",
-        "email_verified": True
+        "email_verified": True,
     }
-    
+
     with patch("routes.auth.id_token.verify_oauth2_token") as mock_verify:
         mock_verify.return_value = mock_idinfo
-        
+
         with patch("routes.auth.db.users") as mock_users_col:
             mock_users_col.find_one.return_value = None  # New user
             mock_users_col.insert_one.return_value = MagicMock(inserted_id=ObjectId())
-            
+
             with patch("routes.auth.create_access_token") as mock_token:
                 mock_token.return_value = "fake_token"
-                
-                response = client.post(
-                    "/api/auth/google",
-                    json=mock_data
-                )
-                
+
+                response = client.post("/api/auth/google", json=mock_data)
+
                 assert response.status_code == 200
                 _assert_last_active_set(mock_users_col.insert_one)
