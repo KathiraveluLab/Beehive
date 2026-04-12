@@ -97,7 +97,7 @@ def get_all_analytics():
     try:
         days_param = request.args.get("days", 7)
         try:
-            days_ago = max(1, int(days_param))
+            days_ago = min(max(1, int(days_param)), 365)
         except (ValueError, TypeError):
             return jsonify({"error": "Invalid 'days' parameter"}), 400
         
