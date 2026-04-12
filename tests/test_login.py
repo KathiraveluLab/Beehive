@@ -8,7 +8,7 @@ import pytest
 def created_user(mock_db):
     """Fixture to create a user in the mock database."""
     password = "securepassword"
-    hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+    hashed_pw = bcrypt.hashpw(password.encode(), bcrypt.gensalt())
     user_data = {
         "email": "test@example.com",
         "username": "testuser",
