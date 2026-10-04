@@ -30,7 +30,7 @@ urllib3==2.7.0
 httplib2==0.22.0
 certifi==2025.1.31
 charset-normalizer==3.4.1
-idna==3.10
+idna==3.15
 
 # Image processing & PDFs
 Pillow==12.2.0
@@ -64,8 +64,8 @@ google-generativeai==0.8.3
 python-magic==0.4.27
 
 # Basic security (will be enhanced in separate security PR)
-cryptography==46.0.7
-PyJWT==2.12.1
+cryptography==48.0.1
+PyJWT==2.13.0
 
 # input validation and sanitization
-bleach==6.3.0
+bleach==6.4.0
