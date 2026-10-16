@@ -167,7 +167,7 @@ useEffect(() => {
                 </div>
                 <div className="mt-4">
                   <button
-                    onClick={fetchDashboardData}
+                    onClick={() => fetchDashboardData()}
                     className="bg-red-100 text-red-800 px-3 py-2 rounded-md text-sm font-medium hover:bg-red-200"
                   >
                     Try again
