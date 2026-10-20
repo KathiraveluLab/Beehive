@@ -647,7 +647,10 @@ def edit_image(image_id):
         # Get form data
         title = sanitize_text(request.form.get("title"))
         description = sanitize_text(request.form.get("description"))
-        sentiment = sanitize_text(request.form.get("sentiment", ""))
+        # Leave the stored sentiment alone when the request does not send one.
+        sentiment = request.form.get("sentiment")
+        if sentiment is not None:
+            sentiment = sanitize_text(sentiment)
 
         if not title or not description:
             return jsonify({"error": "Title and description are required."}), 400
