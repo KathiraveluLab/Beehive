@@ -212,6 +212,11 @@ def _build_user_id_query(user_id):
 
 def search_and_filter_images(user_id, search_query=None, sentiment=None, from_date=None, to_date=None, 
                              sort_by='date', sort_order='desc', limit=12, offset=0):
+    # Parse the dates first so a bad value raises ValueError for the route to turn into a 400,
+    # instead of being swallowed below and shown as "no results".
+    from_dt = _parse_iso_date(from_date, 'from') if from_date else None
+    to_dt = _parse_iso_date(to_date, 'to') if to_date else None
+
     try:
         query = _build_user_id_query(user_id)
         update_last_seen(user_id)
@@ -221,14 +226,12 @@ def search_and_filter_images(user_id, search_query=None, sentiment=None, from_da
         if sentiment and sentiment.strip():
             query['sentiment'] = sentiment.strip()
         
-        if from_date or to_date:
+        if from_dt or to_dt:
             date_query = {}
-            if from_date:
-                from_dt = _parse_iso_date(from_date, 'from')
+            if from_dt:
                 date_query['$gte'] = from_dt
-            
-            if to_date:
-                to_dt = _parse_iso_date(to_date, 'to')
+
+            if to_dt:
                 # Use the date as-is since frontend now sends with time
                 date_query['$lte'] = to_dt
             
