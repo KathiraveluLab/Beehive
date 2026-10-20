@@ -392,102 +392,116 @@ def upload_images():
                     return error_response("Server MIME detection unavailable; contact administrator.", 500)
             mime_detector = _FALLBACK_MAGIC
 
+        # Validate every file and the audio before anything is written, so a bad file
+        # later in the batch does not leave the earlier ones saved.
+        validated_files = []
         for file in files:
-            if file:
-                # Validate extension
-                original_filename = secure_filename(file.filename)
-                unique_filename = f"{ObjectId()}_{original_filename}".lower()
-                file_ext = os.path.splitext(unique_filename)[1].lstrip('.').lower()
-                if file_ext not in ALLOWED_EXTENSIONS:
-                    return jsonify(
-                        {
-                            "error": f"File type not allowed. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
-                        }
-                    ), 400
+            if not file:
+                continue
 
-                file.stream.seek(0)
-                file_header = file.stream.read(2048)
-                file.stream.seek(0)
-                file_mime_type = mime_detector.from_buffer(file_header)
+            # Validate extension
+            original_filename = secure_filename(file.filename)
+            unique_filename = f"{ObjectId()}_{original_filename}".lower()
+            file_ext = os.path.splitext(unique_filename)[1].lstrip('.').lower()
+            if file_ext not in ALLOWED_EXTENSIONS:
+                return jsonify(
+                    {
+                        "error": f"File type not allowed. Allowed types: {', '.join(ALLOWED_EXTENSIONS)}"
+                    }
+                ), 400
 
-                if file_mime_type not in ALLOWED_MIME_TYPES:
-                    return jsonify(
-                        {
-                            "error": f'File content validation failed. Detected type "{file_mime_type}" is not allowed.'
-                        }
-                    ), 400
-                    
-                size_error = validate_file_size(file, file_mime_type, original_filename)
-                if size_error:
-                    return size_error
+            file.stream.seek(0)
+            file_header = file.stream.read(2048)
+            file.stream.seek(0)
+            file_mime_type = mime_detector.from_buffer(file_header)
 
-                filepath = os.path.join(app.config["UPLOAD_FOLDER"], unique_filename)
-                os.makedirs(os.path.dirname(filepath), exist_ok=True)
-                file.save(filepath)
+            if file_mime_type not in ALLOWED_MIME_TYPES:
+                return jsonify(
+                    {
+                        "error": f'File content validation failed. Detected type "{file_mime_type}" is not allowed.'
+                    }
+                ), 400
 
-                # Handle audio upload (either base64 or file)
-                if audio_data:
-                    audio_binary, audio_mime_or_error = _decode_audio_data(audio_data)
-                    if not isinstance(audio_binary, (bytes, bytearray)):
-                        # audio_mime_or_error holds the response tuple in this case
-                        return audio_mime_or_error
+            size_error = validate_file_size(file, file_mime_type, original_filename)
+            if size_error:
+                return size_error
 
-                    audio_mime = audio_mime_or_error  # safe: decode returns mime on success
-                    audio_ext = AUDIO_MIME_TO_EXTENSION.get(audio_mime, ".wav")
+            validated_files.append((file, original_filename, unique_filename))
 
-                    audio_filename = f"{safe_audio_basename}_{ObjectId()}{audio_ext}"
-                    audio_path = os.path.join(
-                        app.config["UPLOAD_FOLDER"], audio_filename
-                    )
-                    os.makedirs(os.path.dirname(audio_path), exist_ok=True)
-                    with open(audio_path, "wb") as f:
-                        f.write(audio_binary)
+        # Audio is either a base64 data URL or an uploaded file
+        audio_binary = None
+        audio_mime = None
+        if audio_data:
+            audio_binary, audio_mime_or_error = _decode_audio_data(audio_data)
+            if not isinstance(audio_binary, (bytes, bytearray)):
+                # audio_mime_or_error holds the response tuple in this case
+                return audio_mime_or_error
+            audio_mime = audio_mime_or_error  # safe: decode returns mime on success
+        elif audio_file:
+            audio_error = _validate_audio_file_upload(audio_file)
+            if audio_error:
+                return audio_error
 
-                elif audio_file:
-                    audio_error = _validate_audio_file_upload(audio_file)
-                    if audio_error:
-                        return audio_error
+        for file, original_filename, unique_filename in validated_files:
+            filepath = os.path.join(app.config["UPLOAD_FOLDER"], unique_filename)
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            file.save(filepath)
 
-                    # Derive and validate the audio file extension from the user-supplied filename.
-                    raw_audio_ext = pathlib.Path(audio_file.filename).suffix.lower()
-                    allowed_audio_exts = {".wav", ".mp3", ".m4a", ".ogg", ".flac"}
-                    audio_ext = raw_audio_ext if raw_audio_ext in allowed_audio_exts else ".wav"
+            # Handle audio upload (either base64 or file)
+            if audio_binary is not None:
+                audio_ext = AUDIO_MIME_TO_EXTENSION.get(audio_mime, ".wav")
 
-                    audio_filename = f"{safe_audio_basename}_{ObjectId()}{audio_ext}"
-                    upload_root = app.config["UPLOAD_FOLDER"]
-                    # Build and normalize the audio path, then ensure it stays within upload_root.
-                    audio_path = os.path.normpath(os.path.join(upload_root, audio_filename))
-                    upload_root_abs = os.path.abspath(upload_root)
-                    audio_path_abs = os.path.abspath(audio_path)
-                    if not audio_path_abs.startswith(upload_root_abs + os.sep):
-                        return jsonify({"error": "Invalid audio file path"}), 400
-
-                    os.makedirs(os.path.dirname(audio_path_abs), exist_ok=True)
-                    audio_file.save(audio_path_abs)
-
-                # Always safe to call now
-                time_created = datetime.datetime.now(datetime.timezone.utc)
-                
-                # Generate pdf thumbnail
-                thumbnail_filename = None
-                if unique_filename.endswith(".pdf"):
-                    name, _ = os.path.splitext(unique_filename)
-                    thumbnail_filename = f"{name}.jpg"
-                    generate_pdf_thumbnail(filepath, unique_filename)
-                
-                save_image(
-                    user_id,
-                    unique_filename,
-                    title,
-                    description,
-                    time_created,
-                    audio_filename,
-                    sentiment,
-                    thumbnail_filename,
+                audio_filename = f"{safe_audio_basename}_{ObjectId()}{audio_ext}"
+                audio_path = os.path.join(
+                    app.config["UPLOAD_FOLDER"], audio_filename
                 )
-                save_notification(
-                    user_id, username, unique_filename, title, time_created, sentiment
-                )
+                os.makedirs(os.path.dirname(audio_path), exist_ok=True)
+                with open(audio_path, "wb") as f:
+                    f.write(audio_binary)
+
+            elif audio_file:
+                # Derive and validate the audio file extension from the user-supplied filename.
+                raw_audio_ext = pathlib.Path(audio_file.filename).suffix.lower()
+                allowed_audio_exts = {".wav", ".mp3", ".m4a", ".ogg", ".flac"}
+                audio_ext = raw_audio_ext if raw_audio_ext in allowed_audio_exts else ".wav"
+
+                audio_filename = f"{safe_audio_basename}_{ObjectId()}{audio_ext}"
+                upload_root = app.config["UPLOAD_FOLDER"]
+                # Build and normalize the audio path, then ensure it stays within upload_root.
+                audio_path = os.path.normpath(os.path.join(upload_root, audio_filename))
+                upload_root_abs = os.path.abspath(upload_root)
+                audio_path_abs = os.path.abspath(audio_path)
+                if not audio_path_abs.startswith(upload_root_abs + os.sep):
+                    return jsonify({"error": "Invalid audio file path"}), 400
+
+                os.makedirs(os.path.dirname(audio_path_abs), exist_ok=True)
+                # The stream was read to validate it and by any earlier save.
+                audio_file.stream.seek(0)
+                audio_file.save(audio_path_abs)
+
+            # Always safe to call now
+            time_created = datetime.datetime.now(datetime.timezone.utc)
+            
+            # Generate pdf thumbnail
+            thumbnail_filename = None
+            if unique_filename.endswith(".pdf"):
+                name, _ = os.path.splitext(unique_filename)
+                thumbnail_filename = f"{name}.jpg"
+                generate_pdf_thumbnail(filepath, unique_filename)
+            
+            save_image(
+                user_id,
+                unique_filename,
+                title,
+                description,
+                time_created,
+                audio_filename,
+                sentiment,
+                thumbnail_filename,
+            )
+            save_notification(
+                user_id, username, unique_filename, title, time_created, sentiment
+            )
 
         return jsonify({"message": "Upload successful"}), 200
 
