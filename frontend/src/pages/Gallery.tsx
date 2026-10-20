@@ -158,6 +158,7 @@ const Gallery = () => {
   const [showFilters, setShowFilters] = useState(false);
 
   const [deleteCandidate, setDeleteCandidate] = useState<Upload | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const [totalResults, setTotalResults] = useState(0);
   const [hasMore, setHasMore] = useState(false);
