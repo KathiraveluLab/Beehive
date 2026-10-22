@@ -406,7 +406,7 @@ def set_password():
 
         db.users.update_one(
             {"email": email},
-            {"$set": {"password": hashed}}
+            {"$set": {"password": hashed, "password_changed_at": datetime.now(timezone.utc)}}
         )
 
         # Cleanup OTPs after successful reset
@@ -552,6 +552,13 @@ def change_password():
         return jsonify({"error": "New password must be different from current password"}), 400
 
     hashed = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt())
-    db.users.update_one({"_id": user_id}, {"$set": {"password": hashed, "last_active": datetime.now(timezone.utc)}})
+    now_utc = datetime.now(timezone.utc)
+    db.users.update_one(
+        {"_id": user_id},
+        {"$set": {"password": hashed, "password_changed_at": now_utc, "last_active": now_utc}},
+    )
 
-    return jsonify({"message": "Password updated successfully"}), 200
+    # Tokens issued before this moment are no longer accepted, so hand back a fresh
+    # one for the session that made the change.
+    token = create_access_token(user_id=str(user_id), role=user.get("role", "user"))
+    return jsonify({"message": "Password updated successfully", "access_token": token}), 200

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { UserCircleIcon, LockClosedIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { apiUrl } from '../utils/api';
-import { getToken } from '../utils/auth';
+import { getToken, saveToken } from '../utils/auth';
 import toast from 'react-hot-toast';
 
 interface UserProfile {
@@ -62,6 +62,10 @@ const Settings = () => {
       const data = await res.json();
       if (!res.ok) {
         throw new Error(data.error || 'Failed to change password');
+      }
+      // The server ends sessions opened with the old password and returns a fresh token.
+      if (data.access_token) {
+        saveToken(data.access_token);
       }
       toast.success('Password changed successfully');
       setCurrentPassword('');
