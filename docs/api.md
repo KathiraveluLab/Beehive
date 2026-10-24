@@ -70,9 +70,10 @@ Side effects:
 
 #### GET `/api/admin/users`
 - **Description**: List users from the local MongoDB `users` collection.
-- **Query**: `query` (search), `limit` (default 10), `offset` (default 0)
+- **Query**: `query` (search), `limit` (default 10, clamped to 1-100), `offset` (default 0, minimum 0)
 - **Responses**:
   - 200: `{ users: [{ id, username, email, role, lastActive, image }], totalCount }`
+  - 400: `{ error: "..." }` (`limit` or `offset` is not an integer)
   - 500: `{ error: "Failed to fetch users" }`
  - **Notes**: No external Clerk dependency; the backend reads users from MongoDB.
 
@@ -92,8 +93,10 @@ Side effects:
 
 #### GET `/api/admin/notifications?mark_seen={true|false}`
 - **Description**: Get unseen notifications; optionally mark them as seen.
+- **Query**: `page` (default 1, minimum 1), `limit` (default 5, clamped to 1-50)
 - **Responses**:
   - 200: `{ notifications: [{ _id, user_id, username, image_filename, title, timestamp, seen, type }] }`
+  - 400: `{ error: "..." }` (`page` or `limit` is not an integer)
   - 500: `{ error: "..." }`
 
 ---

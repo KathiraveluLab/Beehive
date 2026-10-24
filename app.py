@@ -55,6 +55,7 @@ from database.userdatahandler import (
     get_image_by_thumbnail
 )
 from utils import error_response
+from utils.pagination import parse_bounded_int
 
 from utils.jwt_auth import require_auth,require_admin_role 
 app = Flask(__name__, static_folder="static", static_url_path="/static")
@@ -879,8 +880,8 @@ def get_admin_notifications():
         notification_collection = get_beehive_notification_collection()
 
         try:
-            page = int(request.args.get("page", 1))
-            per_page = int(request.args.get("limit", 5))
+            page = parse_bounded_int("page", default=1, min_value=1, max_value=10**6)
+            per_page = parse_bounded_int("limit", default=5, min_value=1, max_value=50)
         except ValueError:
             return error_response("Invalid 'page' or 'limit' parameter. Must be an integer.", 400)
         skip = (page - 1) * per_page
