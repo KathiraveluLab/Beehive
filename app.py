@@ -32,6 +32,7 @@ from flask import (
 from flask_cors import CORS
 from google_auth_oauthlib.flow import Flow
 from PIL import Image
+from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.utils import secure_filename
 from flask_mail import Mail
 
@@ -161,7 +162,6 @@ if (
     )
 app.config["UPLOAD_FOLDER"] = "uploads"
 app.config["PDF_THUMBNAIL_FOLDER"] = "uploads/thumbnails/"
-app.config["MAX_CONTENT_LENGTH"] = 16 * 1024 * 1024
 if os.getenv("FLASK_ENV") == "development":
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 client_secrets_file = os.path.join(pathlib.Path(__file__).parent, "client_secret.json")
@@ -197,6 +197,21 @@ MIME_SIZE_LIMITS = {
     "image/avif": 15 * 1024 * 1024,
     "application/pdf": 25 * 1024 * 1024,
 }
+
+# One request may carry the largest file the limits above allow, plus a base64 voice note
+# (a third bigger than MAX_AUDIO_FILE_SIZE) and room for the form fields and multipart framing.
+# Flask rejects anything larger before the view runs, so a lower cap would make the per-type
+# limits shown on the upload page unreachable.
+app.config["MAX_CONTENT_LENGTH"] = (
+    max(MIME_SIZE_LIMITS.values()) + MAX_AUDIO_FILE_SIZE * 4 // 3 + 1024 * 1024
+)
+
+
+@app.errorhandler(RequestEntityTooLarge)
+def request_too_large(_error):
+    limit_mb = app.config["MAX_CONTENT_LENGTH"] // (1024 * 1024)
+    return jsonify({"error": f"Request is too large. The limit is {limit_mb}MB per request."}), 413
+
 
 def validate_file_size(file, mime_type, filename):
     """
@@ -491,6 +506,8 @@ def upload_images():
 
         return jsonify({"message": "Upload successful"}), 200
 
+    except RequestEntityTooLarge:
+        raise  # let the 413 handler answer instead of the generic 500 below
     except Exception as e:
         logging.error(f"Upload error: {str(e)}")  # Add logging
         return jsonify({"error": "Failed to upload file. Please try again."}), 500

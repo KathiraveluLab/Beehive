@@ -25,6 +25,7 @@ Base URL (dev): `http://127.0.0.1:5000`
 - **Responses**:
   - 200: `{ message: "Upload successful" }`
   - 400: `{ error: "..." }` (e.g., missing required fields, disallowed file type)
+  - 413: `{ error: "..." }` (a file is over the size limit for its type, or the whole request is over the per-request cap; both limits are defined in `app.py` as `MIME_SIZE_LIMITS` and `MAX_CONTENT_LENGTH`)
   - 500: `{ error: "Error uploading file: ..." }`
 
 Side effects:
