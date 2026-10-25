@@ -1,16 +1,32 @@
+import html
 import bleach
 import re
 from typing import Optional
 
 def sanitize_text(value: Optional[str]) -> str:
+    """Strip HTML tags and return plain text.
+
+    bleach.clean() escapes "&", "<" and ">", so "Tom & Jerry" would be stored
+    as "Tom &amp; Jerry" and shown literally by the frontend, which already
+    escapes text when it renders. The escaped output is therefore unescaped
+    again. Unescaping can rebuild a tag out of input such as "<<b>b>", so the
+    clean/unescape step repeats until the text stops changing.
+    """
     if not value:
         return ""
-    return bleach.clean(
-        value,
-        tags=[],          # Remove ALL HTML tags
-        attributes={},    # Remove inbuilt methods, etc.
-        strip=True        # Strip the tags
-    ).strip()
+    text = value
+    while True:
+        cleaned = html.unescape(
+            bleach.clean(
+                text,
+                tags=[],          # Remove ALL HTML tags
+                attributes={},    # Remove inbuilt methods, etc.
+                strip=True        # Strip the tags
+            )
+        ).strip()
+        if cleaned == text:
+            return cleaned
+        text = cleaned
 
 def sanitize_api_query(value: Optional[str], max_length: int = 100) -> str:
     """
