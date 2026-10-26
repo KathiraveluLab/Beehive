@@ -134,7 +134,7 @@ ALLOWED_AUDIO_MIME_TYPES = {
     "application/ogg",  # libmagic may report this for ogg
 }
 MAX_AUDIO_FILE_SIZE = 6 * 1024 * 1024  # We can set the size required to Beehive 
-AUDIO_DATA_URL_RE = re.compile(r"^data:(?P<mime>[-\w.+/]+);base64,(?P<data>[A-Za-z0-9+/=\r\n]+)$")
+AUDIO_DATA_URL_RE = re.compile(r"^data:(?P<mime>[-\w.+/]+(?:;[^;,]+)*);base64,(?P<data>[A-Za-z0-9+/=\r\n]+)$")
 
 # Initialized global MIME detector
 try:
