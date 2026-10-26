@@ -42,8 +42,9 @@ def sanitize_string(value, field_name="field", max_length=1000, allow_empty=Fals
 def validate_email(value, field_name="email", max_length=254):
     """
     Validate email format and sanitize input.
+    The address is lowercased so the same mailbox is always stored and looked up the same way.
     """
-    value = sanitize_string(value, field_name, max_length)
+    value = sanitize_string(value, field_name, max_length).lower()
     
     email_regex = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
     if not re.match(email_regex, value):
