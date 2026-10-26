@@ -81,7 +81,7 @@ const Users = () => {
       // Get the authentication token from local storage
       // token is available above
       
-      const response = await fetch(apiUrl(`/api/admin/users?limit=${limit}&offset=${offset}&query=${searchTerm}`), {
+      const response = await fetch(apiUrl(`/api/admin/users?limit=${limit}&offset=${offset}&query=${encodeURIComponent(searchTerm)}`), {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
