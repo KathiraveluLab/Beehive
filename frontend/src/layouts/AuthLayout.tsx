@@ -3,36 +3,6 @@ import { SunIcon, MoonIcon } from "@heroicons/react/24/outline";
 import { useTheme } from "../context/ThemeContext";
 import { motion } from "framer-motion";
 
-const FloatingParticles = () => (
-  <div className="absolute inset-0 overflow-hidden">
-    {[...Array(30)].map((_, i) => (
-      <motion.div
-        key={i}
-        className="absolute w-2 h-2 bg-yellow-400 rounded-full"
-        initial={{
-          x: Math.random() * window.innerWidth,
-          y: Math.random() * window.innerHeight,
-        }}
-        animate={{
-          y: [
-            Math.random() * window.innerHeight,
-            Math.random() * window.innerHeight,
-          ],
-          x: [
-            Math.random() * window.innerWidth,
-            Math.random() * window.innerWidth,
-          ],
-        }}
-        transition={{
-          duration: Math.random() * 50 + 20,
-          repeat: Infinity,
-          ease: "linear",
-        }}
-      />
-    ))}
-  </div>
-);
-
 const GradientBackground = () => (
   <div className="absolute inset-0">
     <div className="absolute inset-0 bg-gradient-to-br from-yellow-100/30 via-white to-yellow-50/30 dark:bg-none dark:bg-gray-900" />
