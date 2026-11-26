@@ -251,8 +251,9 @@ def parse_int_param(param_name, default, min_val=None, max_val=None):
 
 def _build_audio_basename(title: str) -> str:
     safe_title = secure_filename(title) or "audio"
-    # Keep filenames short and predictable
-    return safe_title[:80]
+    # Keep filenames short and predictable. They are lowercased because the database
+    # stores audio filenames in lowercase, so the file on disk has to match.
+    return safe_title[:80].lower()
 
 
 def _audio_size_error():
