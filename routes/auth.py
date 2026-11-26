@@ -230,7 +230,7 @@ def complete_signup():
         # Check for differentiating usernames and emails, prevent @ in username
         if("@" in username):
             return jsonify({"error": "Username cannot contain '@' symbol"}), 400
-        password = sanitize_string(data.get("password"))
+        password = sanitize_string(data.get("password"), check_operators=False)
     except ValidationError as e:
         current_app.logger.warning("SIGNUP VALIDATION ERROR")
         return jsonify({"error": str(e)}), 400
@@ -288,7 +288,7 @@ def login():
         identifier = sanitize_string(data.get("username"))
         if identifier and "@" in identifier:
             identifier = validate_email(identifier)
-        password = sanitize_string(data.get("password"))
+        password = sanitize_string(data.get("password"), check_operators=False)
     except ValidationError as e:
         current_app.logger.warning("LOGIN VALIDATION ERROR: %s", e)
         return jsonify({"error": "Invalid input"}), 400
@@ -353,7 +353,7 @@ def set_password():
 
     try:
         email = validate_email(data.get("email"))
-        password = sanitize_string(data.get("password"))
+        password = sanitize_string(data.get("password"), check_operators=False)
         purpose = sanitize_string(data.get("purpose"), field_name="purpose").lower()
         if purpose not in ["signup", "reset"]:
             return jsonify({"error": "Invalid purpose"}), 400
@@ -524,8 +524,12 @@ def change_password():
     data = request.get_json(force=True)
 
     try:
-        current_password = sanitize_string(data.get("current_password"), field_name="current_password")
-        new_password = sanitize_string(data.get("new_password"), field_name="new_password")
+        current_password = sanitize_string(
+            data.get("current_password"), field_name="current_password", check_operators=False
+        )
+        new_password = sanitize_string(
+            data.get("new_password"), field_name="new_password", check_operators=False
+        )
     except ValidationError as e:
         return jsonify({"error": str(e)}), 400
 

@@ -13,10 +13,15 @@ class ValidationError(Exception):
         super().__init__(self.message)
 
 
-def sanitize_string(value, field_name="field", max_length=1000, allow_empty=False):
+def sanitize_string(value, field_name="field", max_length=1000, allow_empty=False,
+                    check_operators=True):
     """
     Sanitize and validate string input.
     Prevents NoSQL injection by ensuring the value is a plain string.
+
+    Pass check_operators=False for values that are never used in a database query,
+    such as passwords: they are only hashed, and the operator check would reject
+    valid passwords that happen to contain text like "$in" or "$or".
     """
     if value is None:
         if allow_empty:
@@ -34,7 +39,7 @@ def sanitize_string(value, field_name="field", max_length=1000, allow_empty=Fals
     if len(value) > max_length:
         raise ValidationError(f"{field_name} exceeds maximum length of {max_length}", field_name)
     
-    if _contains_mongo_operators(value):
+    if check_operators and _contains_mongo_operators(value):
         raise ValidationError(f"{field_name} contains invalid characters", field_name)
     
     return value
