@@ -10,7 +10,7 @@ click==8.1.8
 blinker==1.9.0
 
 # Database
-pymongo==4.11.0
+pymongo==4.18.2
 dnspython==2.7.0
 
 # Authentication & OAuth
