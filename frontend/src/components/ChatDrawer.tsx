@@ -120,37 +120,37 @@ const ChatDrawer: React.FC<ChatDrawerProps> = ({
         ${userRole === "admin" && !isMinimized ? "w-[480px]" : "w-72 sm:w-80"}
       `}
       >
-        {/* Header */}
-        <button
-          type="button"
-          onClick={() => setIsMinimized(!isMinimized)}
-          className="w-full text-left bg-transparent border-none flex items-center justify-between px-4 py-3 border-b border-yellow-500 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50 rounded-t-xl"
-        >
-          <div className="flex items-center gap-2 truncate">
-            <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
-            <span className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">
-              {userRole === "admin"
-                ? selectedUser
-                  ? `Chat: ${selectedUser.name}`
-                  : "Users"
-                : "Support"}
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
+        {/* Header: the toggle and the close control are siblings, since a button cannot contain a button */}
+        <div className="flex items-center border-b border-yellow-500 dark:border-slate-800 hover:bg-gray-50 dark:hover:bg-slate-800/50 rounded-t-xl">
+          <button
+            type="button"
+            aria-expanded={!isMinimized}
+            onClick={() => setIsMinimized(!isMinimized)}
+            className="flex-1 min-w-0 text-left bg-transparent border-none flex items-center justify-between pl-4 pr-3 py-3"
+          >
+            <div className="flex items-center gap-2 truncate">
+              <div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-sm font-bold text-gray-800 dark:text-gray-100 truncate">
+                {userRole === "admin"
+                  ? selectedUser
+                    ? `Chat: ${selectedUser.name}`
+                    : "Users"
+                  : "Support"}
+              </span>
+            </div>
             <span className="text-gray-400 text-xs">
               {isMinimized ? "Expand" : "Hide"}
             </span>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                onClose();
-              }}
-              className="text-gray-400 hover:text-red-500 transition-colors text-2xl leading-none"
-            >
-              &times;
-            </button>
-          </div>
-        </button>
+          </button>
+          <button
+            type="button"
+            aria-label="Close chat"
+            onClick={onClose}
+            className="pr-4 text-gray-400 hover:text-red-500 transition-colors text-2xl leading-none"
+          >
+            &times;
+          </button>
+        </div>
 
         {!isMinimized && (
           <div className="flex flex-1 overflow-hidden">
