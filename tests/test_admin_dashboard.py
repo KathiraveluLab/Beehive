@@ -258,3 +258,37 @@ def test_invalid_date_format(client, mock_db, admin_token):
     data = response.get_json()
     assert "error" in data
     assert "date format" in data["error"].lower()
+
+
+@pytest.mark.parametrize(
+    "username,email,query",
+    [
+        ("O'Brien", "ob@example.com", "O'Brien"),
+        ("Müller", "mu@example.com", "Müller"),
+        ("anna", "anna+work@example.com", "anna+work@example.com"),
+    ],
+)
+def test_users_search_matches_special_characters(
+    client, mock_db, admin_token, username, email, query
+):
+    """GET /api/admin/users?query= - names/emails with ' + or non-ASCII letters"""
+    _create_test_user(mock_db, username=username, email=email)
+    _create_test_user(mock_db, username="plainuser", email="plain@example.com")
+
+    response = client.get(
+        "/api/admin/users",
+        headers={"Authorization": f"Bearer {admin_token}"},
+        query_string={"query": query},
+    )
+
+    assert response.status_code == 200
+    data = response.get_json()
+    assert [u["name"] for u in data["users"]] == [username]
+
+
+@pytest.mark.parametrize("value", ["O'Brien", "Müller", "anna+work@example.com"])
+def test_sanitize_api_query_keeps_real_usernames_and_emails(value):
+    """The dashboard 'user' filter relies on this keeping stored names intact"""
+    from utils.sanitize import sanitize_api_query
+
+    assert sanitize_api_query(value) == value
