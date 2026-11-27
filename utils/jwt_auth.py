@@ -1,6 +1,8 @@
 import jwt
 import datetime
 from functools import wraps
+from bson import ObjectId
+from bson.errors import InvalidId
 from flask import request, jsonify, current_app
 
 
@@ -36,6 +38,36 @@ def verify_jwt(token):
         raise ValueError("Invalid token")
 
 
+def issued_before_password_change(claims):
+    """True if the token was issued before the user last changed their password.
+
+    JWTs are stateless, so a password change would otherwise leave every session
+    opened with the old password valid until it expires. Tokens for ids with no
+    user document, and users who never changed their password, are not affected.
+    """
+    try:
+        user_id = ObjectId(claims["sub"])
+    except (KeyError, TypeError, InvalidId):
+        return False
+
+    from database.databaseConfig import db
+
+    user = db.users.find_one({"_id": user_id}, {"password_changed_at": 1})
+    changed_at = user.get("password_changed_at") if user else None
+    if not changed_at:
+        return False
+
+    if changed_at.tzinfo is None:
+        changed_at = changed_at.replace(tzinfo=datetime.timezone.utc)
+
+    issued_at = claims.get("iat")
+    if issued_at is None:
+        return True
+    # "iat" has whole-second precision, so compare against the change time truncated
+    # to the second; the token returned by the change itself is never rejected.
+    return issued_at < int(changed_at.timestamp())
+
+
 # Auth decorator
 def require_auth(f):
     @wraps(f)
@@ -53,6 +85,9 @@ def require_auth(f):
         try:
             claims = verify_jwt(token)
         except ValueError:
+            return jsonify({"error": "Invalid or expired token"}), 401
+
+        if issued_before_password_change(claims):
             return jsonify({"error": "Invalid or expired token"}), 401
 
         request.current_user = {
@@ -82,6 +117,9 @@ def require_admin_role(f):
         try:
             claims = verify_jwt(token)
         except ValueError:
+            return jsonify({"error": "Invalid or expired token"}), 401
+
+        if issued_before_password_change(claims):
             return jsonify({"error": "Invalid or expired token"}), 401
 
         if claims.get("role") != "admin":

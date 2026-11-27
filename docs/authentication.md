@@ -38,3 +38,8 @@ The application supports two authentication methods:
   - google_id
   - name
   - email
+
+## Access Tokens and Password Changes
+- API requests carry a JWT in the `Authorization: Bearer` header; it expires after `JWT_EXPIRE_HOURS` (default 24).
+- Changing or resetting a password stores `password_changed_at` on the user. Any token issued before that moment is rejected with `401`, so a stolen or forgotten session cannot outlive the password it was opened with.
+- `PATCH /api/auth/change-password` returns a fresh `access_token` for the session that made the change, and `POST /api/auth/set-password` (reset) already returns one.
