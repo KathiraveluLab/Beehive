@@ -1,34 +1,31 @@
 from flask import request
 
+# Upper bound for a page number; far beyond any real collection, it only keeps the value sane.
+_MAX_PAGE = 10**9
+
+
+def parse_bounded_int(name, default, min_value, max_value):
+    """
+    Read an integer query parameter and clamp it to [min_value, max_value].
+    Raises ValueError if the value is present but not an integer, so route handlers
+    can return a 400 instead of an unhandled error.
+    """
+    raw = request.args.get(name)
+    if raw is None:
+        return default
+    try:
+        value = int(raw)
+    except (ValueError, TypeError):
+        raise ValueError(f"Invalid {name} parameter: {raw}")
+    return min(max(value, min_value), max_value)
+
+
 def parse_pagination_params(default_page=1, default_size=12, max_size=50):
     """
     Parse pagination parameters from request args.
     Raises ValueError if parameters are not valid integers.
     This allows route handlers to return proper 400 Bad Request responses.
     """
-    page_str = request.args.get('page')
-    page_size_str = request.args.get('page_size')
-    
-    # Parse page parameter
-    if page_str is not None:
-        try:
-            page = int(page_str)
-        except (ValueError, TypeError):
-            raise ValueError(f"Invalid page parameter: {page_str}")
-    else:
-        page = default_page
-    
-    # Parse page_size parameter
-    if page_size_str is not None:
-        try:
-            page_size = int(page_size_str)
-        except (ValueError, TypeError):
-            raise ValueError(f"Invalid page_size parameter: {page_size_str}")
-    else:
-        page_size = default_size
-
-    # Validate and clamp values
-    page = max(1, page)
-    page_size = min(max(1, page_size), max_size)
-
+    page = parse_bounded_int('page', default_page, 1, _MAX_PAGE)
+    page_size = parse_bounded_int('page_size', default_size, 1, max_size)
     return page, page_size

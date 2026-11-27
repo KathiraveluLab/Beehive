@@ -11,7 +11,7 @@ from database.userdatahandler import (
     unlock_account,
     get_lock_status,
 )
-from utils.pagination import parse_pagination_params
+from utils.pagination import parse_bounded_int, parse_pagination_params
 from utils.logger import Logger
 from utils.sanitize import sanitize_api_query
 
@@ -95,7 +95,7 @@ def get_dashboard_data():
 @require_admin_role
 def get_all_analytics():
     try:
-        days_ago = int(request.args.get("days", 7))
+        days_ago = parse_bounded_int("days", default=7, min_value=1, max_value=365)
 
         upload_data = get_upload_analytics(trend_days=days_ago)
         user_data = get_user_analytics()
@@ -108,6 +108,8 @@ def get_all_analytics():
             "users": user_data
         }), 200
 
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception:
         logger.error("Error fetching analytics", exc_info=True)
         return jsonify({"error": "Failed to fetch analytics data"}), 500
@@ -118,8 +120,8 @@ def get_all_analytics():
 @require_admin_role
 def list_users():
     try:
-        limit = int(request.args.get("limit", 10))
-        offset = int(request.args.get("offset", 0))
+        limit = parse_bounded_int("limit", default=10, min_value=1, max_value=100)
+        offset = parse_bounded_int("offset", default=0, min_value=0, max_value=10**9)
         query = sanitize_api_query(request.args.get("query", ""))
 
         # Build filter
@@ -152,6 +154,8 @@ def list_users():
             })
 
         return jsonify({"users": users, "totalCount": total_count}), 200
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
     except Exception:
         logger.error("Error listing users", exc_info=True)
         return jsonify({"error": "Failed to list users"}), 500
